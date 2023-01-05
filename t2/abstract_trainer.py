@@ -226,13 +226,13 @@ class AbstractTrainer(object):
         transformer = self.modules['transformer']
         transformer.eval()
 
+        # cuda
+        x1, len1 = to_cuda(self.my_device, x1, len1)
+
         alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
         pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
 
         # pred_mask = pred_mask.transpose(0, 1)
-
-        # cuda
-        x1, len1 = to_cuda(self.my_device, x1, len1)
 
         bs = self.params.batch_size
         # forward / loss
