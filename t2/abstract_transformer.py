@@ -125,6 +125,7 @@ class TransformerEncoder(AbstractTransformer, ABC):
         self.embeddings.cuda(device)
         self.position_embeddings.cuda(device)
 
+
 class TransformerDecoder(AbstractTransformer, ABC):
 
     def __init__(self, config, is_last, is_raw_input):
@@ -244,6 +245,7 @@ class TransformerDecoder(AbstractTransformer, ABC):
     def to_device(self, device):
         self.embeddings.cuda(device)
         self.position_embeddings.cuda(device)
+
 
 def get_masks(slen, lengths, causal):
     """
