@@ -1,21 +1,13 @@
-import math
-import random
-import string
-import sys
-import time
-import numpy as np
 import torch
 import torch.multiprocessing as mp
-import matplotlib.pyplot as plt
+
 import src
 from envs import build_env
-# from src.evaluator import Evaluator
-from src.slurm import init_signal_handler, init_distributed_mode
-from t2.realtime_trainer import RealtimeTrainer
+from src.slurm import init_distributed_mode
 from src.utils import initialize_exp
-from t2.utils import get_parser
-
+from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
+from t2.utils import get_parser
 
 argv = [
     '--exp_name', 'first_train',
