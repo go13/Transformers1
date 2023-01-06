@@ -100,7 +100,7 @@ if __name__ == '__main__':
     a = join_sai(A)
 
     trainers = []
-    number_of_models = 2
+    number_of_models = 16
     for i in range(number_of_models):
         params.my_device = 'cuda:' + str(i)
         trainer = RealtimeTrainer(build_transformer(env, params), env, params)
