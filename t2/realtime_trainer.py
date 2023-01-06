@@ -5,9 +5,6 @@ import torch
 
 from t2.abstract_trainer import AbstractTrainer
 
-if torch.cuda.is_available():
-    import apex
-
 logger = getLogger()
 
 

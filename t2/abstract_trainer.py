@@ -8,9 +8,6 @@ from t2.utils import str_diff
 from src.optim import get_optimizer
 from src.utils import to_cuda, words2string, ids2words
 
-if torch.cuda.is_available():
-    import apex
-
 logger = getLogger()
 
 
