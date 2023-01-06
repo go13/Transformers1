@@ -101,8 +101,9 @@ if __name__ == '__main__':
 
     trainers = []
     number_of_models = 8
+    number_of_gpus = 2
     for i in range(number_of_models):
-        params.my_device = 'cuda:' + str(i)
+        params.my_device = 'cuda:' + str(i % number_of_gpus)
         trainer = RealtimeTrainer(build_transformer(env, params), env, params)
         trainers += [trainer]
 
