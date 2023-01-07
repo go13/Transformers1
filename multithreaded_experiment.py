@@ -61,7 +61,10 @@ def act(inp, trainer):
     return trainer.act(lst)[0]
 
 
-def train(rank, trainer, params, x):
+def run(rank, trainer, params):
+    A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
+    x = join_sai(A)
+
     iterations_number = 100
     for epoch in range(iterations_number):
         for _ in range(params.batch_size):
@@ -73,30 +76,22 @@ def train(rank, trainer, params, x):
 if __name__ == '__main__':
     print('started')
 
-    A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
-    a = join_sai(A)
-
-    trainers = []
-    number_of_models = 8
-    number_of_gpus = 2
-    for i in range(number_of_models):
-        params.my_device = 'cuda:' + str(i % number_of_gpus)
-        trainer = RealtimeTrainer(build_transformer(env, params), env, params)
-        trainers += [trainer]
-
-    kwargs = {'shuffle': True}
-
-    kwargs.update({'num_workers': 1, 'pin_memory': True, })
-
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    rank = 0
-    for trainer in trainers:
-        p = mp.Process(target=train, args=(rank, trainer, params, a))
+    number_of_gpus = 2
+    number_of_models = 8
+
+    for rank in range(number_of_models):
+        params.my_device = 'cuda:' + str(rank % number_of_gpus)
+        trainer = RealtimeTrainer(build_transformer(env, params), env, params)
+
+        p = mp.Process(target=run, args=(rank, trainer, params))
+
+        processes += [p]
+
+    for p in processes:
         p.start()
-        processes.append(p)
-        rank += 1
 
     for p in processes:
         p.join()
