@@ -57,7 +57,7 @@ class TargetStringEvaluator(AbstractEvaluator):
 
 class XY(object):
 
-    def __init__(self, name, data, p1=-1, p2=-1):
+    def __init__(self, name: str, data: 'XY', p1: str="a", p2: str="e"):
         self.data = data
         self.name = name
         self.p1 = p1
