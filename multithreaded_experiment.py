@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 2
-    number_of_models = 8
+    number_of_models = 2
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
