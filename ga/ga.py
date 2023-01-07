@@ -4,11 +4,9 @@ import numpy as np
 
 from src.utils import str_diff, words2string
 
-TARGET = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
 data_dict = (string.ascii_uppercase + string.digits)
 mutation_p_const = 0.1
 new_percentage = 0.8
-xy_data_size_const = len(TARGET)
 
 
 def gen_rnd_chars(ln):
@@ -30,6 +28,43 @@ def mutate(d, mutation_p, xy_data_size):
             v = gen_rnd_chars(1)[0]
             d = replace_char_at_index(d, i, v)
     return d
+
+
+class AbstractEvaluator(object):
+
+    def __init__(self):
+        pass
+
+    def f(self, xy):
+        pass
+
+    def get_xy_len(self):
+        pass
+
+
+class TargetStringEvaluator(AbstractEvaluator):
+    TARGET = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
+    xy_data_size_const = len(TARGET)
+
+    def __init__(self):
+        pass
+
+    def f(self, xy):
+        return ff(self, xy.data)
+
+    def ff(self, data):
+        diff = random.random() * 0.001
+        # for i in range(len(xy.data)):
+        #     diff += 0 if target[i] != xy.data[i] else 1
+        diff += (len(TARGET) - str_diff(TARGET, data))
+        return diff
+
+    def evaluate_all(self, population):
+        for xy in population:
+            xy.f = f(xy)
+
+    def get_xy_len(self):
+        return xy_data_size_const
 
 
 class XY(object):
@@ -68,36 +103,28 @@ class XY(object):
         )
 
 
-def f(xy, target=TARGET):
-    return ff(xy.data, target)
-
-
-def ff(data, target=TARGET):
-    diff = random.random() * 0.001
-    # for i in range(len(xy.data)):
-    #     diff += 0 if target[i] != xy.data[i] else 1
-    diff += (len(target) - str_diff(target, data))
-    return diff
-
-
-def evaluate_all(population):
-    for xy in population:
-        xy.f = f(xy)
-
-
 class GA(object):
 
-    def __init__(self, eval_funct=evaluate_all, population_size=20, mutation_p=mutation_p_const, verbose=True,
-                 xy_data_size=xy_data_size_const):
+    def __init__(
+            self,
+            evaluator: TargetStringEvaluator,
+            population_size=20,
+            mutation_p=mutation_p_const,
+            verbose=True
+    ):
         self.verbose = verbose
         self.iteration = 0
         self.population_size = population_size
-        self.eval_funct = eval_funct
+        self.evaluator = evaluator
         self.mutation_p = mutation_p
         self.mutation_enabled = True
-        self.xy_data_size = xy_data_size
-        self.population = self.generate(population_size, xy_data_size)
+        self.xy_data_size = evaluator.get_xy_len()
+        self.population = self.generate(population_size, self.xy_data_size)
         self.new_size = int(new_percentage * self.population_size)
+
+    def evaluate_all(self, population):
+        for xy in population:
+            xy.f = f(xy)
 
     @staticmethod
     def generate(population_size, xy_data_size):
@@ -137,7 +164,7 @@ class GA(object):
         min_f_val = np.min(f_values)
         max_f_val = np.max(f_values)
 
-        return (mean_f_val, std_f_val, min_f_val, max_f_val)
+        return mean_f_val, std_f_val, min_f_val, max_f_val
 
     def evaluate(self):
         if self.eval_funct:
