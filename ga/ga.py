@@ -2,7 +2,7 @@ import random
 import string
 import numpy as np
 
-from t2.utils import str_diff
+from src.utils import str_diff
 
 TARGET = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
 data_dict = (string.ascii_uppercase + string.digits)

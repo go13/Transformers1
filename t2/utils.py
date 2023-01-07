@@ -221,10 +221,3 @@ def check_model_params(params):
     # reload a pretrained model
     if params.reload_model != '':
         assert os.path.isfile(params.reload_model)
-
-
-def str_diff(s1, s2):
-    diff = abs(len(s1) - len(s2))
-    for i in range(min(len(s1), len(s2))):
-        diff += 1 if s1[i] != s2[i] else 0
-    return diff
