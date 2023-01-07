@@ -172,3 +172,10 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
         return wraps(func)(wrapper)
 
     return decorator
+
+
+def str_diff(s1, s2):
+    diff = abs(len(s1) - len(s2))
+    for i in range(min(len(s1), len(s2))):
+        diff += 1 if s1[i] != s2[i] else 0
+    return diff

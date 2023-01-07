@@ -7,7 +7,7 @@ from src.slurm import init_distributed_mode
 from src.utils import initialize_exp
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
-from t2.utils import get_parser
+from t2.utils import get_parser, join_sai
 
 argv = [
     '--exp_name', 'first_train',
@@ -59,21 +59,6 @@ def act(inp, trainer):
         lst += [x]
 
     return trainer.act(lst)[0]
-
-
-def to_sai_str(p):
-    return join_sai(p.data)
-
-
-def join_sai(data):
-    return ' '.join(data)
-
-
-def str_diff(s1, s2):
-    diff = abs(len(s1) - len(s2))
-    for i in range(min(len(s1), len(s2))):
-        diff += 1 if s1[i] != s2[i] else 0
-    return diff
 
 
 def train(rank, trainer, params, x):
