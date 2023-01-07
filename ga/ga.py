@@ -2,7 +2,7 @@ import random
 import string
 import numpy as np
 
-from src.utils import str_diff
+from src.utils import str_diff, words2string
 
 TARGET = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
 data_dict = (string.ascii_uppercase + string.digits)
@@ -12,11 +12,7 @@ xy_data_size_const = len(TARGET)
 
 
 def gen_rnd_chars(ln):
-    return join_to_string(random.choices(data_dict, k=ln))
-
-
-def join_to_string(s):
-    return ''.join(s)
+    return words2string(random.choices(data_dict, k=ln))
 
 
 def replace_char_at_index(org_str, index, replacement):
