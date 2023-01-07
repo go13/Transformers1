@@ -46,7 +46,6 @@ class AbstractEvaluator(ABC):
 
 
 class TargetStringEvaluator(AbstractEvaluator):
-
     def __init__(self):
         super().__init__()
         self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
@@ -81,8 +80,6 @@ class XY(object):
         #     new_data += [v]
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
-
-        # new_data = join_to_string(new_data)
 
         return XY(name, new_data, self.name, xy2.name)
 
