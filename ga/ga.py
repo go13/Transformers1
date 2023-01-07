@@ -1,16 +1,15 @@
 import random
 import string
 import numpy as np
-from typing import ABC, abstractmethod
-
+from abc import ABC, abstractmethod
 from src.utils import str_diff, words2string
 
-data_dict = (string.ascii_uppercase + string.digits)
+data_dict = string.ascii_uppercase + string.digits
 mutation_p_const = 0.05
 new_percentage = 0.8
 
 
-def gen_rnd_chars(ln):
+def gen_rnd_chars(ln: int) -> str:
     return words2string(random.choices(data_dict, k=ln))
 
 
@@ -23,7 +22,7 @@ def replace_char_at_index(org_str, index, replacement):
     return new_str
 
 
-def mutate(d, mutation_p, xy_data_size):
+def mutate(d: str, mutation_p: float, xy_data_size: int) -> str:
     for i in range(0, xy_data_size):
         if random.random() < mutation_p:
             v = gen_rnd_chars(1)[0]
@@ -32,33 +31,27 @@ def mutate(d, mutation_p, xy_data_size):
 
 
 class AbstractEvaluator(ABC):
-
-    def __init__(self):
+    @abstractmethod
+    def func(self, data: str) -> float:
         pass
 
     @abstractmethod
-    def func(self, data):
-        pass
-
-    @abstractmethod
-    def get_xy_len(self):
+    def get_xy_len(self) -> int:
         pass
 
 
 class TargetStringEvaluator(AbstractEvaluator):
     def __init__(self):
-        super().__init__()
         self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
         self.xy_data_size_const = len(self.target)
 
-    def func(self, data):
+    def func(self, data: str) -> float:
         diff = random.random() * 0.001
-        # for i in range(len(xy.data)):
-        #     diff += 0 if target[i] != xy.data[i] else 1
         diff += (self.xy_data_size_const - str_diff(self.target, data))
         return diff
 
-    def get_xy_len(self):
+    def get_xy_len(self) -> int:
+
         return self.xy_data_size_const
 
 
@@ -71,7 +64,7 @@ class XY(object):
         self.p2 = p2
         self.f = None
 
-    def crossover(self, xy2, name, xy_data_size):
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         cp = random.randint(0, xy_data_size - 1)
@@ -83,7 +76,7 @@ class XY(object):
 
         return XY(name, new_data, self.name, xy2.name)
 
-    def mutate(self, mutation_p, xy_data_size):
+    def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         self.data = mutate(self.data, mutation_p, xy_data_size)
 
     def __str__(self):
