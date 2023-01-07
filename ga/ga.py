@@ -1,7 +1,7 @@
 import random
 import string
 import numpy as np
-from abc import ABC, abstractmethod
+from typing import ABC, abstractmethod
 
 from src.utils import str_diff, words2string
 
