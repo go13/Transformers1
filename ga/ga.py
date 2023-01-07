@@ -51,13 +51,12 @@ class TargetStringEvaluator(AbstractEvaluator):
         return diff
 
     def get_xy_len(self) -> int:
-
         return self.xy_data_size_const
 
 
 class XY(object):
 
-    def __init__(self, name: str, data: 'XY', p1: str="a", p2: str="e"):
+    def __init__(self, name: str, data: 'XY', p1: str = "a", p2: str = "e"):
         self.data = data
         self.name = name
         self.p1 = p1
