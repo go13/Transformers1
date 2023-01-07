@@ -1,11 +1,12 @@
 import random
 import string
 import numpy as np
+from abc import ABC, abstractmethod
 
 from src.utils import str_diff, words2string
 
 data_dict = (string.ascii_uppercase + string.digits)
-mutation_p_const = 0.1
+mutation_p_const = 0.4
 new_percentage = 0.8
 
 
@@ -30,41 +31,36 @@ def mutate(d, mutation_p, xy_data_size):
     return d
 
 
-class AbstractEvaluator(object):
+class AbstractEvaluator(ABC):
 
     def __init__(self):
         pass
 
-    def f(self, xy):
+    @abstractmethod
+    def func(self, data):
         pass
 
+    @abstractmethod
     def get_xy_len(self):
         pass
 
 
 class TargetStringEvaluator(AbstractEvaluator):
-    TARGET = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
-    xy_data_size_const = len(TARGET)
 
     def __init__(self):
-        pass
+        super().__init__()
+        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
+        self.xy_data_size_const = len(self.target)
 
-    def f(self, xy):
-        return ff(self, xy.data)
-
-    def ff(self, data):
+    def func(self, data):
         diff = random.random() * 0.001
         # for i in range(len(xy.data)):
         #     diff += 0 if target[i] != xy.data[i] else 1
-        diff += (len(TARGET) - str_diff(TARGET, data))
+        diff += (self.xy_data_size_const - str_diff(self.target, data))
         return diff
 
-    def evaluate_all(self, population):
-        for xy in population:
-            xy.f = f(xy)
-
     def get_xy_len(self):
-        return xy_data_size_const
+        return self.xy_data_size_const
 
 
 class XY(object):
@@ -122,10 +118,6 @@ class GA(object):
         self.population = self.generate(population_size, self.xy_data_size)
         self.new_size = int(new_percentage * self.population_size)
 
-    def evaluate_all(self, population):
-        for xy in population:
-            xy.f = f(xy)
-
     @staticmethod
     def generate(population_size, xy_data_size):
         pp = []
@@ -136,15 +128,15 @@ class GA(object):
         return pp
 
     def step(self):
-        # self.evaluate()
-        # self.sort_population()
+        self.evaluate()
+        self.sort_population()
 
         self.print_population()
 
         children = self.crossover()
-        self.mutate(children)
+        children = self.mutate(children)
 
-        self.update_population()
+        self.update_bottom(children)
 
         self.iteration += 1
 
@@ -167,27 +159,24 @@ class GA(object):
         return mean_f_val, std_f_val, min_f_val, max_f_val
 
     def evaluate(self):
-        if self.eval_funct:
-            self.eval_funct(self.population)
-
-    def evaluate_pp(self, pp):
-        self.eval_funct(pp)
+        for xy in self.population:
+            xy.f = self.evaluator.func(xy.data)
 
     def mutate(self, pp, mp=None):
         # if not self.mutation_enabled:
         #     return
 
+        mp_ = mp if mp else self.mutation_p
+
         for p in pp:
-            p.mutate(mp if mp else self.mutation_p, self.xy_data_size)
+            p.mutate(mp_, self.xy_data_size)
 
         return pp
 
     def crossover(self):
-        new_population = self.generate_crossover(self.new_size)
+        children = self.generate_crossover(self.new_size)
 
-        self.update_bottom(new_population)
-
-        return new_population
+        return children
 
     def generate_crossover(self, new_size):
         new_population = []
