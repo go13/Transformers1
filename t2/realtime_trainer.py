@@ -38,5 +38,14 @@ class RealtimeTrainer(AbstractTrainer):
 
         return self._act(x1, len1)
 
+    def act_detailed(self, xx1, xx2):
+        q = []
+        for x1, x2 in zip(xx1, xx2):
+            q.append((x1.split(), x2.split()))
+
+        (x1, len1), (x2, len2) = self.collate_fn(q)
+
+        return self._act_detailed(x1, len1, x2, len2)
+
     def collate_fn2(self, training_queue):
         return self.collate_fn(training_queue)
