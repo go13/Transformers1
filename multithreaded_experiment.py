@@ -8,6 +8,7 @@ from src.utils import initialize_exp
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 from t2.utils import get_parser, join_sai
+from ga.ga import GA, TargetStringEvaluator
 
 argv = [
     '--exp_name', 'first_train',
@@ -62,15 +63,21 @@ def act(inp, trainer):
 
 
 def run(rank, trainer, params):
-    A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
-    x = join_sai(A)
 
-    iterations_number = 100
-    for epoch in range(iterations_number):
-        for _ in range(params.batch_size):
-            loss = trainer.learn(x, x)
-            if loss[0]:
-                print(f"epoch={epoch}, rank={rank}")
+    ga = GA(TargetStringEvaluator())
+
+    for i in range(100):
+        ga.step()
+
+    # A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
+    # x = join_sai(A)
+    #
+    # iterations_number = 100
+    # for epoch in range(iterations_number):
+    #     for _ in range(params.batch_size):
+    #         loss = trainer.learn(x, x)
+    #         if loss[0]:
+    #             print(f"epoch={epoch}, rank={rank}")
 
 
 if __name__ == '__main__':

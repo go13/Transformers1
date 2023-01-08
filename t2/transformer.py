@@ -25,12 +25,6 @@ class Transformer(DispatchingModule, ABC):
 
         self.output = self.td1
 
-    def fwd(self, x1, len1):
-        encoded1 = self.te1.fwd(x=x1, lengths=len1, causal=False)
-        tensor = self.td1.fwd(x=x1, lengths=len1, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
-
-        return tensor
-
     def learn(self, tensor, pred_mask, y):
         x = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.config.dim)
         assert (y == self.config.pad_index).sum().item() == 0
@@ -39,10 +33,18 @@ class Transformer(DispatchingModule, ABC):
 
         return scores, loss
 
+    def fwd(self, x1, len1):
+        encoded1 = self.te1.fwd(x=x1, lengths=len1, causal=False)
+        tensor = self.td1.fwd(x=x1, lengths=len1, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
+
+        return tensor
+
     def generate(self, tensor, pred_mask):
-        assert tensor.shape == (self.config.input_seq_length, self.config.batch_size, self.config.dim)
+        # TODO: assert tensor shape
+        # assert tensor.shape == (self.config.input_seq_length, self.config.batch_size, self.config.dim)
         x = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.config.dim)
         scores = self.output.proj(x).view(-1, self.config.n_words)
+
         return scores
 
     def to_device(self, device):
