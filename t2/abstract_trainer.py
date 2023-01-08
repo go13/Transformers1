@@ -256,9 +256,11 @@ class AbstractTrainer(object):
             e = abs(input_size - str_diff(pred, src)) / input_size
             av_score += e
 
+            src = words2string(ids2words(self.env.id2word, src))
+            pred = words2string(ids2words(self.env.id2word, pred))
+
             #if self.params.eval_verbose_print:
-            # src = words2string(ids2words(self.env.id2word, src))
-            # pred = words2string(ids2words(self.env.id2word, pred))
+
             # logger.info(f"acting: src={src}, pred={pred}, score={e}")
 
             result += [pred]
