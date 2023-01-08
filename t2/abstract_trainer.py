@@ -223,7 +223,7 @@ class AbstractTrainer(object):
             pred = words2string(ids2words(self.env.id2word, pred))
 
             av_score += e
-            #logger.info(f"learning: src={src}, pred={pred}, score={e}")
+            logger.info(f"learning: src={src}, pred={pred}, score={e}")
 
             result += [pred]
         av_score = av_score / bs
