@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .embeddings import Embedding
+from .embeddings import Embedding, create_sinusoidal_embeddings
 from .multi_head_attention import MultiHeadAttention
 from .utils import N_MAX_POSITIONS, DispatchingModule
 from .transformer_config import TransformerConfig
@@ -31,8 +31,8 @@ class TransformerEncoder(AbstractTransformer, ABC):
         self.is_raw_input = is_raw_input
         # embeddings
         self.position_embeddings = Embedding(N_MAX_POSITIONS, self.config.dim)
-        # if params.sinusoidal_embeddings:
-        #     create_sinusoidal_embeddings(N_MAX_POSITIONS, self.config.dim, out=self.position_embeddings.weight)
+        if config.sinusoidal_embeddings:
+            create_sinusoidal_embeddings(N_MAX_POSITIONS, self.config.dim, out=self.position_embeddings.weight)
         if not is_raw_input:
             self.embeddings = Embedding(self.config.n_words, self.config.dim, padding_idx=self.config.pad_index)
         self.layer_norm_emb = nn.LayerNorm(self.config.dim, eps=1e-12)

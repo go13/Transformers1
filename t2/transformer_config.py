@@ -9,6 +9,7 @@ class TransformerConfig:
         self.batch_size = params.batch_size
         self.share_inout_emb = params.share_inout_emb
         self.input_seq_length = params.input_seq_length
+        self.sinusoidal_embeddings = params.sinusoidal_embeddings
 
         # dictionary
         self.n_words = params.n_words

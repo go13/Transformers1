@@ -15,7 +15,7 @@ argv = [
     '--tasks', 'add_dataset',
     '--n_enc_layers', '16',
     '--n_heads', '4',
-    '--sinusoidal_embeddings', 'true',
+    '--sinusoidal_embeddings', 'false',
     '--num_workers', '4',
     '--eval_onl', '0',
     '--save_periodic', '0',
@@ -27,7 +27,7 @@ argv = [
     '--bottleneck_dim', '64',
     '--nn_output', '1',
     '--input_seq_length', '47',
-    '--share_inout_emb', 'false'
+    '--share_inout_emb', 'true'
 ]
 
 parser = get_parser()
@@ -77,7 +77,7 @@ def run(rank, trainer, params):
             # else:
             #     df = df * 10
             # for _ in range(bs):
-            trainer.learn(a.data, b.data, c.data, df)
+            trainer.learn(a.data, b.data, c.data, 1)
 
         ga.iteration += 1
 
