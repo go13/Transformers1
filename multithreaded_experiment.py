@@ -56,7 +56,7 @@ def run(rank, trainer, params):
     ga = GA(TargetStringEvaluator())
     ga.evaluate()
     ga.sort_population()
-
+    bs = trainer.params.batch_size
     for i in range(100):
         ga.print_population()
 
@@ -71,8 +71,9 @@ def run(rank, trainer, params):
 
         # learn crossover result
         for a, b, c in families:
-            df = c.f - max(a.f, b.f)
-            trainer.learn(a.data, b.data, c.data, df)
+            df = (c.f - max(a.f, b.f)) / bs
+            for _ in range(bs):
+                trainer.learn(a.data, b.data, c.data, df)
 
         ga.iteration += 1
 
