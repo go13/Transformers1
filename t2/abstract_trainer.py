@@ -219,7 +219,7 @@ class AbstractTrainer(object):
         return loss
 
     def _act(self, x1, len1):
-        self._act_detailed(x1, len1, x1, len1)
+        return self._act_detailed(x1, len1, x1, len1)
 
     def _act_detailed(self, x1, len1, x2, len2):
         transformer = self.modules['transformer']
