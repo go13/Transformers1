@@ -34,7 +34,7 @@ class RealtimeTrainer(AbstractTrainer):
         self.training_queue.append((x1.split(), x2.split(), y.split()))
 
         if len(self.training_queue) == self.params.batch_size:
-            (x1, x1_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
+            (x1, x1_len), (_, _), _ = self.collate_fn(self.training_queue)
             (x2, x2_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
 
             loss = self._learn_detailed(x1, x1_len, x2, x2_len, y1, y_len)
