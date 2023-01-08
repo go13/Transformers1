@@ -247,12 +247,14 @@ class AbstractTrainer(object):
         av_score = 0
         for i in range(bs):
             src = x1[1:len1[i] - 1, i].tolist()
-            src = words2string(ids2words(self.env.id2word, src))
-            #TODO: replace string comparison vs ids comparison
+
             pred = o[0:len1[i] - 2, i].tolist()
-            pred = words2string(ids2words(self.env.id2word, pred))
             e = abs(input_size - str_diff(pred, src)) / input_size
             av_score += e
+
+            #if self.params.eval_verbose_print:
+            # src = words2string(ids2words(self.env.id2word, src))
+            # pred = words2string(ids2words(self.env.id2word, pred))
             # logger.info(f"acting: src={src}, pred={pred}, score={e}")
 
             result += [pred]
