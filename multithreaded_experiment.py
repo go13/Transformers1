@@ -64,7 +64,7 @@ def run(rank, trainer, params):
         children, families = ga.crossover()
 
         for a, b, c in families:
-            trainer.learn_detailed(a.data, b.data, c.data)
+            trainer.learn(a.data, b.data, c.data)
 
         children = ga.mutate(children)
 

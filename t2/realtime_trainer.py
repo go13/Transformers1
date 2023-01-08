@@ -51,7 +51,7 @@ class RealtimeTrainer(AbstractTrainer):
 
         return self.act(lst)[0]
 
-    def single_act_detailed(self, inp1, inp2):
+    def single_act(self, inp1, inp2):
         inp1 = join_sai(inp1)
         inp2 = join_sai(inp2)
         lst1 = []
@@ -63,4 +63,4 @@ class RealtimeTrainer(AbstractTrainer):
             x2 = inp2
             lst2 += [x2]
 
-        return self.act_detailed(lst1, lst2)[0]
+        return self.act(lst1, lst2)[0]
