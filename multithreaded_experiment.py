@@ -54,21 +54,25 @@ env = build_env(params)
 
 def run(rank, trainer, params):
     ga = GA(TargetStringEvaluator())
+    ga.evaluate()
+    ga.sort_population()
 
     for i in range(100):
-        ga.evaluate()
-        ga.sort_population()
-
         ga.print_population()
 
         children, families = ga.crossover()
 
-        for a, b, c in families:
-            trainer.learn(a.data, b.data, c.data)
-
         children = ga.mutate(children)
 
         ga.update_bottom(children)
+
+        ga.evaluate()
+        ga.sort_population()
+
+        # learn crossover result
+        for a, b, c in families:
+            df = c.f - max(a.f, b.f)
+            trainer.learn(a.data, b.data, c.data, df)
 
         ga.iteration += 1
 

@@ -17,16 +17,17 @@ class RealtimeTrainer(AbstractTrainer):
         self.training_queue = []
         self.data_path = None
 
-    def learn(self, x1, x2, y):
+    def learn(self, x1, x2, y, learning_rate):
         x1 = join_sai(x1)
         x2 = join_sai(x2)
         y = join_sai(y)
+
         self.training_queue.append((x1.split(), x2.split(), y.split()))
 
         if len(self.training_queue) == self.params.batch_size:
             (x1, x1_len), (x2, x2_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
 
-            loss = self._learn_detailed(x1, x1_len, x2, x2_len, y1, y_len)
+            loss = self._learn_detailed(x1, x1_len, x2, x2_len, y1, y_len, learning_rate)
 
             self.training_queue.clear()
 
