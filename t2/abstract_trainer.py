@@ -215,18 +215,20 @@ class AbstractTrainer(object):
         av_score = 0
         for i in range(bs):
             src = x1[1:len1[i] - 1, i].tolist()
-            src = words2string(ids2words(self.env.id2word, src))
-
             pred = o[0:len1[i] - 2, i].tolist()
-            pred = words2string(ids2words(self.env.id2word, pred))
+
             e = abs(input_size - str_diff(pred, src)) / input_size
+
+            src = words2string(ids2words(self.env.id2word, src))
+            pred = words2string(ids2words(self.env.id2word, pred))
+
             av_score += e
             #logger.info(f"learning: src={src}, pred={pred}, score={e}")
 
             result += [pred]
         av_score = av_score / bs
 
-        logger.info(f"learning: av-score={av_score}, device={self.my_device}")
+        logger.info(f"learning: av-score={av_score}, device={self.my_device}, loss={loss.item()}")
 
         return loss
 
