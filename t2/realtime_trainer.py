@@ -47,5 +47,28 @@ class RealtimeTrainer(AbstractTrainer):
 
         return self._act_detailed(x1, len1, x2, len2)
 
+    def single_act(inp):
+        inp = join_sai(inp)
+        lst = []
+        for _ in range(bs):
+            x = inp
+            lst += [x]
+
+        return self.act(lst)[0]
+
+    def single_act_detailed(inp1, inp2):
+        inp1 = join_sai(inp1)
+        inp2 = join_sai(inp2)
+        lst1 = []
+        lst2 = []
+        for _ in range(bs):
+            x1 = inp1
+            lst1 += [x1]
+
+            x2 = inp2
+            lst2 += [x2]
+
+        return self.act_detailed(lst1, lst2)[0]
+
     def collate_fn2(self, training_queue):
         return self.collate_fn(training_queue)
