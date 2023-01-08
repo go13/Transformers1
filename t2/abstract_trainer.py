@@ -240,7 +240,7 @@ class AbstractTrainer(object):
         # output = output.reshape(bs, -1, self.params.n_words)
         # i = random.randint(0, bs - 1)
 
-        input_size = self.params.input_seq_length
+        #input_size = self.params.input_seq_length
         # bs = self.params.batch_size
         # scores = scores.reshape(-1, bs, self.params.n_words)
         # scores = scores.transpose(0, 1)
@@ -249,6 +249,7 @@ class AbstractTrainer(object):
         result = []
         av_score = 0
         for i in range(bs):
+            input_size = len1[i]
             src = x1[1:len1[i] - 1, i].tolist()
 
             pred = o[0:len1[i] - 2, i].tolist()
