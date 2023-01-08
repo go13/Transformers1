@@ -172,13 +172,13 @@ class AbstractTrainer(object):
         return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
 
     def _learn(self, x1, len1, y, y_len):
-        self._learn_detailed(x1, len1, x1, len1, y, y_len)
+        self._learn_detailed(x1, len1, x1, len1, y, y_len, 1)
 
-    def _learn_detailed(self, x1, len1, x2, len2, y, y_len):
+    def _learn_detailed(self, x1, len1, x2, len2, y, y_len, learning_rate=None):
         transformer = self.modules['transformer']
         transformer.train()
 
-        x1, len1, x2, len2, y = to_cuda(self.my_device, x1, len1, x2, len2, y)
+        x1, len1, x2, len2, y, learning_rate = to_cuda(self.my_device, x1, len1, x2, len2, y, learning_rate)
 
         # target words to predict
         alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
@@ -194,6 +194,9 @@ class AbstractTrainer(object):
         # fwd both encode and decoder
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         scores, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
+
+        if learning_rate:
+            loss = loss * learning_rate
 
         self.optimize(loss)
 
