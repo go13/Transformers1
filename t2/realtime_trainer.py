@@ -4,6 +4,7 @@ from logging import getLogger
 import torch
 
 from t2.abstract_trainer import AbstractTrainer
+from t2.utils import join_sai
 
 logger = getLogger()
 
@@ -47,21 +48,21 @@ class RealtimeTrainer(AbstractTrainer):
 
         return self._act_detailed(x1, len1, x2, len2)
 
-    def single_act(inp):
+    def single_act(self, inp):
         inp = join_sai(inp)
         lst = []
-        for _ in range(bs):
+        for _ in range(self.params.batch_size):
             x = inp
             lst += [x]
 
         return self.act(lst)[0]
 
-    def single_act_detailed(inp1, inp2):
+    def single_act_detailed(self, inp1, inp2):
         inp1 = join_sai(inp1)
         inp2 = join_sai(inp2)
         lst1 = []
         lst2 = []
-        for _ in range(bs):
+        for _ in range(self.params.batch_size):
             x1 = inp1
             lst1 += [x1]
 
