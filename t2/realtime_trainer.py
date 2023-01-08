@@ -64,6 +64,3 @@ class RealtimeTrainer(AbstractTrainer):
             lst2 += [x2]
 
         return self.act_detailed(lst1, lst2)[0]
-
-    def collate_fn2(self, training_queue):
-        return self.collate_fn(training_queue)
