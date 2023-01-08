@@ -33,7 +33,7 @@ class RealtimeTrainer(AbstractTrainer):
             return True, loss
         return False, None
 
-    def act_detailed(self, xx1, xx2):
+    def act(self, xx1, xx2):
         q = []
         for x1, x2 in zip(xx1, xx2):
             q.append((x1.split(), x2.split(), x2.split()))
@@ -41,15 +41,6 @@ class RealtimeTrainer(AbstractTrainer):
         (x1, len1), (x2, len2), _, _, _ = self.collate_fn(q)
 
         return self._act_detailed(x1, len1, x2, len2)
-
-    def single_act(self, inp):
-        inp = join_sai(inp)
-        lst = []
-        for _ in range(self.params.batch_size):
-            x = inp
-            lst += [x]
-
-        return self.act(lst)[0]
 
     def single_act(self, inp1, inp2):
         inp1 = join_sai(inp1)
