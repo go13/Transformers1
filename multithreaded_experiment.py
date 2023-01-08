@@ -72,8 +72,8 @@ def run(rank, trainer, params):
         # learn crossover result
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
-            for _ in range(bs):
-                trainer.learn(a.data, a.data, a.data, df)
+            # for _ in range(bs):
+            trainer.learn(a.data, a.data, a.data, df)
 
         ga.iteration += 1
 
