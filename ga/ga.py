@@ -122,7 +122,7 @@ class GA(object):
 
         self.print_population()
 
-        children = self.crossover()
+        children, families = self.crossover()
         children = self.mutate(children)
 
         self.update_bottom(children)
@@ -163,11 +163,12 @@ class GA(object):
         return pp
 
     def crossover(self):
-        children = self.generate_crossover(self.new_size)
+        children, famililes = self.generate_crossover(self.new_size)
 
-        return children
+        return children, famililes
 
     def generate_crossover(self, new_size):
+        new_families = []
         new_population = []
         for i in range(new_size):
             xy1 = self.get_random_xy(self.population)
@@ -176,9 +177,12 @@ class GA(object):
             child = xy1.crossover(xy2, i, self.xy_data_size)
             # child.mutate(self.mutation_p)
 
-            new_population.append(child)
+            family = (xy1, xy2, child)
 
-        return new_population
+            new_population += [child]
+            new_families += [family]
+
+        return new_population, new_families
 
     def update_bottom(self, new_population):
         # new_population = new_population.copy()

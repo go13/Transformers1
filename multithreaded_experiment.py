@@ -56,7 +56,22 @@ def run(rank, trainer, params):
     ga = GA(TargetStringEvaluator())
 
     for i in range(100):
-        ga.step()
+        ga.evaluate()
+        ga.sort_population()
+
+        ga.print_population()
+
+        children, families = ga.crossover()
+
+        for a, b, c in families:
+            trainer.learn_detailed(a.data, b.data, c.data)
+
+        children = ga.mutate(children)
+
+        ga.update_bottom(children)
+
+        ga.iteration += 1
+
 
     # A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
     # x = join_sai(A)

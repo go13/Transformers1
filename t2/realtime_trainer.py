@@ -17,25 +17,18 @@ class RealtimeTrainer(AbstractTrainer):
         self.training_queue = []
         self.data_path = None
 
+    #TODO: remove
     def learn(self, x, y):
-        self.training_queue.append((x.split(), y.split()))
-
-        if len(self.training_queue) == self.params.batch_size:
-            (x1, x_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
-
-            loss = self._learn(x1, x_len, y1, y_len)
-
-            self.training_queue.clear()
-
-            return True, loss
-        return False, None
+        return self.learn_detailed(x, x, y)
 
     def learn_detailed(self, x1, x2, y):
+        x1 = join_sai(x1)
+        x2 = join_sai(x2)
+        y = join_sai(y)
         self.training_queue.append((x1.split(), x2.split(), y.split()))
 
         if len(self.training_queue) == self.params.batch_size:
-            (x1, x1_len), (_, _), _ = self.collate_fn(self.training_queue)
-            (x2, x2_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
+            (x1, x1_len), (x2, x2_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
 
             loss = self._learn_detailed(x1, x1_len, x2, x2_len, y1, y_len)
 
@@ -44,10 +37,11 @@ class RealtimeTrainer(AbstractTrainer):
             return True, loss
         return False, None
 
+    # TODO: remove
     def act(self, xx):
         q = []
         for x in xx:
-            q.append((x.split(), x.split()))
+            q.append((x.split(), x.split(), x.split()))
 
         (x1, len1), _, _, _ = self.collate_fn(q)
 
@@ -56,9 +50,9 @@ class RealtimeTrainer(AbstractTrainer):
     def act_detailed(self, xx1, xx2):
         q = []
         for x1, x2 in zip(xx1, xx2):
-            q.append((x1.split(), x2.split()))
+            q.append((x1.split(), x2.split(), x2.split()))
 
-        (x1, len1), (x2, len2), _ = self.collate_fn(q)
+        (x1, len1), (x2, len2), _, _, _ = self.collate_fn(q)
 
         return self._act_detailed(x1, len1, x2, len2)
 

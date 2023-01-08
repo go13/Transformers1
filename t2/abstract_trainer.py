@@ -154,17 +154,19 @@ class AbstractTrainer(object):
         """
         Collate samples into a batch.
         """
-        x, y = zip(*elements)
+        x1, x2, y = zip(*elements)
 
-        nb_ops = [sum(int(word in self.env.WORD_DICTIONARY) for word in seq) for seq in x]
+        nb_ops = [sum(int(word in self.env.WORD_DICTIONARY) for word in seq) for seq in x1]
 
-        x = [self.seq2tensor(seq) for seq in x]
+        x1 = [self.seq2tensor(seq) for seq in x1]
+        x2 = [self.seq2tensor(seq) for seq in x2]
         y = [self.seq2tensor(seq) for seq in y]
 
-        x, x_len = self.env.batch_sequences(x)
+        x1, x1_len = self.env.batch_sequences(x1)
+        x2, x2_len = self.env.batch_sequences(x2)
         y, y_len = self.env.batch_sequences(y)
 
-        return (x, x_len), (y, y_len), torch.LongTensor(nb_ops)
+        return (x1, x1_len), (x2, x2_len), (y, y_len), torch.LongTensor(nb_ops)
 
     def seq2tensor(self, seq):
         return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
