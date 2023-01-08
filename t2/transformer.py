@@ -33,9 +33,9 @@ class Transformer(DispatchingModule, ABC):
 
         return scores, loss
 
-    def fwd(self, x1, len1):
+    def fwd(self, x1, len1, x2, len2):
         encoded1 = self.te1.fwd(x=x1, lengths=len1, causal=False)
-        tensor = self.td1.fwd(x=x1, lengths=len1, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
+        tensor = self.td1.fwd(x=x2, lengths=len2, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
 
         return tensor
 

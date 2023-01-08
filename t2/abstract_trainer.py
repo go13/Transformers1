@@ -219,11 +219,14 @@ class AbstractTrainer(object):
         return loss
 
     def _act(self, x1, len1):
+        self._act_detailed(x1, len1, x1, len1)
+
+    def _act_detailed(self, x1, len1, x2, len2):
         transformer = self.modules['transformer']
         transformer.eval()
 
         # cuda
-        x1, len1 = to_cuda(self.my_device, x1, len1)
+        x1, len1, x2, len2 = to_cuda(self.my_device, x1, len1, x2, len2)
 
         alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
         pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
@@ -232,7 +235,7 @@ class AbstractTrainer(object):
 
         bs = self.params.batch_size
         # forward / loss
-        tensor = transformer('fwd', x1=x1, len1=len1)
+        tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         output = transformer('generate', tensor=tensor, pred_mask=pred_mask)
         # output = output.reshape(bs, -1, self.params.n_words)
         # i = random.randint(0, bs - 1)
