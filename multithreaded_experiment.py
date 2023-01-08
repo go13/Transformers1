@@ -73,7 +73,7 @@ def run(rank, trainer, params):
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
             for _ in range(bs):
-                trainer.learn(a.data, a.data, a.data, 1)
+                trainer.learn(a.data, a.data, a.data, df)
 
         ga.iteration += 1
 

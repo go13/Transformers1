@@ -199,13 +199,12 @@ class AbstractTrainer(object):
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         scores, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
 
-        #loss = loss * learning_rate
+        loss = loss * learning_rate
 
         self.optimize(loss)
 
         # logger.info(f"learning: loss={loss}")
 
-        input_size = self.params.input_seq_length
         bs = self.params.batch_size
         # scores = scores.reshape(-1, bs, self.params.n_words)
         # scores = scores.transpose(0, 1)
@@ -214,6 +213,7 @@ class AbstractTrainer(object):
         result = []
         av_score = 0
         for i in range(bs):
+            input_size = len1[i]
             src = x1[1:len1[i] - 1, i].tolist()
             pred = o[0:len1[i] - 2, i].tolist()
 
