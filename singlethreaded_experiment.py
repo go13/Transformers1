@@ -73,6 +73,35 @@ def act(inp, trainer):
 
     return trainer.act(lst)[0]
 
+
+def act(inp, trainer):
+    inp = join_sai(inp)
+    lst = []
+    for _ in range(bs):
+        x = inp
+        lst += [x]
+
+    return trainer.act(lst)[0]
+
+
+def act_detailed(inp1, inp2, trainer):
+    inp1 = join_sai(inp1)
+    inp2 = join_sai(inp2)
+    lst1 = []
+    lst2 = []
+    for _ in range(bs):
+        x1 = inp1
+        lst1 += [x1]
+
+        x2 = inp2
+        lst2 += [x2]
+
+    return trainer.act_detailed(lst1, lst2)[0]
+
 A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
 a = join_sai(A)
-print(act(a, trainer))
+print(act_detailed(a, a, trainer))
+
+# A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
+# a = join_sai(A)
+# print(act(a, trainer))

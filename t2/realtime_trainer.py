@@ -43,7 +43,7 @@ class RealtimeTrainer(AbstractTrainer):
         for x1, x2 in zip(xx1, xx2):
             q.append((x1.split(), x2.split()))
 
-        (x1, len1), (x2, len2) = self.collate_fn(q)
+        (x1, len1), (x2, len2), _ = self.collate_fn(q)
 
         return self._act_detailed(x1, len1, x2, len2)
 
