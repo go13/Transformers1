@@ -17,7 +17,7 @@ class RealtimeTrainer(AbstractTrainer):
         self.training_queue = []
         self.data_path = None
 
-    def learn_detailed(self, x1, x2, y):
+    def learn(self, x1, x2, y):
         x1 = join_sai(x1)
         x2 = join_sai(x2)
         y = join_sai(y)
