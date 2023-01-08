@@ -172,11 +172,12 @@ class AbstractTrainer(object):
         return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
 
     def _learn(self, x1, len1, y, y_len):
-        self._learn_detailed(x1, len1, x1, len1, y, y_len, 1)
+        lr = 1#[1 for _ in range(self.params.batch_size)]
+        self._learn_detailed(x1, len1, x1, len1, y, y_len, lr)
 
     def _learn_detailed(self, x1, len1, x2, len2, y, y_len, learning_rate):
-
-        learning_rate = torch.FloatTensor(learning_rate)
+        # lr = [1 for _ in range(self.params.batch_size)]
+        learning_rate = torch.FloatTensor([learning_rate])
 
         transformer = self.modules['transformer']
         transformer.train()
