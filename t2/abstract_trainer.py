@@ -199,7 +199,7 @@ class AbstractTrainer(object):
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         scores, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
 
-        loss = loss * learning_rate
+        #loss = loss * learning_rate
 
         self.optimize(loss)
 
