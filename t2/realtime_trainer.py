@@ -17,10 +17,6 @@ class RealtimeTrainer(AbstractTrainer):
         self.training_queue = []
         self.data_path = None
 
-    #TODO: remove
-    def learn(self, x, y):
-        return self.learn_detailed(x, x, y)
-
     def learn_detailed(self, x1, x2, y):
         x1 = join_sai(x1)
         x2 = join_sai(x2)
@@ -36,16 +32,6 @@ class RealtimeTrainer(AbstractTrainer):
 
             return True, loss
         return False, None
-
-    # TODO: remove
-    def act(self, xx):
-        q = []
-        for x in xx:
-            q.append((x.split(), x.split(), x.split()))
-
-        (x1, len1), _, _, _ = self.collate_fn(q)
-
-        return self._act(x1, len1)
 
     def act_detailed(self, xx1, xx2):
         q = []
