@@ -170,7 +170,7 @@ class AbstractTrainer(object):
         return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
 
     def _learn(self, x1, len1, y, y_len):
-        self._learn(x1, len1, x1, len1, y, y_len)
+        self._learn_detailed(x1, len1, x1, len1, y, y_len)
 
     def _learn_detailed(self, x1, len1, x2, len2, y, y_len):
         transformer = self.modules['transformer']

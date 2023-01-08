@@ -52,18 +52,7 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 
-def act(inp, trainer):
-    inp = join_sai(inp)
-    lst = []
-    for _ in range(bs):
-        x = inp
-        lst += [x]
-
-    return trainer.act(lst)[0]
-
-
 def run(rank, trainer, params):
-
     ga = GA(TargetStringEvaluator())
 
     for i in range(100):

@@ -31,12 +31,13 @@ class RealtimeTrainer(AbstractTrainer):
         return False, None
 
     def learn_detailed(self, x1, x2, y):
-        self.training_queue.append((x.split(), y.split()))
+        self.training_queue.append((x1.split(), x2.split(), y.split()))
 
         if len(self.training_queue) == self.params.batch_size:
-            (x1, x_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
+            (x1, x1_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
+            (x2, x2_len), (y1, y_len), _ = self.collate_fn(self.training_queue)
 
-            loss = self._learn(x1, x_len, y1, y_len)
+            loss = self._learn_detailed(x1, x1_len, x2, x2_len, y1, y_len)
 
             self.training_queue.clear()
 
@@ -48,7 +49,7 @@ class RealtimeTrainer(AbstractTrainer):
         for x in xx:
             q.append((x.split(), x.split()))
 
-        (x1, len1), _, _ = self.collate_fn(q)
+        (x1, len1), _, _, _ = self.collate_fn(q)
 
         return self._act(x1, len1)
 
