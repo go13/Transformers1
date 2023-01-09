@@ -209,7 +209,7 @@ class AbstractTrainer(object):
         # scores = scores.reshape(-1, bs, self.params.n_words)
         # scores = scores.transpose(0, 1)
         output = scores
-        o = output.max(1)[1].reshape(-1, self.params.batch_size)
+        o = output.max(1)[1].reshape(-1, bs)
         result = []
         av_score = 0
         for i in range(bs):
@@ -259,7 +259,7 @@ class AbstractTrainer(object):
         # scores = scores.reshape(-1, bs, self.params.n_words)
         # scores = scores.transpose(0, 1)
 
-        o = output.max(1)[1].reshape(-1, self.params.batch_size)
+        o = output.max(1)[1].reshape(-1, bs)
         result = []
         av_score = 0
         for i in range(bs):

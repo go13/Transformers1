@@ -27,7 +27,7 @@ argv = [
     '--bottleneck_dim', '64',
     '--nn_output', '1',
     '--input_seq_length', '47',
-    '--share_inout_emb', 'true'
+    '--share_inout_emb', 'false'
 ]
 
 parser = get_parser()
@@ -52,12 +52,15 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 
-def run(rank, trainer, params):
+def run(rank, params):
+    t = build_transformer(env, params)
+    trainer = RealtimeTrainer(t, env, params)
+
     ga = GA(TargetStringEvaluator())
     ga.evaluate()
     ga.sort_population()
-    bs = trainer.params.batch_size
-    for i in range(100000):
+
+    for i in range(100):
         ga.print_population()
 
         children, families = ga.crossover()
@@ -72,26 +75,9 @@ def run(rank, trainer, params):
         # learn crossover result
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
-            if df < 0:
-                df = 0.01
-            # else:
-            #     df = df * 10
-            # for _ in range(bs):
-            trainer.learn(a.data, b.data, c.data, 1)
+            trainer.learn(a.data, b.data, c.data, df)
 
         ga.iteration += 1
-
-
-    # A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
-    # x = join_sai(A)
-    #
-    # iterations_number = 100
-    # for epoch in range(iterations_number):
-    #     for _ in range(params.batch_size):
-    #         loss = trainer.learn(x, x)
-    #         if loss[0]:
-    #             print(f"epoch={epoch}, rank={rank}")
-
 
 if __name__ == '__main__':
     print('started')
@@ -104,9 +90,8 @@ if __name__ == '__main__':
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
-        trainer = RealtimeTrainer(build_transformer(env, params), env, params)
 
-        p = mp.Process(target=run, args=(rank, trainer, params))
+        p = mp.Process(target=run, args=(rank, params))
 
         processes += [p]
 
