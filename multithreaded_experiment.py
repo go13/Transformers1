@@ -60,7 +60,7 @@ def run(rank, params):
     ga.evaluate()
     ga.sort_population()
 
-    for i in range(100):
+    for i in range(10000):
         ga.print_population()
 
         children, families = ga.crossover()
@@ -75,6 +75,8 @@ def run(rank, params):
         # learn crossover result
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
+            if df < 0:
+                df = df * 0.001
             trainer.learn(a.data, b.data, c.data, df)
 
         ga.iteration += 1
