@@ -200,35 +200,19 @@ class AbstractTrainer(object):
         scores, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
 
         loss = loss * learning_rate
+        # logger.info(f"learning: loss={loss}")
 
         self.optimize(loss)
 
-        # logger.info(f"learning: loss={loss}")
-
         bs = self.params.batch_size
-        # scores = scores.reshape(-1, bs, self.params.n_words)
-        # scores = scores.transpose(0, 1)
+
         output = scores
-        o = output.max(1)[1].reshape(-1, bs)
-        result = []
-        av_score = 0
-        for i in range(bs):
-            input_size = len1[i]
-            src = x1[1:len1[i] - 1, i].tolist()
-            pred = o[0:len1[i] - 2, i].tolist()
 
-            e = abs(input_size - str_diff(pred, src)) / input_size
+        result = self.log_in_out(bs, output, x1, len1, x2)
 
-            src = words2string(ids2words(self.env.id2word, src))
-            pred = words2string(ids2words(self.env.id2word, pred))
+        logger.info(f"learning: device={self.my_device}, loss={loss.item()}")
 
-            av_score += e
-            logger.info(f"learning: src={src}, pred={pred}, score={e}")
-
-            result += [pred]
-        av_score = av_score / bs
-
-        logger.info(f"learning: av-score={av_score}, device={self.my_device}, loss={loss.item()}")
+        # e = abs(input_size - str_diff(pred, src1)) / input_size
 
         return loss
 
@@ -245,41 +229,30 @@ class AbstractTrainer(object):
         alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
         pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
 
-        # pred_mask = pred_mask.transpose(0, 1)
-
         bs = self.params.batch_size
         # forward / loss
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         output = transformer('generate', tensor=tensor, pred_mask=pred_mask)
-        # output = output.reshape(bs, -1, self.params.n_words)
-        # i = random.randint(0, bs - 1)
 
-        #input_size = self.params.input_seq_length
-        # bs = self.params.batch_size
-        # scores = scores.reshape(-1, bs, self.params.n_words)
-        # scores = scores.transpose(0, 1)
-
-        o = output.max(1)[1].reshape(-1, bs)
-        result = []
-        av_score = 0
-        for i in range(bs):
-            input_size = len1[i]
-            src = x1[1:len1[i] - 1, i].tolist()
-
-            pred = o[0:len1[i] - 2, i].tolist()
-            e = abs(input_size - str_diff(pred, src)) / input_size
-            av_score += e
-
-            src = words2string(ids2words(self.env.id2word, src))
-            pred = words2string(ids2words(self.env.id2word, pred))
-
-            #if self.params.eval_verbose_print:
-
-            # logger.info(f"acting: src={src}, pred={pred}, score={e}")
-
-            result += [pred]
-        av_score = av_score / bs
+        result = self.log_in_out(bs, output, x1, len1, x2)
 
         # logger.info(f"acting: av-score={av_score}")
 
+        return result
+
+    def log_in_out(self, bs, output, x1, len1, x2):
+        o = output.max(1)[1].reshape(-1, bs)
+        result = []
+        for i in range(bs):
+            src1 = x1[1:len1[i] - 1, i].tolist()
+            src2 = x2[1:len1[i] - 1, i].tolist()
+            pred = o[0:len1[i] - 2, i].tolist()
+
+            src1 = words2string(ids2words(self.env.id2word, src1))
+            src2 = words2string(ids2words(self.env.id2word, src2))
+            pred = words2string(ids2words(self.env.id2word, pred))
+
+            logger.info(f"src1={src1}, src2={src2}, pred={pred}")
+
+            result += [pred]
         return result
