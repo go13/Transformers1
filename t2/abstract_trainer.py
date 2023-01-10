@@ -165,6 +165,7 @@ class AbstractTrainer(object):
         x1, len1, x2, len2, y, learning_rate = to_cuda(self.my_device, x1, len1, x2, len2, y, learning_rate)
 
         pred_mask = self.get_pred_mask(len1)
+
         y = y[1:].masked_select(pred_mask[:-1])
         # y = x1[1:].masked_select(pred_mask[:-1])
         assert len(y) == (len1 - 1).sum().item()
