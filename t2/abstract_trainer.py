@@ -150,30 +150,11 @@ class AbstractTrainer(object):
         # log speed + stats + learning rate
         logger.info(s_iter + s_speed + s_stat + s_lr)
 
-    def collate_fn(self, elements):
-        """
-        Collate samples into a batch.
-        """
-        x1, x2, y = zip(*elements)
-
-        nb_ops = [sum(int(word in self.env.WORD_DICTIONARY) for word in seq) for seq in x1]
-
-        x1 = [self.seq2tensor(seq) for seq in x1]
-        x2 = [self.seq2tensor(seq) for seq in x2]
-        y = [self.seq2tensor(seq) for seq in y]
-
-        x1, x1_len = self.env.batch_sequences(x1)
-        x2, x2_len = self.env.batch_sequences(x2)
-        y, y_len = self.env.batch_sequences(y)
-
-        return (x1, x1_len), (x2, x2_len), (y, y_len), torch.LongTensor(nb_ops)
-
     def seq2tensor(self, seq):
         return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
 
     def _learn(self, x1, len1, y, y_len):
-        lr = 1#[1 for _ in range(self.params.batch_size)]
-        self._learn_detailed(x1, len1, x1, len1, y, y_len, lr)
+        self._learn_detailed(x1, len1, x1, len1, y, y_len, 1)
 
     def _learn_detailed(self, x1, len1, x2, len2, y, y_len, learning_rate):
         learning_rate = torch.FloatTensor([learning_rate])
@@ -183,9 +164,7 @@ class AbstractTrainer(object):
 
         x1, len1, x2, len2, y, learning_rate = to_cuda(self.my_device, x1, len1, x2, len2, y, learning_rate)
 
-        # target words to predict
-        alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
-        pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+        pred_mask = self.get_pred_mask(len1)
         y = y[1:].masked_select(pred_mask[:-1])
         # y = x1[1:].masked_select(pred_mask[:-1])
         assert len(y) == (len1 - 1).sum().item()
@@ -194,7 +173,6 @@ class AbstractTrainer(object):
 
         # x1 = x1.transpose(0, 1)
 
-        # fwd both encode and decoder
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         output, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
 
@@ -220,22 +198,24 @@ class AbstractTrainer(object):
         transformer = self.modules['transformer']
         transformer.eval()
 
-        # cuda
         x1, len1, x2, len2 = to_cuda(self.my_device, x1, len1, x2, len2)
 
-        alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
-        pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+        pred_mask = self.get_pred_mask(len1)
 
-        bs = self.params.batch_size
-        # forward / loss
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
         output = transformer('generate', tensor=tensor, pred_mask=pred_mask)
 
+        bs = self.params.batch_size
         result = self.log_in_out(bs, output, x1, len1, x2)
 
         # logger.info(f"acting: av-score={av_score}")
 
         return result
+
+    def get_pred_mask(self, len1):
+        alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
+        pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+        return pred_mask
 
     def log_in_out(self, bs, output, x1, len1, x2):
         o = output.max(1)[1].reshape(-1, bs)
@@ -253,3 +233,21 @@ class AbstractTrainer(object):
 
             result += [pred]
         return result
+
+    def collate_fn(self, elements):
+        """
+        Collate samples into a batch.
+        """
+        x1, x2, y = zip(*elements)
+
+        nb_ops = [sum(int(word in self.env.WORD_DICTIONARY) for word in seq) for seq in x1]
+
+        x1 = [self.seq2tensor(seq) for seq in x1]
+        x2 = [self.seq2tensor(seq) for seq in x2]
+        y = [self.seq2tensor(seq) for seq in y]
+
+        x1, x1_len = self.env.batch_sequences(x1)
+        x2, x2_len = self.env.batch_sequences(x2)
+        y, y_len = self.env.batch_sequences(y)
+
+        return (x1, x1_len), (x2, x2_len), (y, y_len), torch.LongTensor(nb_ops)
