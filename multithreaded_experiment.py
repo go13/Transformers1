@@ -78,8 +78,8 @@ def run(rank, params):
             if df < 0:
                 df = df * 0.001
             # for _ in range(bs):
-            trainer.learn(a.data, b.data, c.data, df)
-            res = trainer.act(a.data, b.data) #TODO: fix act
+            trainer.learn_accumulate(a.data, b.data, c.data, df)
+            res = trainer.act_single(a.data, b.data) #TODO: fix act
 
         ga.iteration += 1
 

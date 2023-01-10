@@ -18,7 +18,7 @@ class RealtimeTrainer(AbstractTrainer):
         self.learning_queue = []
         self.data_path = None
 
-    def learn(self, x1, x2, y, learning_rate):
+    def learn_accumulate(self, x1, x2, y, learning_rate):
         x1 = join_sai(x1)
         x2 = join_sai(x2)
         y = join_sai(y)
@@ -47,7 +47,7 @@ class RealtimeTrainer(AbstractTrainer):
 
         return self._act_detailed(x1, len1, x2, len2)
 
-    def single_act(self, inp1, inp2):
+    def act_single(self, inp1, inp2):
         inp1 = join_sai(inp1)
         inp2 = join_sai(inp2)
         lst1 = []

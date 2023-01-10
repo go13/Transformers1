@@ -183,7 +183,6 @@ class AbstractTrainer(object):
         self.optimize(loss)
 
         bs = self.params.batch_size
-
         result = self.log_in_out(bs, output, x1, len1, x2)
 
         logger.info(f"learning: device={self.my_device}, loss={loss.item()}")
