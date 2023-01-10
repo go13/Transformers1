@@ -217,19 +217,20 @@ class AbstractTrainer(object):
         pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
         return pred_mask
 
-    def log_in_out(self, bs, output, x1, len1, x2):
+    def log_in_out(self, bs, output, x1, len1, x2, verbose=False):
         o = output.max(1)[1].reshape(-1, bs)
         result = []
         for i in range(bs):
-            src1 = x1[1:len1[i] - 1, i].tolist()
-            src2 = x2[1:len1[i] - 1, i].tolist()
             pred = o[0:len1[i] - 2, i].tolist()
-
-            src1 = words2string(ids2words(self.env.id2word, src1))
-            src2 = words2string(ids2words(self.env.id2word, src2))
             pred = words2string(ids2words(self.env.id2word, pred))
 
-            logger.info(f"src1={src1}, src2={src2}, pred={pred}")
+            if verbose:
+                src1 = x1[1:len1[i] - 1, i].tolist()
+                src1 = words2string(ids2words(self.env.id2word, src1))
+                src2 = x2[1:len1[i] - 1, i].tolist()
+                src2 = words2string(ids2words(self.env.id2word, src2))
+
+                logger.info(f"src1={src1}, src2={src2}, pred={pred}")
 
             result += [pred]
         return result
