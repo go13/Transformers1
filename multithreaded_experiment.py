@@ -64,7 +64,7 @@ def run(rank, params):
     for i in range(10000):
         ga.print_population()
 
-        if random.random() > 0.5:
+        if ga.iteration > 300: #random.random() > 0.5 and
             children = []
             families = []
             p1, p2 = ga.select_random_parents(params.batch_size)
@@ -75,7 +75,6 @@ def run(rank, params):
             children_data = trainer.act(pp1, pp2)
 
             for p1, p2, ch_data in zip(p1, p2, children_data):
-                # ch_data = trainer.act_single(xx1.data, xx2.data)
                 ch = XY('', ch_data)
                 children += [ch]
                 families += [(p1, p2, ch)]
@@ -107,8 +106,8 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 2
-    number_of_models = 2
+    number_of_gpus = 1
+    number_of_models = 1
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)

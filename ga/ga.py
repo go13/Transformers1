@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from src.utils import str_diff, words2string
 
 data_dict = string.ascii_uppercase + string.digits
-mutation_p_const = 0.05
-new_percentage = 0.8
+mutation_p_const = 0.1
+new_percentage = 0.7
 
 
 def gen_rnd_chars(ln: int) -> str:
