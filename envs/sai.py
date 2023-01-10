@@ -16,7 +16,7 @@ class SAIEnvironment(object):
     TRAINING_TASKS = {'prim_fwd', 'prim_bwd', 'prim_ibp', 'ode1', 'ode2', 'add_dataset'}
 
     WORD_DICTIONARY_SPECIAL = [
-        '<s>', '</s>'
+        # '<s>', '</s>'
     ]
 
     WORD_DICTIONARY = WORD_DICTIONARY_SPECIAL + list(string.ascii_uppercase + string.digits)

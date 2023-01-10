@@ -56,7 +56,7 @@ class TargetStringEvaluator(AbstractEvaluator):
 
 class XY(object):
 
-    def __init__(self, name: str, data: 'XY', p1: str = "a", p2: str = "e"):
+    def __init__(self, name: str, data: str, p1: str = "a", p2: str = "e"):
         self.data = data
         self.name = name
         self.p1 = p1
@@ -163,19 +163,19 @@ class GA(object):
         return pp
 
     def crossover(self):
-        children, famililes = self.generate_crossover(self.new_size)
+        return self.generate_crossover(self.new_size)
 
-        return children, famililes
+    def select_random_parents(self, new_size):
+        def rxy():
+            return self.get_random_xy(self.population)
+        return [rxy() for _ in range(new_size)], [rxy() for _ in range(new_size)]
 
     def generate_crossover(self, new_size):
+        p1, p2 = self.select_random_parents(new_size)
         new_families = []
         new_population = []
-        for i in range(new_size):
-            xy1 = self.get_random_xy(self.population)
-            xy2 = self.get_random_xy(self.population)
-
-            child = xy1.crossover(xy2, i, self.xy_data_size)
-            # child.mutate(self.mutation_p)
+        for xy1, xy2 in zip(p1, p2):
+            child = xy1.crossover(xy2, '', self.xy_data_size)
 
             family = (xy1, xy2, child)
 

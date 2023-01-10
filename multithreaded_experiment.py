@@ -1,5 +1,6 @@
 import torch
 import torch.multiprocessing as mp
+import random
 
 import src
 from envs import build_env
@@ -8,7 +9,7 @@ from src.utils import initialize_exp
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 from t2.utils import get_parser, join_sai
-from ga.ga import GA, TargetStringEvaluator
+from ga.ga import GA, TargetStringEvaluator, XY
 
 argv = [
     '--exp_name', 'first_train',
@@ -63,7 +64,26 @@ def run(rank, params):
     for i in range(10000):
         ga.print_population()
 
-        children, families = ga.crossover()
+        if random.random() > 0.5:
+            children = []
+            families = []
+            p1, p2 = ga.select_random_parents(params.batch_size)
+
+            pp1 = [p.data for p in p1]
+            pp2 = [p.data for p in p2]
+
+            children_data = trainer.act(pp1, pp2)
+
+            for p1, p2, ch_data in zip(p1, p2, children_data):
+                # ch_data = trainer.act_single(xx1.data, xx2.data)
+                ch = XY('', ch_data)
+                children += [ch]
+                families += [(p1, p2, ch)]
+
+            children = children[:ga.new_size]
+            families = families[:ga.new_size]
+        else:
+            children, families = ga.crossover()
 
         children = ga.mutate(children)
 
@@ -77,9 +97,7 @@ def run(rank, params):
             df = (c.f - max(a.f, b.f))
             if df < 0:
                 df = df * 0.001
-            # for _ in range(bs):
             trainer.learn_accumulate(a.data, b.data, c.data, df)
-            res = trainer.act_single(a.data, b.data) #TODO: fix act
 
         ga.iteration += 1
 

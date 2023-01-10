@@ -41,7 +41,7 @@ class RealtimeTrainer(AbstractTrainer):
     def act(self, xx1, xx2):
         q = []
         for x1, x2 in zip(xx1, xx2):
-            q.append((x1.split(), x2.split(), x2.split()))
+            q.append((join_sai(x1).split(), join_sai(x2).split(), join_sai(x2).split()))
 
         (x1, len1), (x2, len2), (y, y_len), _ = self.collate_fn(q)
 
