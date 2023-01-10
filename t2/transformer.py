@@ -26,9 +26,7 @@ class Transformer(DispatchingModule, ABC):
         self.output = self.td1
 
     def learn(self, tensor, pred_mask, y):
-        x = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.config.dim)
-        assert (y == self.config.pad_index).sum().item() == 0
-        scores = self.output.proj(x).view(-1, self.config.n_words)
+        scores = self.generate(tensor, pred_mask)
         loss = F.cross_entropy(scores, y, reduction='mean')
 
         return scores, loss
@@ -40,7 +38,6 @@ class Transformer(DispatchingModule, ABC):
         return tensor
 
     def generate(self, tensor, pred_mask):
-        # TODO: assert tensor shape
         # assert tensor.shape == (self.config.input_seq_length, self.config.batch_size, self.config.dim)
         x = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.config.dim)
         scores = self.output.proj(x).view(-1, self.config.n_words)

@@ -176,7 +176,6 @@ class AbstractTrainer(object):
         self._learn_detailed(x1, len1, x1, len1, y, y_len, lr)
 
     def _learn_detailed(self, x1, len1, x2, len2, y, y_len, learning_rate):
-        # lr = [1 for _ in range(self.params.batch_size)]
         learning_rate = torch.FloatTensor([learning_rate])
 
         transformer = self.modules['transformer']
@@ -197,7 +196,7 @@ class AbstractTrainer(object):
 
         # fwd both encode and decoder
         tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
-        scores, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
+        output, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
 
         loss = loss * learning_rate
         # logger.info(f"learning: loss={loss}")
@@ -205,8 +204,6 @@ class AbstractTrainer(object):
         self.optimize(loss)
 
         bs = self.params.batch_size
-
-        output = scores
 
         result = self.log_in_out(bs, output, x1, len1, x2)
 
