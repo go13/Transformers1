@@ -57,6 +57,8 @@ def run(rank, params):
     t = build_transformer(env, params)
     trainer = RealtimeTrainer(t, env, params)
 
+    training_set = set()
+
     ga = GA(TargetStringEvaluator())
     ga.evaluate()
     ga.sort_population()
@@ -64,7 +66,7 @@ def run(rank, params):
     for i in range(10000):
         ga.print_population()
 
-        if ga.iteration > 300: #random.random() > 0.5 and
+        if ga.iteration > 200: #random.random() > 0.5 and
             children = []
             families = []
             p1, p2 = ga.select_random_parents(params.batch_size)
@@ -97,7 +99,10 @@ def run(rank, params):
             if df < 0:
                 df = df * 0.001
             # for _ in range(params.batch_size):
-            trainer.learn_accumulate(a.data, b.data, c.data, df)
+            training_set.add((a.data, b.data, c.data, df))
+
+        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 3, len(training_set))):
+            trainer.learn_accumulate(a, b, c, df)
 
         ga.iteration += 1
 
