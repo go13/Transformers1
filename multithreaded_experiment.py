@@ -96,6 +96,7 @@ def run(rank, params):
             df = (c.f - max(a.f, b.f))
             if df < 0:
                 df = df * 0.001
+            # for _ in range(params.batch_size):
             trainer.learn_accumulate(a.data, b.data, c.data, df)
 
         ga.iteration += 1
