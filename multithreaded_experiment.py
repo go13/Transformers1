@@ -67,22 +67,7 @@ def run(rank, params):
         ga.print_population()
 
         if ga.iteration > 200: #random.random() > 0.5 and
-            children = []
-            families = []
-            p1, p2 = ga.select_random_parents(params.batch_size)
-
-            pp1 = [p.data for p in p1]
-            pp2 = [p.data for p in p2]
-
-            children_data = trainer.act(pp1, pp2)
-
-            for p1, p2, ch_data in zip(p1, p2, children_data):
-                ch = XY('', ch_data)
-                children += [ch]
-                families += [(p1, p2, ch)]
-
-            children = children[:ga.new_size]
-            families = families[:ga.new_size]
+            children, families = neural_crossover(ga, params, trainer)
         else:
             children, families = ga.crossover()
 
@@ -96,15 +81,35 @@ def run(rank, params):
         # learn crossover result
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
-            if df < 0:
-                df = df * 0.001
+            # if df < 0:
+            #     df = df * 0.001
             # for _ in range(params.batch_size):
+            df = 1
             training_set.add((a.data, b.data, c.data, df))
 
-        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 3, len(training_set))):
+        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
             trainer.learn_accumulate(a, b, c, df)
 
         ga.iteration += 1
+
+
+def neural_crossover(ga, params, trainer):
+    children = []
+    families = []
+    p1, p2 = ga.select_random_parents(params.batch_size)
+    pp1 = [p.data for p in p1]
+    pp2 = [p.data for p in p2]
+    children_data = trainer.act(pp1, pp2)
+
+    for p1, p2, ch_data in zip(p1, p2, children_data):
+        ch = XY('', ch_data)
+        children += [ch]
+        families += [(p1, p2, ch)]
+    children = children[:ga.new_size]
+    families = families[:ga.new_size]
+
+    return children, families
+
 
 if __name__ == '__main__':
     print('started')
