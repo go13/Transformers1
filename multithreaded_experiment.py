@@ -8,6 +8,7 @@ from src.slurm import init_distributed_mode
 from src.utils import initialize_exp
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
+from t2.sentimental_transformer import build_sentimental_transformer
 from t2.utils import get_parser, join_sai
 from ga.ga import GA, TargetStringEvaluator, XY
 
@@ -57,6 +58,9 @@ def run(rank, params):
     crossover_transformer = build_transformer(env, params)
     crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
 
+    sentimental_transformer = build_sentimental_transformer(env, params)
+    sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
+
     training_set = set()
 
     ga = GA(TargetStringEvaluator())
@@ -89,6 +93,8 @@ def run(rank, params):
 
         for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
             crossover_trainer.learn_accumulate(a, b, c, df)
+
+        # sentimental_trainer.learn_accumulate()
 
         ga.iteration += 1
 
