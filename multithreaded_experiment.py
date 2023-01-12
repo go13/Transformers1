@@ -54,8 +54,8 @@ env = build_env(params)
 
 
 def run(rank, params):
-    t = build_transformer(env, params)
-    trainer = RealtimeTrainer(t, env, params)
+    crossover_transformer = build_transformer(env, params)
+    crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
 
     training_set = set()
 
@@ -67,7 +67,7 @@ def run(rank, params):
         ga.print_population()
 
         if ga.iteration > 200: #random.random() > 0.5 and
-            children, families = neural_crossover(ga, params, trainer)
+            children, families = neural_crossover(ga, params, crossover_trainer)
         else:
             children, families = ga.crossover()
 
@@ -88,7 +88,7 @@ def run(rank, params):
             training_set.add((a.data, b.data, c.data, df))
 
         for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
-            trainer.learn_accumulate(a, b, c, df)
+            crossover_trainer.learn_accumulate(a, b, c, df)
 
         ga.iteration += 1
 
@@ -97,18 +97,33 @@ def neural_crossover(ga, params, trainer):
     children = []
     families = []
     p1, p2 = ga.select_random_parents(params.batch_size)
-    pp1 = [p.data for p in p1]
-    pp2 = [p.data for p in p2]
+    pp1 = xy_to_data(p1)
+    pp2 = xy_to_data(p2)
     children_data = trainer.act(pp1, pp2)
 
     for p1, p2, ch_data in zip(p1, p2, children_data):
         ch = XY('', ch_data)
         children += [ch]
         families += [(p1, p2, ch)]
+
+    # pre_eval = pre_evaluate(children, None)
+
+    # pre_eval, children, families = zip(pre_eval, children, families).sort()
+
     children = children[:ga.new_size]
     families = families[:ga.new_size]
 
     return children, families
+
+
+def pre_evaluate(children, trainer):
+    ch_data = [xy_to_data(ch) for ch in children]
+    ch_f = trainer.act(ch_data, ch_data)
+    return ch_f
+
+def xy_to_data(p1):
+    pp1 = [p.data for p in p1]
+    return pp1
 
 
 if __name__ == '__main__':

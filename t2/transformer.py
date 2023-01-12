@@ -44,10 +44,6 @@ class Transformer(DispatchingModule, ABC):
 
         return tensor
 
-    def to_device(self, device):
-        self.te1.cuda(device)
-        self.td1.cuda(device)
-
 
 def build_transformer(env, params):
     modules = {}
@@ -56,25 +52,11 @@ def build_transformer(env, params):
 
     modules['transformer'] = Transformer(config)
 
-    # reload pretrained modules
-    if params.reload_model != '':
-        logger.info(f"Reloading modules from {params.reload_model} ...")
-        reloaded = torch.load(params.reload_model)
-        for k, v in modules.items():
-            assert k in reloaded
-            if all([k2.startswith('module.') for k2 in reloaded[k].keys()]):
-                reloaded[k] = {k2[len('module.'):]: v2 for k2, v2 in reloaded[k].items()}
-            v.load_state_dict(reloaded[k])
-
-    # log
-    for k, v in modules.items():
-        logger.debug(f"{v}: {v}")
-
     for k, v in modules.items():
         logger.info(f"Number of parameters ({k}): {sum([p.numel() for p in v.parameters() if p.requires_grad])}")
 
-    # cuda
     assert not params.cpu
+
     if not params.cpu:
         for v in modules.values():
             v.cuda(config.my_device)

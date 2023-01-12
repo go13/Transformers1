@@ -242,11 +242,6 @@ class TransformerDecoder(AbstractTransformer, ABC):
 
         return tensor
 
-    def to_device(self, device):
-        self.embeddings.cuda(device)
-        self.position_embeddings.cuda(device)
-
-
 def get_masks(slen, lengths, causal):
     """
     Generate hidden states mask, and optionally an attention mask.
