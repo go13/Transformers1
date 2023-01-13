@@ -77,12 +77,12 @@ def run(rank, params):
                 children, families = ga.crossover()
 
             for a, b, c in families:
-                log_file.write(f"c,{i},{a},{b},{c}\n")
+                log_file.write(f"c,{i},{a.data},{b.data},{c.data}\n")
 
             children = ga.mutate(children)
 
             for c in children:
-                log_file.write(f"m,{i},{c}\n")
+                log_file.write(f"m,{i},{c.data}\n")
 
             ga.update_bottom(children)
 
