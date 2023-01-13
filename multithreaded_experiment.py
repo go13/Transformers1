@@ -15,7 +15,7 @@ from ga.ga import GA, TargetStringEvaluator, XY
 argv = [
     '--exp_name', 'first_train',
     '--tasks', 'add_dataset',
-    '--n_enc_layers', '16',
+    '--n_enc_layers', '4',
     '--n_heads', '4',
     '--sinusoidal_embeddings', 'false',
     '--num_workers', '4',
@@ -58,8 +58,8 @@ def run(rank, params):
     crossover_transformer = build_transformer(env, params)
     crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
 
-    sentimental_transformer = build_sentimental_transformer(env, params)
-    sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
+    # sentimental_transformer = build_sentimental_transformer(env, params)
+    # sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
 
     training_set = set()
 
@@ -67,36 +67,45 @@ def run(rank, params):
     ga.evaluate()
     ga.sort_population()
 
-    for i in range(10000):
-        ga.print_population()
+    with open(f"evolution-{rank}.txt", "w") as log_file:
+        for i in range(1000):
+            ga.print_population()
 
-        if ga.iteration > 200: #random.random() > 0.5 and
-            children, families = neural_crossover(ga, params, crossover_trainer)
-        else:
-            children, families = ga.crossover()
+            if ga.iteration > 200: #random.random() > 0.5 and
+                children, families = neural_crossover(ga, params, crossover_trainer)
+            else:
+                children, families = ga.crossover()
 
-        children = ga.mutate(children)
+            for a, b, c in families:
+                log_file.write("c,{i},{a},{b},{c}\n")
 
-        ga.update_bottom(children)
+            children = ga.mutate(children)
 
-        ga.evaluate()
-        ga.sort_population()
+            for c in children:
+                log_file.write("m,{i},{c}\n")
 
-        # learn crossover result
-        for a, b, c in families:
-            df = (c.f - max(a.f, b.f))
-            # if df < 0:
-            #     df = df * 0.001
-            # for _ in range(params.batch_size):
-            df = 1
-            training_set.add((a.data, b.data, c.data, df))
+            ga.update_bottom(children)
 
-        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
-            crossover_trainer.learn_accumulate(a, b, c, df)
+            ga.evaluate()
+            ga.sort_population()
 
-        # sentimental_trainer.learn_accumulate()
+            # learn crossover result
+            for a, b, c in families:
+                df = (c.f - max(a.f, b.f))
+                # if df < 0:
+                #     df = df * 0.001
+                # for _ in range(params.batch_size):
+                df = 1
+                training_set.add((a.data, b.data, c.data, df))
 
-        ga.iteration += 1
+            for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
+                crossover_trainer.learn_accumulate(a, b, c, df)
+
+            # sentimental_trainer.learn_accumulate()
+
+            ga.iteration += 1
+
+
 
 
 def neural_crossover(ga, params, trainer):
@@ -139,7 +148,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 1
-    number_of_models = 1
+    number_of_models = 30
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
