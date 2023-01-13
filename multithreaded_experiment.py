@@ -89,6 +89,10 @@ def run(rank, params):
             ga.evaluate()
             ga.sort_population()
 
+            for c in self.population:
+                log_file.write(f"e,{i},{c.f},{c.data}\n")
+
+
             # learn crossover result
             for a, b, c in families:
                 df = (c.f - max(a.f, b.f))
