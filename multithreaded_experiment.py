@@ -89,7 +89,7 @@ def run(rank, params):
             ga.evaluate()
             ga.sort_population()
 
-            for c in self.population:
+            for c in ga.population:
                 log_file.write(f"e,{i},{c.f},{c.data}\n")
 
 
