@@ -77,12 +77,12 @@ def run(rank, params):
                 children, families = ga.crossover()
 
             for a, b, c in families:
-                log_file.write("c,{i},{a},{b},{c}\n")
+                log_file.write(f"c,{i},{a},{b},{c}\n")
 
             children = ga.mutate(children)
 
             for c in children:
-                log_file.write("m,{i},{c}\n")
+                log_file.write(f"m,{i},{c}\n")
 
             ga.update_bottom(children)
 
@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 1
-    number_of_models = 30
+    number_of_models = 1
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
