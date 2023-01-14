@@ -201,7 +201,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 2
-    models_per_gpu = 100
+    models_per_gpu = 200
     number_of_iterations = 100
 
     for gpu_num in range(number_of_gpus):
