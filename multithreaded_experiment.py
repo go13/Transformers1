@@ -65,7 +65,7 @@ class ModelRunnner(object):
         self.log_file = open(f"evolution-{gpu_num}-{current_date_time}.txt", "w")
 
         self.crossover_transformer = build_transformer(env, params)
-        self.crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
+        self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
 
         self.training_set = set()
 
@@ -77,7 +77,7 @@ class ModelRunnner(object):
 
         self.start_time = time.time()
 
-    def step(self, gpu_num, model_num, params):
+    def step(self, gpu_num, params):
 
         # sentimental_transformer = build_sentimental_transformer(env, params)
         # sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
@@ -143,18 +143,18 @@ class ModelRunnner(object):
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
 
-def step_all_models(runners, models_per_gpu):
+def step_all_models(iteration_num, gpu_num, runners, models_per_gpu):
     for r in runners:
-        r.step(self.gpu_num, model_num, self.params)
+        r.step(gpu_num, self.params)
 
 
 def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
     runners = [ModelRunnner(gpu_num, model_num, params) for model_num in range(models_per_gpu)]
 
-    for i in number_of_iterations:
+    for i in range(number_of_iterations):
         print(f"Starting iteration {i}")
 
-        step_all_models(runners, models_per_gpu)
+        step_all_models(iteration_num, gpu_num, runners, models_per_gpu)
 
 def neural_crossover(ga, params, trainer):
     children = []
