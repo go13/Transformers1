@@ -76,9 +76,6 @@ def run(rank, params):
             else:
                 children, families = ga.crossover()
 
-            for xy in range(ga.population):
-                print(crossover_trainer.state_dict())
-
             for a, b, c in families:
                 log_file.write(f"c,{i},{a.data},{b.data},{c.data}\n")
 

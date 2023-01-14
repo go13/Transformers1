@@ -55,6 +55,24 @@ class TargetStringEvaluator(AbstractEvaluator):
 
 
 class XY(object):
+    def __init__(self, name: str, p1: XY, p2: XY):
+        pass
+
+
+    @abstractmethod
+    def mutate(self, mutation_p: float, xy_data_size: int) -> None:
+        pass
+
+    @abstractmethod
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def generate(self, xy_data_size):
+        pass
+
+class StringXY(XY):
 
     def __init__(self, name: str, data: str, p1: str = "a", p2: str = "e"):
         self.data = data
@@ -78,6 +96,10 @@ class XY(object):
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         self.data = mutate(self.data, mutation_p, xy_data_size)
 
+    @staticmethod
+    def generate(self, xy_data_size):
+        return StringXY("", data)
+
     def __str__(self):
         return "n={name}({p1}, {p2}), f={f}, d={data}".format(
             name=self.name,
@@ -92,12 +114,14 @@ class GA(object):
 
     def __init__(
             self,
+            xy_generator,
             evaluator: TargetStringEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
             verbose=True
     ):
         self.verbose = verbose
+        self.xy_generator = xy_generator
         self.iteration = 0
         self.population_size = population_size
         self.evaluator = evaluator
@@ -112,7 +136,8 @@ class GA(object):
         pp = []
         for i in range(population_size):
             data = gen_rnd_chars(xy_data_size)
-            xy = XY(i, data)
+            # xy = XY(i, data)
+            xy = self.xy_generator(xy_data_size)
             pp.append(xy)
         return pp
 
