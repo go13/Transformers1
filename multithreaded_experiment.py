@@ -2,6 +2,7 @@ import torch
 import torch.multiprocessing as mp
 import random
 
+import time
 import src
 from envs import build_env
 from src.slurm import init_distributed_mode
@@ -67,22 +68,28 @@ def run(rank, params):
     ga.evaluate()
     ga.sort_population()
 
+    tm = time.time()
+
     with open(f"evolution-{rank}.txt", "w") as log_file:
         for i in range(1000):
+
             ga.print_population()
 
-            if ga.iteration > 200: #random.random() > 0.5 and
+            if ga.iteration > 200 or True: #random.random() > 0.5 and
                 children, families = neural_crossover(ga, params, crossover_trainer)
             else:
                 children, families = ga.crossover()
 
             for a, b, c in families:
-                log_file.write(f"c,{i},{a.data},{b.data},{c.data}\n")
+                log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
+
+            # for xy in ga.population:
+            #     print(crossover_trainer.modules['transformer'].state_dict())
 
             children = ga.mutate(children)
 
             for c in children:
-                log_file.write(f"m,{i},{c.data}\n")
+                log_file.write(f"mutated,{i},{c.data}\n")
 
             ga.update_bottom(children)
 
@@ -90,7 +97,7 @@ def run(rank, params):
             ga.sort_population()
 
             for c in ga.population:
-                log_file.write(f"e,{i},{c.f},{c.data}\n")
+                log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
 
 
             # learn crossover result
@@ -109,7 +116,13 @@ def run(rank, params):
 
             ga.iteration += 1
 
+            tm_new = time.time()
 
+            print(f"Total runtime of the iteration is {tm_new - tm}")
+
+            log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
+
+            tm = tm_new
 
 
 def neural_crossover(ga, params, trainer):
