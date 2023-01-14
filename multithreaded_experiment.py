@@ -84,58 +84,58 @@ class ModelRunnner(object):
 
         tm = time.time()
 
-        for i in range(iterations):
+        # for i in range(iterations):
 
-            ga.print_population()
+        ga.print_population()
 
-            if ga.iteration > 200 or True: #random.random() > 0.5 and
-                children, families = neural_crossover(ga, params, self.crossover_trainer)
-            else:
-                children, families = ga.crossover()
+        if ga.iteration > 200 or True: #random.random() > 0.5 and
+            children, families = neural_crossover(ga, params, self.crossover_trainer)
+        else:
+            children, families = ga.crossover()
 
-            for a, b, c in families:
-                self.log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
+        for a, b, c in families:
+            self.log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
 
-            # for xy in ga.population:
-            #     print(crossover_trainer.modules['transformer'].state_dict())
+        # for xy in ga.population:
+        #     print(crossover_trainer.modules['transformer'].state_dict())
 
-            children = ga.mutate(children)
+        children = ga.mutate(children)
 
-            for c in children:
-                self.log_file.write(f"mutated,{i},{c.data}\n")
+        for c in children:
+            self.log_file.write(f"mutated,{i},{c.data}\n")
 
-            ga.update_bottom(children)
+        ga.update_bottom(children)
 
-            ga.evaluate()
-            ga.sort_population()
+        ga.evaluate()
+        ga.sort_population()
 
-            for c in ga.population:
-                self.log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
+        for c in ga.population:
+            self.log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
 
 
-            # learn crossover result
-            for a, b, c in families:
-                df = (c.f - max(a.f, b.f))
-                # if df < 0:
-                #     df = df * 0.001
-                # for _ in range(params.batch_size):
-                df = 1
-                training_set.add((a.data, b.data, c.data, df))
+        # learn crossover result
+        for a, b, c in families:
+            df = (c.f - max(a.f, b.f))
+            # if df < 0:
+            #     df = df * 0.001
+            # for _ in range(params.batch_size):
+            df = 1
+            training_set.add((a.data, b.data, c.data, df))
 
-            for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
-                self.crossover_trainer.learn_accumulate(a, b, c, df)
+        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
+            self.crossover_trainer.learn_accumulate(a, b, c, df)
 
-            # sentimental_trainer.learn_accumulate()
+        # sentimental_trainer.learn_accumulate()
 
-            ga.iteration += 1
+        ga.iteration += 1
 
-            tm_new = time.time()
+        tm_new = time.time()
 
-            print(f"Total runtime of the iteration is {tm_new - tm}")
+        print(f"Total runtime of the iteration is {tm_new - tm}")
 
-            self.log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
+        self.log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
 
-            tm = tm_new
+        tm = tm_new
 
         # end_time = time.time()
         #
