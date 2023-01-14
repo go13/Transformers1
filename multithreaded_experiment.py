@@ -166,8 +166,8 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 1
-    number_of_models = 1
+    number_of_gpus = 8
+    number_of_models = 32
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
