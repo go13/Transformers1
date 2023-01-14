@@ -60,12 +60,14 @@ class ModelRunnner(object)
         self.gpu_num = gpu_num
         self.models_per_gpu = models_per_gpu
         self.params = params
+        current_date_time = time.strftime("%H-%M-%S", time.localtime())
+        self.log_file = open(f"evolution-{rank}-{current_date_time}.txt", "w")
 
-    def run(self):
+    def step_all_models(self):
         for model_num in range(self.models_per_gpu):
             run(self.gpu_num, model_num, self.params)
 
-    def run(gpu_num, model_num, params):
+    def step(gpu_num, model_num, params):
         crossover_transformer = build_transformer(env, params)
         crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
 
@@ -84,8 +86,6 @@ class ModelRunnner(object)
 
         tm = time.time()
 
-        current_date_time = time.strftime("%H-%M-%S", time.localtime())
-        with open(f"evolution-{rank}-{current_date_time}.txt", "w") as log_file:
             for i in range(iterations):
 
                 ga.print_population()
@@ -153,7 +153,7 @@ def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params
         print(f"Starting iteration {i}")
 
         for runner in runners:
-            runner.step()
+            runner.step_all_models()
 
 
 def neural_crossover(ga, params, trainer):
