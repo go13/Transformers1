@@ -159,7 +159,7 @@ def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params
         step_all_models(iteration_num, gpu_num, runners, models_per_gpu, params)
 
         end = time.time()
-        print(f"Ended iteration {iteration_num} on gpu {gpu_num}, taken = {end - start}, time/iteration = {(end - start) / models_per_gpu}")
+        print(f"Ended iteration {iteration_num} on gpu {gpu_num}, taken = {end - start}, time/iteration = {(end - start) / models_per_gpu}, model_num={models_per_gpu}")
 
 def neural_crossover(ga, params, trainer):
     children = []
