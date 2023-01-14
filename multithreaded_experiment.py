@@ -132,7 +132,7 @@ class ModelRunnner(object):
 
         tm_new = time.time()
 
-        print(f"Total runtime of the iteration is {tm_new - tm}, it={iteration_num} on gpu {gpu_num}")
+        print(f"Total time of iteration is {tm_new - tm}, it=on gpu {gpu_num}")
 
         self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
