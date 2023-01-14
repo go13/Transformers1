@@ -123,7 +123,7 @@ class ModelRunnner(object):
             df = 1
             self.training_set.add((a.data, b.data, c.data, df))
 
-        for (a, b, c, df) in  random.sample(self.training_set, min(params.batch_size * 10, len(self.training_set))):
+        for (a, b, c, df) in  random.sample(self.training_set, min(params.batch_size * 1, len(self.training_set))):
             self.crossover_trainer.learn_accumulate(a, b, c, df)
 
         # sentimental_trainer.learn_accumulate()
@@ -132,7 +132,7 @@ class ModelRunnner(object):
 
         tm_new = time.time()
 
-        print(f"Total time of iteration is {tm_new - tm}, it=on gpu {gpu_num}")
+        print(f"Time of iteration is {tm_new - tm}, it=on gpu {gpu_num}")
 
         self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 1
+    number_of_gpus = 2
     models_per_gpu = 100
     number_of_iterations = 100
 
