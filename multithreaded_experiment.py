@@ -69,7 +69,7 @@ def run(rank, params):
     ga.evaluate()
     ga.sort_population()
 
-    iterations=10
+    iterations=1000
 
     start_time = time.time()
 
