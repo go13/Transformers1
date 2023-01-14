@@ -56,13 +56,13 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 class ModelRunnner(object):
-    def __init__(self, gpu_num, models_per_gpu, params):
+    def __init__(self, gpu_num, model_num, params):
         self.gpu_num = gpu_num
-        self.models_per_gpu = models_per_gpu
+        self.model_num = model_num
         self.params = params
 
         current_date_time = time.strftime("%H-%M-%S", time.localtime())
-        self.log_file = open(f"evolution-{rank}-{current_date_time}.txt", "w")
+        self.log_file = open(f"evolution-{gpu_num}-{current_date_time}.txt", "w")
 
         self.crossover_transformer = build_transformer(env, params)
         self.crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
@@ -76,7 +76,6 @@ class ModelRunnner(object):
         self.iterations=100
 
         self.start_time = time.time()
-
 
     def step(self, gpu_num, model_num, params):
 
