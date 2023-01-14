@@ -3,6 +3,7 @@ import torch.multiprocessing as mp
 import random
 
 import time
+import datetime
 import src
 from envs import build_env
 from src.slurm import init_distributed_mode
@@ -70,7 +71,8 @@ def run(rank, params):
 
     tm = time.time()
 
-    with open(f"evolution-{rank}.txt", "w") as log_file:
+    current_date_time = time.strftime("%H-%M-%S", time.localtime())
+    with open(f"evolution-{rank}-{current_date_time}.txt", "w") as log_file:
         for i in range(1000):
 
             ga.print_population()
