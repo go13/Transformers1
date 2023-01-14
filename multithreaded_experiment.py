@@ -132,7 +132,7 @@ class ModelRunnner(object):
 
         tm_new = time.time()
 
-        print(f"Total runtime of the iteration is {tm_new - tm}")
+        print(f"Total runtime of the iteration is {tm_new - tm}, it={iteration_num} on gpu {gpu_num}")
 
         self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
@@ -154,8 +154,12 @@ def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params
 
     for iteration_num in range(number_of_iterations):
         print(f"Starting iteration {iteration_num} on gpu {gpu_num}")
+        start = time.time()
 
         step_all_models(iteration_num, gpu_num, runners, models_per_gpu, params)
+
+        end = time.time()
+        print(f"Ended iteration {iteration_num} on gpu {gpu_num}, taken = {end - start}, time/iteration = {(end - start) / models_per_gpu}")
 
 def neural_crossover(ga, params, trainer):
     children = []
