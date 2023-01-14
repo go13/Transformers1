@@ -121,9 +121,9 @@ class ModelRunnner(object):
             #     df = df * 0.001
             # for _ in range(params.batch_size):
             df = 1
-            training_set.add((a.data, b.data, c.data, df))
+            self.training_set.add((a.data, b.data, c.data, df))
 
-        for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
+        for (a, b, c, df) in  random.sample(self.training_set, min(params.batch_size * 10, len(self.training_set))):
             self.crossover_trainer.learn_accumulate(a, b, c, df)
 
         # sentimental_trainer.learn_accumulate()
