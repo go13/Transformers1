@@ -55,7 +55,7 @@ src.utils.CUDA = not params.cpu
 
 env = build_env(params)
 
-class ModelRunnner(object)
+class ModelRunnner(object):
     def __init__(self, gpu_num, models_per_gpu, params):
         self.gpu_num = gpu_num
         self.models_per_gpu = models_per_gpu
@@ -64,8 +64,18 @@ class ModelRunnner(object)
         current_date_time = time.strftime("%H-%M-%S", time.localtime())
         self.log_file = open(f"evolution-{rank}-{current_date_time}.txt", "w")
 
-        crossover_transformer = build_transformer(env, params)
-        crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
+        self.crossover_transformer = build_transformer(env, params)
+        self.crossover_trainer = RealtimeTrainer(crossover_transformer, env, params)
+
+        self.training_set = set()
+
+        self.ga = GA(TargetStringEvaluator())
+        self.ga.evaluate()
+        self.ga.sort_population()
+
+        self.iterations=100
+
+        self.start_time = time.time()
 
 
     def step(self, gpu_num, model_num, params):
@@ -73,75 +83,65 @@ class ModelRunnner(object)
         # sentimental_transformer = build_sentimental_transformer(env, params)
         # sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
 
-        training_set = set()
-
-        ga = GA(TargetStringEvaluator())
-        ga.evaluate()
-        ga.sort_population()
-
-        iterations=100
-
-        start_time = time.time()
-
         tm = time.time()
 
-            for i in range(iterations):
+        for i in range(iterations):
 
-                ga.print_population()
+            ga.print_population()
 
-                if ga.iteration > 200 or True: #random.random() > 0.5 and
-                    children, families = neural_crossover(ga, params, crossover_trainer)
-                else:
-                    children, families = ga.crossover()
+            if ga.iteration > 200 or True: #random.random() > 0.5 and
+                children, families = neural_crossover(ga, params, self.crossover_trainer)
+            else:
+                children, families = ga.crossover()
 
-                for a, b, c in families:
-                    log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
+            for a, b, c in families:
+                self.log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
 
-                # for xy in ga.population:
-                #     print(crossover_trainer.modules['transformer'].state_dict())
+            # for xy in ga.population:
+            #     print(crossover_trainer.modules['transformer'].state_dict())
 
-                children = ga.mutate(children)
+            children = ga.mutate(children)
 
-                for c in children:
-                    log_file.write(f"mutated,{i},{c.data}\n")
+            for c in children:
+                self.log_file.write(f"mutated,{i},{c.data}\n")
 
-                ga.update_bottom(children)
+            ga.update_bottom(children)
 
-                ga.evaluate()
-                ga.sort_population()
+            ga.evaluate()
+            ga.sort_population()
 
-                for c in ga.population:
-                    log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
+            for c in ga.population:
+                self.log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
 
 
-                # learn crossover result
-                for a, b, c in families:
-                    df = (c.f - max(a.f, b.f))
-                    # if df < 0:
-                    #     df = df * 0.001
-                    # for _ in range(params.batch_size):
-                    df = 1
-                    training_set.add((a.data, b.data, c.data, df))
+            # learn crossover result
+            for a, b, c in families:
+                df = (c.f - max(a.f, b.f))
+                # if df < 0:
+                #     df = df * 0.001
+                # for _ in range(params.batch_size):
+                df = 1
+                training_set.add((a.data, b.data, c.data, df))
 
-                for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
-                    crossover_trainer.learn_accumulate(a, b, c, df)
+            for (a, b, c, df) in  random.sample(training_set, min(params.batch_size * 10, len(training_set))):
+                self.crossover_trainer.learn_accumulate(a, b, c, df)
 
-                # sentimental_trainer.learn_accumulate()
+            # sentimental_trainer.learn_accumulate()
 
-                ga.iteration += 1
+            ga.iteration += 1
 
-                tm_new = time.time()
+            tm_new = time.time()
 
-                print(f"Total runtime of the iteration is {tm_new - tm}")
+            print(f"Total runtime of the iteration is {tm_new - tm}")
 
-                log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
+            self.log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
 
-                tm = tm_new
+            tm = tm_new
 
-        end_time = time.time()
-
-        print(f"Total time taken = {end_time - start_time}")
-        print(f"Average time per iteration = {(end_time - start_time) / iterations}")
+        # end_time = time.time()
+        #
+        # print(f"Total time taken = {end_time - start_time}")
+        # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
 
 def step_all_models(runners, models_per_gpu):
