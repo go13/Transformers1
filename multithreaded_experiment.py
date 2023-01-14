@@ -200,10 +200,10 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 2
+    number_of_gpus = 1
     models_per_gpu = 200
     number_of_iterations = 100
-
+    # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
         params.my_device = 'cuda:' + str(gpu_num)
 
