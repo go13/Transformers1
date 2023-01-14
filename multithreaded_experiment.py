@@ -69,7 +69,7 @@ def run(rank, params):
     ga.evaluate()
     ga.sort_population()
 
-    iternations=1000
+    iterations=10
 
     start_time = time.time()
 
@@ -77,7 +77,7 @@ def run(rank, params):
 
     current_date_time = time.strftime("%H-%M-%S", time.localtime())
     with open(f"evolution-{rank}-{current_date_time}.txt", "w") as log_file:
-        for i in range(iternations):
+        for i in range(iterations):
 
             ga.print_population()
 
@@ -132,7 +132,8 @@ def run(rank, params):
 
     end_time = time.time()
 
-    print(f"Total time taken = {end_time - start_time}, average time per iteration = {(end_time - start_time) / iterations}")
+    print(f"Total time taken = {end_time - start_time}")
+    print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
 def neural_crossover(ga, params, trainer):
     children = []
@@ -173,8 +174,8 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 8
-    number_of_models = 32
+    number_of_gpus = 1
+    number_of_models = 1
 
     for rank in range(number_of_models):
         params.my_device = 'cuda:' + str(rank % number_of_gpus)
