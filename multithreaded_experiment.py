@@ -77,12 +77,13 @@ class ModelRunnner(object):
 
         self.start_time = time.time()
 
-    def step(self, gpu_num, params):
+    def step(self, iteration_num, gpu_num, params):
 
         # sentimental_transformer = build_sentimental_transformer(env, params)
         # sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
 
         tm = time.time()
+        ga = self.ga
 
         # for i in range(iterations):
 
@@ -94,7 +95,7 @@ class ModelRunnner(object):
             children, families = ga.crossover()
 
         for a, b, c in families:
-            self.log_file.write(f"crossover,{i},{a.data},{b.data},{c.data}\n")
+            self.log_file.write(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
 
         # for xy in ga.population:
         #     print(crossover_trainer.modules['transformer'].state_dict())
@@ -102,7 +103,7 @@ class ModelRunnner(object):
         children = ga.mutate(children)
 
         for c in children:
-            self.log_file.write(f"mutated,{i},{c.data}\n")
+            self.log_file.write(f"mutated,{iteration_num},{c.data}\n")
 
         ga.update_bottom(children)
 
@@ -110,7 +111,7 @@ class ModelRunnner(object):
         ga.sort_population()
 
         for c in ga.population:
-            self.log_file.write(f"evaluated,{i},{c.f},{c.data}\n")
+            self.log_file.write(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
 
         # learn crossover result
@@ -133,7 +134,7 @@ class ModelRunnner(object):
 
         print(f"Total runtime of the iteration is {tm_new - tm}")
 
-        self.log_file.write(f"iteration_time,{i},{tm_new - tm}\n")
+        self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
         tm = tm_new
 
@@ -145,7 +146,7 @@ class ModelRunnner(object):
 
 def step_all_models(iteration_num, gpu_num, runners, models_per_gpu, params):
     for r in runners:
-        r.step(gpu_num, params)
+        r.step(iteration_num, gpu_num, params)
 
 
 def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
