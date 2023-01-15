@@ -97,17 +97,25 @@ class XY(object):
         self.p2 = p2
         self.f = None
 
-    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int, worst_to_be_reused) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         cp = random.randint(0, xy_data_size - 1)
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
-        return XY(name, new_data, self.name, xy2.name)
+        return worst_to_be_reused.reuse(name, new_data, self.name, xy2.name)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         self.data = mutate(self.data, mutation_p, xy_data_size)
+
+    def reuse(self, name: str, data: str, p1: str, p2: str) -> 'XY':
+        self.data = data
+        self.name = name
+        self.p1 = p1
+        self.p2 = p2
+        self.f = None
+        return self
 
     def __str__(self):
         return "n={name}({p1}, {p2}), f={f}, d={data}".format(
@@ -206,11 +214,17 @@ class GA(object):
         return [rxy() for _ in range(new_size)], [rxy() for _ in range(new_size)]
 
     def generate_crossover(self, new_size):
-        p1, p2 = self.select_random_parents(new_size)
+        to_process = []
+        worst_to_be_reused = self.get_worst_pp(new_size)
+        for worst_to_be_reused in worst_to_be_reused:
+            xy1 = get_random_xy(self.population)
+            xy2 = get_random_xy(self.population)
+            to_process += [(xy1, xy2, worst_to_be_reused)]
+
         new_families = []
         new_population = []
-        for xy1, xy2 in zip(p1, p2):
-            child = xy1.crossover(xy2, '', self.xy_data_size)
+        for xy1, xy2, worst_to_be_reused in to_process:
+            child = xy1.crossover(xy2, '', self.xy_data_size, worst_to_be_reused)
 
             family = (xy1, xy2, child)
 
@@ -235,6 +249,9 @@ class GA(object):
 
     def get_best_pp(self, n):
         return self.population[: n]
+
+    def get_worst_pp(self, n):
+        return self.population[-n:]
 
     def replace_worst_pp(self, new_pp):
         for i in range(len(new_pp)):
