@@ -36,12 +36,12 @@ class NeuralXY(XY):
         self.transformer_pool = transformer_pool
 
     def crossover_transformer(self, xy1, xy2):
-        xy1_weights = xy1.get_transformer_weights()
-        xy2_weights = xy2.get_transformer_weights()
+        # xy1_weights = xy1.get_transformer_weights()
+        # xy2_weights = xy2.get_transformer_weights()
 
         trainer = self.transformer_pool.acquire()
 
-        trainer.get_transformer().load_state_dict(xy2_weights)
+        # trainer.get_transformer().load_state_dict(xy2_weights)
 
         return trainer
 
