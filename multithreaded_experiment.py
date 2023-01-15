@@ -190,7 +190,7 @@ class GpuRunnner(object):
             r.step(iteration_num, self.gpu_num, self.params)
 
 
-def run_all_gpus(number_of_iterations, gpu_num, models_per_gpu, params):
+def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
     gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params)
 
     for iteration_num in range(number_of_iterations):
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     for gpu_num in range(number_of_gpus):
         params.my_device = 'cuda:' + str(gpu_num)
 
-        p = mp.Process(target=run_all_gpus, args=(number_of_iterations, gpu_num, models_per_gpu, params))
+        p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params))
 
         processes += [p]
 
