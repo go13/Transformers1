@@ -16,11 +16,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.model_num = model_num
         self.params = params
 
-        current_date_time = time.strftime("%H-%M-%S", time.localtime())
-        if params.log_ga_into_file:
-            self.log_file = open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
-        else:
-            self.log_file = None
+        self.log_file = self.setup_logger(gpu_num, params)
 
         self.crossover_transformer = build_transformer(env, params)
         self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
@@ -32,6 +28,13 @@ class GAModelRunnner(AbstractModelRunnner):
         self.ga.sort_population()
 
         self.start_time = time.time()
+
+    def setup_logger(self, gpu_num, params):
+        if params.log_ga_into_file:
+            current_date_time = time.strftime("%H-%M-%S", time.localtime())
+            return open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
+        else:
+            return None
 
     def get_best_xy(self, n=1):
         return self.ga.get_best_pp(n)
