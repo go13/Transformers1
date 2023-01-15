@@ -1,5 +1,4 @@
 from ga.ga import GA, TargetStringEvaluator, XY
-from multithreaded_experiment import env, params
 from base_model_runners import AbstractModelRunnner
 from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer

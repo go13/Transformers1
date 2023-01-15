@@ -1,6 +1,3 @@
-from multithreaded_experiment import params
-
-
 class AbstractModelRunnner(object):
 
     def __init__(self, gpu_num, models_per_gpu, params):
@@ -17,7 +14,7 @@ class AbstractModelRunnner(object):
 
 
 class GpuRunnner(object):
-    def __init__(self, gpu_num, models_per_gpu, model_runner_factory):
+    def __init__(self, gpu_num, models_per_gpu, params, model_runner_factory):
         self.gpu_num = gpu_num
         self.models_per_gpu = models_per_gpu
         self.params = params

@@ -60,7 +60,7 @@ env = build_env(params)
 
 
 def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
-    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, GAModelRunnner.create)
+    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, GAModelRunnner.create)
 
     gpu_runner.iterate(number_of_iterations)
 
