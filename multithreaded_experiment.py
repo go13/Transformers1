@@ -75,18 +75,17 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', force=True)
 
     processes = []
-    number_of_gpus = 1
 
     params.number_of_gpus = 1
     params.models_per_gpu = 10
-    params.number_of_iterations = 101
+    params.number_of_iterations = 1000
 
     params.exchange_best_every_n_iterations = 10
     params.select_best_of_group = 5
     params.distribute_best = 5
 
     # seems like multi gpu may not work???
-    for gpu_num in range(number_of_gpus):
+    for gpu_num in range(params.number_of_gpus):
         p = mp.Process(target=run_gpu, args=(gpu_num, params, env))
 
         processes += [p]
