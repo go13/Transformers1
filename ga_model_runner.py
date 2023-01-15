@@ -24,10 +24,10 @@ class NeuralXY(XY):
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
-        return NeuralXY(name, new_data, self.name, xy2.name)
+        return NeuralXY(name, new_data, self.env, self.params)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
-        self.data = mutate(self.data, mutation_p, xy_data_size)
+        super().mutate(mutation_p, xy_data_size)
 
     @staticmethod
     def create(name, xy_data_size: int, env, params):
