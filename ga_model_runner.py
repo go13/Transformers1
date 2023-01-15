@@ -8,14 +8,31 @@ from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 
+
+class TransformerPool(object):
+
+    def __init__(self, params, env, model_num):
+        super().__init__()
+
+        self.trainers = []
+        for i in range(model_num * 2):
+            # transformer = build_transformer(env, params)
+            trainer = "abc"#RealtimeTrainer(transformer, env, params)
+            self.trainers += [trainer]
+
+    def acquire(self):
+        return self.trainers.pop()
+
+    def release(self, trainer):
+        self.trainers += [trainer]
+
 class NeuralXY(XY):
-    def __init__(self, name: str, data: str, env, params):
+    def __init__(self, name: str, data: str, env, params, transformer_pool: TransformerPool):
         super().__init__(name, data)
         self.env = env
         self.params = params
-
-        # transformer = build_transformer(env, params)
-        # self.trainer = RealtimeTrainer(transformer, env, params)
+        self.transformer_pool = transformer_pool
+        self.trainer = transformer_pool.acquire()
 
     def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
@@ -24,23 +41,18 @@ class NeuralXY(XY):
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
-        return NeuralXY(name, new_data, self.env, self.params)
+        return NeuralXY(name, new_data, self.env, self.params, self.transformer_pool)
 
-    def reuse(self, name: str, data: str, env, params):
-        self.data = data
-        self.name = name
-        self.env = env
-        self.params = params
-        self.f = None
-        return self
+    def destroy(self):
+        self.transformer_pool.release(self.trainer)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
 
     @staticmethod
-    def create(name, xy_data_size: int, env, params):
+    def create(name, xy_data_size: int, env, params, transformer_pool):
         data = gen_rnd_chars(xy_data_size)
-        return NeuralXY(name, data, env, params)
+        return NeuralXY(name, data, env, params, transformer_pool)
 
 
 class GAModelRunnner(AbstractModelRunnner):
@@ -49,6 +61,9 @@ class GAModelRunnner(AbstractModelRunnner):
         self.gpu_num = gpu_num
         self.model_num = model_num
         self.params = params
+
+        self.population_size = params.ga_population_size
+        self.transformer_pool = TransformerPool(params, env, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
@@ -59,9 +74,9 @@ class GAModelRunnner(AbstractModelRunnner):
         self.training_set = set()
 
         def neural_xy_factory(i, xy_data_size):
-            return NeuralXY.create(i, xy_data_size, env, params)
+            return NeuralXY.create(i, xy_data_size, env, params, self.transformer_pool)
 
-        self.ga = GA(TargetStringEvaluator(), verbose=params.verbose, xy_factory=neural_xy_factory)
+        self.ga = GA(TargetStringEvaluator(), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()
         self.ga.sort_population()
 
@@ -131,6 +146,9 @@ class GAModelRunnner(AbstractModelRunnner):
 
         for c in children:
             self.log(f"mutated,{iteration_num},{c.data}\n")
+
+        for xy in ga.get_worst_pp(ga.new_size):
+            xy.destroy()
 
         ga.update_bottom(children)
 

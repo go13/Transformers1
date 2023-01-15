@@ -78,11 +78,12 @@ if __name__ == '__main__':
 
     params.number_of_gpus = 1
     params.models_per_gpu = 1
-    params.number_of_iterations = 101
+    params.number_of_iterations = 1000
     params.log_ga_into_file = False
     params.verbose = True
 
-    params.use_random_exchange = False
+    params.ga_use_random_exchange = False
+    params.ga_population_size = 20
 
     params.use_neural_crossover = False
     params.neural_crossover_iteration_threshold = 200
