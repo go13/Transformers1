@@ -78,7 +78,8 @@ class TargetStringEvaluator(AbstractEvaluator):
         self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
         self.xy_data_size_const = len(self.target)
 
-    def func(self, data: str) -> float:
+    def func(self, xy) -> float:
+        data = xy.data
         diff = random.random() * 0.001
         diff += (self.xy_data_size_const - str_diff(self.target, data))
         return diff
@@ -187,7 +188,7 @@ class GA(object):
 
     def evaluate(self):
         for xy in self.population:
-            xy.f = self.evaluator.func(xy.data)
+            xy.f = self.evaluator.func(xy)
 
     def mutate(self, pp, mp=None):
         # if not self.mutation_enabled:
