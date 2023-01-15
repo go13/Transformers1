@@ -29,10 +29,33 @@ def mutate(d: str, mutation_p: float, xy_data_size: int) -> str:
             d = replace_char_at_index(d, i, v)
     return d
 
+
 def sort_pp(pp):
     pp.sort(key=lambda xy: xy.f, reverse=True)
     return pp
 
+
+def get_random_xy_with_position(population):
+    sm = 0
+    for xy in population:
+        sm += xy.f
+
+    res = population[0]
+    rnd = random.random() * sm
+    sm = 0
+
+    ind = 0
+    for xy in population:
+        if xy.f + sm >= rnd:
+            res = xy
+            break
+        sm += xy.f
+        ind += 1
+
+    return res, ind
+
+def get_random_xy(population):
+    return get_random_xy_with_position(population)[0]
 
 class AbstractEvaluator(ABC):
     @abstractmethod
@@ -171,7 +194,7 @@ class GA(object):
 
     def select_random_parents(self, new_size):
         def rxy():
-            return self.get_random_xy(self.population)
+            return get_random_xy(self.population)
         return [rxy() for _ in range(new_size)], [rxy() for _ in range(new_size)]
 
     def generate_crossover(self, new_size):
@@ -222,31 +245,7 @@ class GA(object):
         pp = pp.copy()
         res = []
         for i in range(n):
-            xy = self.get_random_xy(pp)
+            xy = get_random_xy(pp)
             pp.remove(xy)
             res += [xy]
         return res
-
-    @staticmethod
-    def get_random_xy(population):
-        return GA.get_random_xy_with_position(population)[0]
-
-    @staticmethod
-    def get_random_xy_with_position(population):
-        sm = 0
-        for xy in population:
-            sm += xy.f
-
-        res = population[0]
-        rnd = random.random() * sm
-        sm = 0
-
-        ind = 0
-        for xy in population:
-            if xy.f + sm >= rnd:
-                res = xy
-                break
-            sm += xy.f
-            ind += 1
-
-        return res, ind
