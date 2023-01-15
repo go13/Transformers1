@@ -38,14 +38,18 @@ class NeuralXY(XY):
     def crossover_transformer(self, xy1, xy2):
         xy1_weights = xy1.get_transformer_weights()
         xy2_weights = xy2.get_transformer_weights()
+
         trainer = self.transformer_pool.acquire()
+
+        trainer.get_transformer().load_state_dict(xy2_weights)
+
         return trainer
 
     def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
         trainer = self.crossover_transformer(xy1, xy2)
-        new_data = crossover_string(d1, d2, xy_data_size)
+        new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
 
         return NeuralXY(name, new_data, self.env, self.params, trainer, self.transformer_pool)
 
