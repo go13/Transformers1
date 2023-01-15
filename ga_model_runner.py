@@ -2,7 +2,7 @@ import time
 import random
 
 from envs import build_env
-from ga.ga import GA, TargetStringEvaluator, XY, gen_rnd_chars
+from ga.ga import GA, TargetStringEvaluator, XY, gen_rnd_chars, crossover_string
 from base_model_runners import AbstractModelRunnner
 from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer
@@ -38,20 +38,19 @@ class NeuralXY(XY):
     def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
-        cp = random.randint(0, xy_data_size - 1)
-
-        new_data = d1[0:cp] + d2[cp: xy_data_size]
+        new_data = crossover_string(d1, d2, xy_data_size)
 
         return NeuralXY(name, new_data, self.env, self.params, self.transformer_pool)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
-        #self.get_transformer_weights()
+        model_weights = self.get_transformer_weights()
 
     @timeit("get_transformer_weights")
     def get_transformer_weights(self):
         model_weights = self.trainer.get_transformer().state_dict()
-        model_weights = {k: v.cpu() for k, v in model_weights.items()}
+        # model_weights = {k: v.cpu() for k, v in model_weights.items()}
+        return model_weights
 
     def destroy(self):
         self.transformer_pool.release(self.trainer)
