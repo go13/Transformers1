@@ -78,6 +78,15 @@ if __name__ == '__main__':
     number_of_gpus = 1
     models_per_gpu = 10
     number_of_iterations = 101
+
+    params.number_of_gpus = 1
+    params.models_per_gpu = 10
+    params.number_of_iterations = 101
+
+    params.exchange_best_every_n_iterations = 1
+    params.select_best_of_group = 5
+    params.distribute_best = 5
+
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
         p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params, env))
