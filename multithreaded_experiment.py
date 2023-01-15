@@ -57,7 +57,23 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 
-class ModelRunnner(object):
+class AbstractModelRunnner(object):
+
+    def __init__(self, gpu_num, models_per_gpu, params):
+        self.gpu_num = gpu_num
+        self.models_per_gpu = models_per_gpu
+        self.params = params
+
+    def step(self, iteration_num, gpu_num, params):
+        raise NotImplementedError()
+
+    @classmethod
+    def create(self, **kwargs):
+        raise NotImplementedError()
+
+
+class GAModelRunnner(AbstractModelRunnner):
+
     def __init__(self, gpu_num, model_num, params):
         self.gpu_num = gpu_num
         self.model_num = model_num
@@ -108,8 +124,12 @@ class ModelRunnner(object):
         pp1 = [p.data for p in p1]
         return pp1
 
-    @timeit("ModelRunnner")
-    def step(self, iteration_num, gpu_num, params):
+    @classmethod
+    def create(self, **kwargs):
+        return GAModelRunnner(**kwargs)
+
+    @timeit("GAModelRunnner")
+    def step(self, iteration_num, gpu_num):
 
         # sentimental_transformer = build_sentimental_transformer(env, params)
         # sentimental_trainer = RealtimeTrainer(sentimental_transformer, env, params)
@@ -120,7 +140,7 @@ class ModelRunnner(object):
         ga.print_population()
 
         if ga.iteration > 200 or True:  # random.random() > 0.5 and
-            children, families = self.neural_crossover(ga, params, self.crossover_trainer)
+            children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
         else:
             children, families = ga.crossover()
 
@@ -177,16 +197,16 @@ class ModelRunnner(object):
 
 
 class GpuRunnner(object):
-    def __init__(self, gpu_num, models_per_gpu, params):
+    def __init__(self, gpu_num, models_per_gpu, model_runner_factory):
         self.gpu_num = gpu_num
         self.models_per_gpu = models_per_gpu
         self.params = params
-
-        self.runners = [ModelRunnner(self.gpu_num, i, self.params) for i in range(self.models_per_gpu)]
+        params.my_device = 'cuda:' + str(gpu_num)
+        self.runners = [model_runner_factory(gpu_num=self.gpu_num, model_num=i, params=self.params) for i in range(self.models_per_gpu)]
 
     def step(self, iteration_num):
         for r in self.runners:
-            r.step(iteration_num, self.gpu_num, self.params)
+            r.step(iteration_num, self.gpu_num)
 
     def iterate(self, number_of_iterations):
         for iteration_num in range(number_of_iterations):
@@ -200,9 +220,10 @@ class GpuRunnner(object):
 
 
 def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
-    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params)
+    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, GAModelRunnner.create)
 
     gpu_runner.iterate(number_of_iterations)
+
 
 if __name__ == '__main__':
     print('started')
@@ -215,8 +236,6 @@ if __name__ == '__main__':
     number_of_iterations = 100
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
-        params.my_device = 'cuda:' + str(gpu_num)
-
         p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params))
 
         processes += [p]
