@@ -8,6 +8,7 @@ import src
 from envs import build_env
 from src.slurm import init_distributed_mode
 from src.utils import initialize_exp
+from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 from t2.sentimental_transformer import build_sentimental_transformer
@@ -17,7 +18,7 @@ from ga.ga import GA, TargetStringEvaluator, XY
 argv = [
     '--exp_name', 'first_train',
     '--tasks', 'add_dataset',
-    '--n_enc_layers', '4',
+    '--n_enc_layers', '64',
     '--n_heads', '4',
     '--sinusoidal_embeddings', 'false',
     '--num_workers', '4',
@@ -73,10 +74,9 @@ class ModelRunnner(object):
         self.ga.evaluate()
         self.ga.sort_population()
 
-        self.iterations=100
-
         self.start_time = time.time()
 
+    @timeit
     def step(self, iteration_num, gpu_num, params):
 
         # sentimental_transformer = build_sentimental_transformer(env, params)
@@ -84,8 +84,6 @@ class ModelRunnner(object):
 
         tm = time.time()
         ga = self.ga
-
-        # for i in range(iterations):
 
         ga.print_population()
 
@@ -113,7 +111,6 @@ class ModelRunnner(object):
         for c in ga.population:
             self.log_file.write(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
-
         # learn crossover result
         for a, b, c in families:
             df = (c.f - max(a.f, b.f))
@@ -127,6 +124,11 @@ class ModelRunnner(object):
             self.crossover_trainer.learn_accumulate(a, b, c, df)
 
         # sentimental_trainer.learn_accumulate()
+
+        # model_weights = self.crossover_transformer['transformer'].state_dict()
+        # model_weights = {k: v.cpu() for k, v in model_weights.items()}
+
+
 
         ga.iteration += 1
 
@@ -142,6 +144,8 @@ class ModelRunnner(object):
         #
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
+
+
 
 
 def step_all_models(iteration_num, gpu_num, runners, models_per_gpu, params):
@@ -201,7 +205,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 1
-    models_per_gpu = 200
+    models_per_gpu = 10
     number_of_iterations = 100
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
