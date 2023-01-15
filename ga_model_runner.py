@@ -8,6 +8,12 @@ from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 
+class NeuralXY(XY):
+
+    def __init__(self, name: str, data: str):
+        super().__init__(name, data)
+
+
 
 class GAModelRunnner(AbstractModelRunnner):
 
@@ -23,7 +29,10 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.training_set = set()
 
-        self.ga = GA(TargetStringEvaluator(), verbose=params.verbose)
+        def neural_xy_factory(i, xy_data_size):
+            return XY.create(i, xy_data_size)
+
+        self.ga = GA(TargetStringEvaluator(), verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()
         self.ga.sort_population()
 
