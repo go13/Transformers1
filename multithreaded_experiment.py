@@ -84,6 +84,9 @@ if __name__ == '__main__':
 
     params.use_random_exchange = False
 
+    params.use_neural_crossover = False
+    params.neural_crossover_iteration_threshold = 200
+
     params.exchange_best_every_n_iterations = 1
     params.select_best_of_group = 5
     params.distribute_best = 5

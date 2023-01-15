@@ -11,11 +11,6 @@ class AbstractModelRunnner(object):
     def step(self, iteration_num, gpu_num, params):
         raise NotImplementedError()
 
-    @classmethod
-    def create(self, **kwargs):
-        raise NotImplementedError()
-
-
 class GpuRunnner(object):
     def __init__(self, gpu_num, params, env, model_runner_factory):
         self.gpu_num = gpu_num

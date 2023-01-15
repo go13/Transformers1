@@ -70,9 +70,6 @@ class GAModelRunnner(AbstractModelRunnner):
         pp1 = [p.data for p in p1]
         return pp1
 
-    @classmethod
-    def create(self, **kwargs):
-        return GAModelRunnner(**kwargs)
 
     @timeit("GAModelRunnner")
     def step(self, iteration_num, gpu_num):
@@ -85,7 +82,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         ga.print_population()
 
-        if ga.iteration > 200 and False:  # random.random() > 0.5 and
+        if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
             children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
         else:
             children, families = ga.crossover()
@@ -132,16 +129,17 @@ class GAModelRunnner(AbstractModelRunnner):
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
     def learn_crossover(self, families):
-        for a, b, c in families:
-            df = (c.f - max(a.f, b.f))
-            # if df < 0:
-            #     df = df * 0.001
-            # for _ in range(params.batch_size):
-            df = 1
-            self.training_set.add((a.data, b.data, c.data, df))
+        if self.params.use_neural_crossover:
+            for a, b, c in families:
+                df = (c.f - max(a.f, b.f))
+                # if df < 0:
+                #     df = df * 0.001
+                # for _ in range(params.batch_size):
+                df = 1
+                self.training_set.add((a.data, b.data, c.data, df))
 
-        for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
-            self.crossover_trainer.learn_accumulate(a, b, c, df)
+            for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
+                self.crossover_trainer.learn_accumulate(a, b, c, df)
 
     def log(self, log_line):
         if self.log_file:
