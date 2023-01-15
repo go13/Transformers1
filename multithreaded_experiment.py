@@ -184,24 +184,25 @@ class GpuRunnner(object):
 
         self.runners = [ModelRunnner(self.gpu_num, i, self.params) for i in range(self.models_per_gpu)]
 
-    @timeit("GpuRunnner")
     def step(self, iteration_num):
         for r in self.runners:
             r.step(iteration_num, self.gpu_num, self.params)
+
+    def iterate(self, number_of_iterations):
+        for iteration_num in range(number_of_iterations):
+            print(f"Starting iteration {iteration_num} on gpu {self.gpu_num}")
+            start = time.time()
+
+            self.step(iteration_num)
+
+            end = time.time()
+            print(f"Ended iteration {iteration_num} on gpu {self.gpu_num}, taken = {end - start}, time/iteration = {(end - start) / self.models_per_gpu}, models_per_gpu={self.models_per_gpu}")
 
 
 def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
     gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params)
 
-    for iteration_num in range(number_of_iterations):
-        print(f"Starting iteration {iteration_num} on gpu {gpu_num}")
-        start = time.time()
-
-        gpu_runner.step(iteration_num)
-
-        end = time.time()
-        print(f"Ended iteration {iteration_num} on gpu {gpu_num}, taken = {end - start}, time/iteration = {(end - start) / models_per_gpu}, model_num={models_per_gpu}")
-
+    gpu_runner.iterate(number_of_iterations)
 
 if __name__ == '__main__':
     print('started')
