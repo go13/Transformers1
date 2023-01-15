@@ -11,6 +11,40 @@ from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 
 
+def neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights):
+    new_state = []
+    for k1, _ in xy1_weights.items():
+        shape = xy1_weights[k1].shape
+        v1 = xy1_weights[k1].reshape(-1)
+        v2 = xy2_weights[k1].reshape(-1)
+
+        rnd1 = torch.rand(v1.shape, device="cuda")
+
+        update = (v1 * rnd1 + (1 - rnd1) * v2)
+
+        # mutate
+        ln = len(v1)
+        mutation_rate = 0.01
+        num_of_ones = int(mutation_rate * ln)
+        num_of_zeros = ln - num_of_ones
+        ones_to_mutate = torch.ones(num_of_ones, device="cuda")
+        zeros_to_mutate = torch.zeros(num_of_zeros, device="cuda")
+        to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
+
+        idxs = torch.randperm(ln, device="cuda")
+
+        to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
+
+        rnd2 = torch.rand(ln, device="cuda")
+
+        update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
+
+        update = update.reshape(shape)
+        new_state.append((k1, update))
+
+    trainer.get_transformer().load_state_dict(OrderedDict(new_state))
+
+
 class TransformerPool(object):
 
     def __init__(self, params, env, model_num):
@@ -42,41 +76,8 @@ class NeuralXY(XY):
         xy2_weights = xy2.get_transformer_weights()
 
         trainer = self.transformer_pool.acquire()
-        new_state = []
 
-        for k1, _ in xy1_weights.items():
-            shape = xy1_weights[k1].shape
-            v1 = xy1_weights[k1].reshape(-1)
-            v2 = xy2_weights[k1].reshape(-1)
-
-            rnd1 = torch.rand(v1.shape, device="cuda")
-
-            update = (v1 * rnd1 + (1 - rnd1) * v2)
-
-            # mutate
-            ln = len(v1)
-            mutation_rate = 0.01
-            num_of_ones = int(mutation_rate * ln)
-            num_of_zeros = ln - num_of_ones
-            ones_to_mutate = torch.ones(num_of_ones, device="cuda")
-            zeros_to_mutate = torch.zeros(num_of_zeros, device="cuda")
-            to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
-
-            idxs = torch.randperm(ln, device="cuda")
-
-            to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
-
-            rnd2 = torch.rand(ln, device="cuda")
-
-            update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
-
-            update = update.reshape(shape)
-            new_state.append((k1, update))
-
-        # pair[0].load_state_dict(OrderedDict(new_state))
-
-
-        trainer.get_transformer().load_state_dict(OrderedDict(new_state))
+        neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights)
 
         return trainer
 

@@ -20,7 +20,7 @@ from ga.ga import GA, TargetStringEvaluator, XY
 argv = [
     '--exp_name', 'first_train',
     '--tasks', 'add_dataset',
-    '--n_enc_layers', '64',
+    '--n_enc_layers', '4',
     '--n_heads', '4',
     '--sinusoidal_embeddings', 'false',
     '--num_workers', '4',
