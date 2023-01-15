@@ -154,7 +154,7 @@ class GpuRunnner(object):
         self.runners = [ModelRunnner(self.gpu_num, i, self.params) for i in range(self.models_per_gpu)]
 
     def step(self, iteration_num):
-        for r in runners:
+        for r in self.runners:
             r.step(iteration_num, self.gpu_num, self.params)
 
 def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
