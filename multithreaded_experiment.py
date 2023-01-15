@@ -63,10 +63,10 @@ def model_runner_factory(gpu_num, model_num, params, env):
     return GAModelRunnner(gpu_num, model_num, params, env)
 
 
-def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params, env):
-    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, env, model_runner_factory)
+def run_gpu(gpu_num, params, env):
+    gpu_runner = GpuRunnner(gpu_num, params, env, model_runner_factory)
 
-    gpu_runner.iterate(number_of_iterations)
+    gpu_runner.iterate(params.number_of_iterations)
 
 
 if __name__ == '__main__':
@@ -76,20 +76,18 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 1
-    models_per_gpu = 10
-    number_of_iterations = 101
 
     params.number_of_gpus = 1
     params.models_per_gpu = 10
     params.number_of_iterations = 101
 
-    params.exchange_best_every_n_iterations = 1
+    params.exchange_best_every_n_iterations = 10
     params.select_best_of_group = 5
     params.distribute_best = 5
 
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
-        p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params, env))
+        p = mp.Process(target=run_gpu, args=(gpu_num, params, env))
 
         processes += [p]
 

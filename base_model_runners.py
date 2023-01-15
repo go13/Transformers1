@@ -17,9 +17,9 @@ class AbstractModelRunnner(object):
 
 
 class GpuRunnner(object):
-    def __init__(self, gpu_num, models_per_gpu, params, env, model_runner_factory):
+    def __init__(self, gpu_num, params, env, model_runner_factory):
         self.gpu_num = gpu_num
-        self.models_per_gpu = models_per_gpu
+        self.models_per_gpu = params.models_per_gpu
         self.params = params
         params.my_device = 'cuda:' + str(gpu_num)
         self.runners = [model_runner_factory(self.gpu_num, i, params, env) for i in range(self.models_per_gpu)]
