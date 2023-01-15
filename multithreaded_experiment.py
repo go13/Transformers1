@@ -77,6 +77,36 @@ class ModelRunnner(object):
 
         self.start_time = time.time()
 
+    def neural_crossover(self, ga, params, trainer):
+        children = []
+        families = []
+        p1, p2 = ga.select_random_parents(params.batch_size)
+        pp1 = self.xy_to_data(p1)
+        pp2 = self.xy_to_data(p2)
+        children_data = trainer.act(pp1, pp2)
+
+        for p1, p2, ch_data in zip(p1, p2, children_data):
+            ch = XY('', ch_data)
+            children += [ch]
+            families += [(p1, p2, ch)]
+
+        # pre_eval = pre_evaluate(children, None)
+
+        # pre_eval, children, families = zip(pre_eval, children, families).sort()
+
+        children = children[:ga.new_size]
+        families = families[:ga.new_size]
+
+        return children, families
+
+    def pre_evaluate(self, children, trainer):
+        ch_data = [self.xy_to_data(ch) for ch in children]
+        ch_f = trainer.act(ch_data, ch_data)
+        return ch_f
+
+    def xy_to_data(self, p1):
+        pp1 = [p.data for p in p1]
+        return pp1
 
     @timeit("ModelRunnner")
     def step(self, iteration_num, gpu_num, params):
@@ -90,7 +120,7 @@ class ModelRunnner(object):
         ga.print_population()
 
         if ga.iteration > 200 or True:  # random.random() > 0.5 and
-            children, families = neural_crossover(ga, params, self.crossover_trainer)
+            children, families = self.neural_crossover(ga, params, self.crossover_trainer)
         else:
             children, families = ga.crossover()
 
@@ -145,6 +175,7 @@ class ModelRunnner(object):
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
+
 class GpuRunnner(object):
     def __init__(self, gpu_num, models_per_gpu, params):
         self.gpu_num = gpu_num
@@ -158,7 +189,8 @@ class GpuRunnner(object):
         for r in self.runners:
             r.step(iteration_num, self.gpu_num, self.params)
 
-def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
+
+def run_all_gpus(number_of_iterations, gpu_num, models_per_gpu, params):
     gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params)
 
     for iteration_num in range(number_of_iterations):
@@ -169,40 +201,6 @@ def run_all_models_per_gpu(number_of_iterations, gpu_num, models_per_gpu, params
 
         end = time.time()
         print(f"Ended iteration {iteration_num} on gpu {gpu_num}, taken = {end - start}, time/iteration = {(end - start) / models_per_gpu}, model_num={models_per_gpu}")
-
-
-def neural_crossover(ga, params, trainer):
-    children = []
-    families = []
-    p1, p2 = ga.select_random_parents(params.batch_size)
-    pp1 = xy_to_data(p1)
-    pp2 = xy_to_data(p2)
-    children_data = trainer.act(pp1, pp2)
-
-    for p1, p2, ch_data in zip(p1, p2, children_data):
-        ch = XY('', ch_data)
-        children += [ch]
-        families += [(p1, p2, ch)]
-
-    # pre_eval = pre_evaluate(children, None)
-
-    # pre_eval, children, families = zip(pre_eval, children, families).sort()
-
-    children = children[:ga.new_size]
-    families = families[:ga.new_size]
-
-    return children, families
-
-
-def pre_evaluate(children, trainer):
-    ch_data = [xy_to_data(ch) for ch in children]
-    ch_f = trainer.act(ch_data, ch_data)
-    return ch_f
-
-
-def xy_to_data(p1):
-    pp1 = [p.data for p in p1]
-    return pp1
 
 
 if __name__ == '__main__':
@@ -218,7 +216,7 @@ if __name__ == '__main__':
     for gpu_num in range(number_of_gpus):
         params.my_device = 'cuda:' + str(gpu_num)
 
-        p = mp.Process(target=run_all_models_per_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params))
+        p = mp.Process(target=run_all_gpus, args=(number_of_iterations, gpu_num, models_per_gpu, params))
 
         processes += [p]
 
