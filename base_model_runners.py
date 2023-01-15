@@ -21,7 +21,7 @@ class GpuRunnner(object):
         self.models_per_gpu = models_per_gpu
         self.params = params
         params.my_device = 'cuda:' + str(gpu_num)
-        self.runners = [model_runner_factory(gpu_num=self.gpu_num, model_num=i, params=self.params, env=env) for i in range(self.models_per_gpu)]
+        self.runners = [model_runner_factory(self.gpu_num, i, params, env) for i in range(self.models_per_gpu)]
 
     def step(self, iteration_num):
         for r in self.runners:

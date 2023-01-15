@@ -59,10 +59,15 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 
+def model_runner_factory(gpu_num, model_num, params, env):
+    return GAModelRunnner(gpu_num, model_num, params, env)
+
+
 def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params, env):
-    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, env, GAModelRunnner.create)
+    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, env, model_runner_factory)
 
     gpu_runner.iterate(number_of_iterations)
+
 
 if __name__ == '__main__':
     print('started')
