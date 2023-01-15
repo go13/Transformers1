@@ -77,7 +77,7 @@ if __name__ == '__main__':
     processes = []
 
     params.number_of_gpus = 1
-    params.models_per_gpu = 10
+    params.models_per_gpu = 4
     params.number_of_iterations = 101
     params.log_ga_into_file = False
     params.verbose = False

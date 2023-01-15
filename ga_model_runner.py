@@ -2,17 +2,26 @@ import time
 import random
 
 from envs import build_env
-from ga.ga import GA, TargetStringEvaluator, XY
+from ga.ga import GA, TargetStringEvaluator, XY, gen_rnd_chars
 from base_model_runners import AbstractModelRunnner
 from src.performance_utils import timeit
 from t2.realtime_trainer import RealtimeTrainer
 from t2.transformer import build_transformer
 
 class NeuralXY(XY):
-
-    def __init__(self, name: str, data: str):
+    def __init__(self, name: str, data: str, env, params):
         super().__init__(name, data)
+        self.env = env
+        self.params = params
 
+        self.transformer = build_transformer(env, params)
+        self.trainer = RealtimeTrainer(self.transformer, env, params)
+
+
+    @staticmethod
+    def create(name, xy_data_size: int, env, params):
+        data = gen_rnd_chars(xy_data_size)
+        return NeuralXY(name, data, env, params)
 
 
 class GAModelRunnner(AbstractModelRunnner):
@@ -24,13 +33,14 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.log_file = self.setup_logger(gpu_num, params)
 
-        self.crossover_transformer = build_transformer(env, params)
-        self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
+        if self.params.use_neural_crossover:
+            self.crossover_transformer = build_transformer(env, params)
+            self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
 
         self.training_set = set()
 
         def neural_xy_factory(i, xy_data_size):
-            return XY.create(i, xy_data_size)
+            return NeuralXY.create(i, xy_data_size, env, params)
 
         self.ga = GA(TargetStringEvaluator(), verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()
