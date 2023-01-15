@@ -17,6 +17,17 @@ class NeuralXY(XY):
         self.transformer = build_transformer(env, params)
         self.trainer = RealtimeTrainer(self.transformer, env, params)
 
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
+        d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
+
+        cp = random.randint(0, xy_data_size - 1)
+
+        new_data = d1[0:cp] + d2[cp: xy_data_size]
+
+        return NeuralXY(name, new_data, self.name, xy2.name)
+
+    def mutate(self, mutation_p: float, xy_data_size: int) -> None:
+        self.data = mutate(self.data, mutation_p, xy_data_size)
 
     @staticmethod
     def create(name, xy_data_size: int, env, params):

@@ -101,9 +101,6 @@ class XY(object):
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         cp = random.randint(0, xy_data_size - 1)
-        # for i in range(0, xy_data_size):
-        #     v = d1[i] if i < cp else d2[i]
-        #     new_data += [v]
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
