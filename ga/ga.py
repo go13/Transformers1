@@ -29,6 +29,7 @@ def mutate_string(d: str, mutation_p: float, xy_data_size: int) -> str:
             d = replace_char_at_index(d, i, v)
     return d
 
+
 def crossover_string(d1, d2, xy_data_size):
     cp = random.randint(0, xy_data_size - 1)
     new_data = d1[0:cp] + d2[cp: xy_data_size]

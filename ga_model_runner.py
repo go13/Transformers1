@@ -28,25 +28,32 @@ class TransformerPool(object):
         self.trainers += [trainer]
 
 class NeuralXY(XY):
-    def __init__(self, name: str, data: str, env, params, transformer_pool: TransformerPool):
+    def __init__(self, name: str, data: str, env, params, trainer, transformer_pool):
         super().__init__(name, data)
         self.env = env
         self.params = params
+        self.trainer = trainer
         self.transformer_pool = transformer_pool
-        self.trainer = transformer_pool.acquire()
+
+    def crossover_transformer(self, xy1, xy2):
+        xy1_weights = xy1.get_transformer_weights()
+        xy2_weights = xy2.get_transformer_weights()
+        trainer = self.transformer_pool.acquire()
+        return trainer
 
     def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
-        d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
+        xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
+        trainer = self.crossover_transformer(xy1, xy2)
         new_data = crossover_string(d1, d2, xy_data_size)
 
-        return NeuralXY(name, new_data, self.env, self.params, self.transformer_pool)
+        return NeuralXY(name, new_data, self.env, self.params, trainer, self.transformer_pool)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
-        model_weights = self.get_transformer_weights()
+        # model_weights = self.get_transformer_weights()
 
-    @timeit("get_transformer_weights")
+    # @timeit("get_transformer_weights")
     def get_transformer_weights(self):
         model_weights = self.trainer.get_transformer().state_dict()
         # model_weights = {k: v.cpu() for k, v in model_weights.items()}
@@ -58,7 +65,8 @@ class NeuralXY(XY):
     @staticmethod
     def create(name, xy_data_size: int, env, params, transformer_pool):
         data = gen_rnd_chars(xy_data_size)
-        return NeuralXY(name, data, env, params, transformer_pool)
+        trainer = transformer_pool.acquire()
+        return NeuralXY(name, data, env, params, trainer, transformer_pool)
 
 
 class GAModelRunnner(AbstractModelRunnner):
