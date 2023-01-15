@@ -41,7 +41,7 @@ class GpuRunnner(object):
             end = time.time()
             print(f"Ended iteration {iteration_num} on gpu {self.gpu_num}, taken = {end - start}, time/iteration = {(end - start) / self.models_per_gpu}, models_per_gpu={self.models_per_gpu}")
 
-            if number_of_iterations % self.exchange_best_every_n_iterations == 0:
+            if iteration_num % self.exchange_best_every_n_iterations == 0:
                 self.exchange_best_models()
 
     def exchange_best_models(self):
