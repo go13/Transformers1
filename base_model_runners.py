@@ -52,6 +52,8 @@ class GpuRunnner(object):
 
         self.replace_worst_xy(best_xy)
 
+        print(f"Exchanged best models on gpu {self.gpu_num}")
+
     def replace_worst_xy(self, best_xy):
         for r in self.runners:
             r.replace_worst_xy(best_xy)

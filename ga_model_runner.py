@@ -82,7 +82,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         ga.print_population()
 
-        if ga.iteration > 200 or True:  # random.random() > 0.5 and
+        if ga.iteration > 200 and False:  # random.random() > 0.5 and
             children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
         else:
             children, families = ga.crossover()
@@ -107,16 +107,16 @@ class GAModelRunnner(AbstractModelRunnner):
             self.log_file.write(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
         # learn crossover result
-        for a, b, c in families:
-            df = (c.f - max(a.f, b.f))
-            # if df < 0:
-            #     df = df * 0.001
-            # for _ in range(params.batch_size):
-            df = 1
-            self.training_set.add((a.data, b.data, c.data, df))
-
-        for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
-            self.crossover_trainer.learn_accumulate(a, b, c, df)
+        # for a, b, c in families:
+        #     df = (c.f - max(a.f, b.f))
+        #     # if df < 0:
+        #     #     df = df * 0.001
+        #     # for _ in range(params.batch_size):
+        #     df = 1
+        #     self.training_set.add((a.data, b.data, c.data, df))
+        #
+        # for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
+        #     self.crossover_trainer.learn_accumulate(a, b, c, df)
 
         # sentimental_trainer.learn_accumulate()
 
@@ -127,7 +127,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         tm_new = time.time()
 
-        print(f"Time of iteration is {tm_new - tm}, it=on gpu {gpu_num}")
+        print(f"Time of iteration is {tm_new - tm}, it={ga.iteration}, gpu={gpu_num}")
 
         self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
