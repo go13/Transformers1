@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     params.use_random_exchange = False
 
-    params.exchange_best_every_n_iterations = 100
+    params.exchange_best_every_n_iterations = 10
     params.select_best_of_group = 5
     params.distribute_best = 10
 
