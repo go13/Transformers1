@@ -109,17 +109,7 @@ class GAModelRunnner(AbstractModelRunnner):
         for c in ga.population:
             self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
-        # learn crossover result
-        # for a, b, c in families:
-        #     df = (c.f - max(a.f, b.f))
-        #     # if df < 0:
-        #     #     df = df * 0.001
-        #     # for _ in range(params.batch_size):
-        #     df = 1
-        #     self.training_set.add((a.data, b.data, c.data, df))
-        #
-        # for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
-        #     self.crossover_trainer.learn_accumulate(a, b, c, df)
+        self.learn_crossover(families)
 
         # sentimental_trainer.learn_accumulate()
 
@@ -140,6 +130,18 @@ class GAModelRunnner(AbstractModelRunnner):
         #
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
+
+    def learn_crossover(self, families):
+        for a, b, c in families:
+            df = (c.f - max(a.f, b.f))
+            # if df < 0:
+            #     df = df * 0.001
+            # for _ in range(params.batch_size):
+            df = 1
+            self.training_set.add((a.data, b.data, c.data, df))
+
+        for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
+            self.crossover_trainer.learn_accumulate(a, b, c, df)
 
     def log(self, log_line):
         if self.log_file:
