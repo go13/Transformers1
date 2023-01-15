@@ -29,13 +29,6 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.start_time = time.time()
 
-    def setup_logger(self, gpu_num, params):
-        if params.log_ga_into_file:
-            current_date_time = time.strftime("%H-%M-%S", time.localtime())
-            return open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
-        else:
-            return None
-
     def get_best_xy(self, n=1):
         return self.ga.get_best_pp(n)
 
@@ -147,3 +140,10 @@ class GAModelRunnner(AbstractModelRunnner):
     def log(self, log_line):
         if self.log_file:
             self.log_file.write(log_line)
+
+    def setup_logger(self, gpu_num, params):
+        if params.log_ga_into_file:
+            current_date_time = time.strftime("%H-%M-%S", time.localtime())
+            return open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
+        else:
+            return None
