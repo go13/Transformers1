@@ -30,6 +30,12 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.start_time = time.time()
 
+    def get_best_xy(self, n=1):
+        return self.ga.get_best_pp(n)
+
+    def replace_worst_xy(self, best_xy):
+        self.ga.replace_worst_pp(best_xy)
+
     def neural_crossover(self, ga, params, trainer):
         children = []
         families = []

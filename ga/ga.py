@@ -29,6 +29,10 @@ def mutate(d: str, mutation_p: float, xy_data_size: int) -> str:
             d = replace_char_at_index(d, i, v)
     return d
 
+def sort_pp(pp):
+    pp.sort(key=lambda xy: xy.f, reverse=True)
+    return pp
+
 
 class AbstractEvaluator(ABC):
     @abstractmethod
@@ -196,16 +200,17 @@ class GA(object):
         self.population = new_population
 
     def sort_population(self):
-        self.sort_pp(self.population)
+        sort_pp(self.population)
 
-    def get_best_pp(self, pp, n):
-        return pp[0: n]
+    def get_best_pp(self, n):
+        return self.population[: n]
+
+    def replace_worst_pp(self, new_pp):
+        for i in range(len(new_pp)):
+            self.population[-i - 1] = new_pp[i]
 
     def get_worst_pp(self, n):
         return self.population[-n:]
-
-    def sort_pp(self, pp):
-        pp.sort(key=lambda xy: xy.f, reverse=True)
 
     def print_population(self):
         if self.verbose:
