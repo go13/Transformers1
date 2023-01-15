@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from src.utils import str_diff, words2string
 
 data_dict = string.ascii_uppercase + string.digits
-mutation_p_const = 0.1
+mutation_p_const = 0.05
 new_percentage = 0.7
 
 
@@ -128,9 +128,7 @@ class GA(object):
             evaluator: TargetStringEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
-            verbose=True
     ):
-        self.verbose = verbose
         self.iteration = 0
         self.population_size = population_size
         self.evaluator = evaluator
@@ -242,7 +240,7 @@ class GA(object):
         return self.population[-n:]
 
     def print_population(self):
-        if self.verbose:
+        if params.verbose:
             print(f"iteration={self.iteration}")
             for xy in self.population:
                 print(f"xy: {xy}")

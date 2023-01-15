@@ -17,7 +17,10 @@ class GAModelRunnner(AbstractModelRunnner):
         self.params = params
 
         current_date_time = time.strftime("%H-%M-%S", time.localtime())
-        self.log_file = open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
+        if params.log_ga_into_file:
+            self.log_file = open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
+        else:
+            self.log_file = None
 
         self.crossover_transformer = build_transformer(env, params)
         self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
@@ -80,7 +83,8 @@ class GAModelRunnner(AbstractModelRunnner):
         tm = time.time()
         ga = self.ga
 
-        ga.print_population()
+        if self.params.verbose or ga.iteration % 100 == 0:
+            ga.print_population()
 
         if ga.iteration > 200 and False:  # random.random() > 0.5 and
             children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
@@ -88,7 +92,7 @@ class GAModelRunnner(AbstractModelRunnner):
             children, families = ga.crossover()
 
         for a, b, c in families:
-            self.log_file.write(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
+            self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
 
         # for xy in ga.population:
         #     print(crossover_trainer.modules['transformer'].state_dict())
@@ -96,7 +100,7 @@ class GAModelRunnner(AbstractModelRunnner):
         children = ga.mutate(children)
 
         for c in children:
-            self.log_file.write(f"mutated,{iteration_num},{c.data}\n")
+            self.log(f"mutated,{iteration_num},{c.data}\n")
 
         ga.update_bottom(children)
 
@@ -104,7 +108,7 @@ class GAModelRunnner(AbstractModelRunnner):
         ga.sort_population()
 
         for c in ga.population:
-            self.log_file.write(f"evaluated,{iteration_num},{c.f},{c.data}\n")
+            self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
         # learn crossover result
         # for a, b, c in families:
@@ -129,7 +133,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         print(f"Time of iteration is {tm_new - tm}, it={ga.iteration}, gpu={gpu_num}")
 
-        self.log_file.write(f"iteration_time,{iteration_num},{tm_new - tm}\n")
+        self.log(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
         tm = tm_new
 
@@ -137,3 +141,7 @@ class GAModelRunnner(AbstractModelRunnner):
         #
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
+
+    def log(self, log_line):
+        if self.log_file:
+            self.log_file.write(log_line)

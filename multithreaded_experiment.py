@@ -79,6 +79,8 @@ if __name__ == '__main__':
     params.number_of_gpus = 1
     params.models_per_gpu = 10
     params.number_of_iterations = 1000
+    params.log_ga_into_file = False
+    params.verbose = False
 
     params.use_random_exchange = False
 
