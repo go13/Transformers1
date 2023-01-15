@@ -58,6 +58,7 @@ def get_random_xy_with_position(population):
 def get_multi_random_xy(population, n=1):
     return [get_random_xy(population) for i in range(n)]
 
+
 def get_random_xy(population):
     return get_random_xy_with_position(population)[0]
 
