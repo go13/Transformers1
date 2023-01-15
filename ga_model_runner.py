@@ -13,12 +13,13 @@ class TransformerPool(object):
 
     def __init__(self, params, env, model_num):
         super().__init__()
-
+        print("Creating transformers")
         self.trainers = []
         for i in range(model_num * 2):
-            # transformer = build_transformer(env, params)
-            trainer = "abc"#RealtimeTrainer(transformer, env, params)
+            transformer = build_transformer(env, params)
+            trainer = RealtimeTrainer(transformer, env, params)
             self.trainers += [trainer]
+            print(f"Transformer created {i}")
 
     def acquire(self):
         return self.trainers.pop()
