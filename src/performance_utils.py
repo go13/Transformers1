@@ -1,6 +1,7 @@
 import time
 from functools import wraps
 
+
 def timeit(message_string: str = 'Time taken for {} : {:.6f} s'):
     def decorator(method):
         @wraps(method)
@@ -11,12 +12,14 @@ def timeit(message_string: str = 'Time taken for {} : {:.6f} s'):
             time_taken = end_time - start_time
             print('{} {} : {:.6f} s'.format(message_string, method.__name__, time_taken))
             return result
+
         return timed
+
     return decorator
 
 # @timeit("Time taken for method")
 # def my_method(a, b, c = 3):
 #     Method code here
-    # pass
+# pass
 #
 # print(my_method('a', 'b', c = 3))

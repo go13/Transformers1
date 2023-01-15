@@ -78,7 +78,7 @@ class ModelRunnner(object):
         self.start_time = time.time()
 
 
-    @timeit
+    @timeit("ModelRunnner.step")
     def step(self, iteration_num, gpu_num, params):
 
         # sentimental_transformer = build_sentimental_transformer(env, params)
@@ -153,6 +153,7 @@ class GpuRunnner(object):
 
         self.runners = [ModelRunnner(self.gpu_num, i, self.params) for i in range(self.models_per_gpu)]
 
+    @timeit("GpuRunnner.step")
     def step(self, iteration_num):
         for r in self.runners:
             r.step(iteration_num, self.gpu_num, self.params)
