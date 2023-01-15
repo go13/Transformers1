@@ -120,6 +120,10 @@ class XY(object):
             p2=self.p2
         )
 
+    @staticmethod
+    def create(self, name, xy_data_size: int):
+        data = gen_rnd_chars(xy_data_size)
+        return XY(name, data)
 
 class GA(object):
 
@@ -128,9 +132,11 @@ class GA(object):
             evaluator: TargetStringEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
-            verbose=True
+            xy_factory=XY,
+            verbose=True,
     ):
         self.iteration = 0
+        self.xy_factory = xy_factory
         self.verbose = verbose
         self.population_size = population_size
         self.evaluator = evaluator
@@ -140,12 +146,11 @@ class GA(object):
         self.population = self.generate(population_size, self.xy_data_size)
         self.new_size = int(new_percentage * self.population_size)
 
-    @staticmethod
-    def generate(population_size, xy_data_size):
+    def generate(self, population_size, xy_data_size):
         pp = []
         for i in range(population_size):
             data = gen_rnd_chars(xy_data_size)
-            xy = XY(i, data)
+            xy = self.xy_factory(i, data)
             pp.append(xy)
         return pp
 
