@@ -1,3 +1,7 @@
+import time
+import random
+
+from envs import build_env
 from ga.ga import GA, TargetStringEvaluator, XY
 from base_model_runners import AbstractModelRunnner
 from src.performance_utils import timeit
@@ -7,7 +11,7 @@ from t2.transformer import build_transformer
 
 class GAModelRunnner(AbstractModelRunnner):
 
-    def __init__(self, gpu_num, model_num, params):
+    def __init__(self, gpu_num, model_num, params, env):
         self.gpu_num = gpu_num
         self.model_num = model_num
         self.params = params
@@ -105,7 +109,7 @@ class GAModelRunnner(AbstractModelRunnner):
             df = 1
             self.training_set.add((a.data, b.data, c.data, df))
 
-        for (a, b, c, df) in random.sample(self.training_set, min(params.batch_size * 1, len(self.training_set))):
+        for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
             self.crossover_trainer.learn_accumulate(a, b, c, df)
 
         # sentimental_trainer.learn_accumulate()

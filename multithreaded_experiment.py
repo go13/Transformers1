@@ -59,8 +59,8 @@ src.utils.CUDA = not params.cpu
 env = build_env(params)
 
 
-def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params):
-    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, GAModelRunnner.create)
+def run_gpu(number_of_iterations, gpu_num, models_per_gpu, params, env):
+    gpu_runner = GpuRunnner(gpu_num, models_per_gpu, params, env, GAModelRunnner.create)
 
     gpu_runner.iterate(number_of_iterations)
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     number_of_iterations = 100
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
-        p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params))
+        p = mp.Process(target=run_gpu, args=(number_of_iterations, gpu_num, models_per_gpu, params, env))
 
         processes += [p]
 

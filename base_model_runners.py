@@ -1,3 +1,5 @@
+import time
+
 class AbstractModelRunnner(object):
 
     def __init__(self, gpu_num, models_per_gpu, params):
@@ -14,12 +16,12 @@ class AbstractModelRunnner(object):
 
 
 class GpuRunnner(object):
-    def __init__(self, gpu_num, models_per_gpu, params, model_runner_factory):
+    def __init__(self, gpu_num, models_per_gpu, params, env, model_runner_factory):
         self.gpu_num = gpu_num
         self.models_per_gpu = models_per_gpu
         self.params = params
         params.my_device = 'cuda:' + str(gpu_num)
-        self.runners = [model_runner_factory(gpu_num=self.gpu_num, model_num=i, params=self.params) for i in range(self.models_per_gpu)]
+        self.runners = [model_runner_factory(gpu_num=self.gpu_num, model_num=i, params=self.params, env=env) for i in range(self.models_per_gpu)]
 
     def step(self, iteration_num):
         for r in self.runners:
