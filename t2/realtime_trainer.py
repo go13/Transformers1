@@ -60,3 +60,6 @@ class RealtimeTrainer(AbstractTrainer):
             lst2 += [x2]
 
         return self.act(lst1, lst2)[0]
+
+    def get_transformer(self):
+        return self.modules['transformer']

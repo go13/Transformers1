@@ -44,11 +44,17 @@ class NeuralXY(XY):
 
         return NeuralXY(name, new_data, self.env, self.params, self.transformer_pool)
 
-    def destroy(self):
-        self.transformer_pool.release(self.trainer)
-
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
+        self.get_transformer_weights()
+
+    @timeit("get_transformer_weights")
+    def get_transformer_weights(self):
+        model_weights = self.trainer.get_transformer().state_dict()
+        model_weights = {k: v.cpu() for k, v in model_weights.items()}
+
+    def destroy(self):
+        self.transformer_pool.release(self.trainer)
 
     @staticmethod
     def create(name, xy_data_size: int, env, params, transformer_pool):
