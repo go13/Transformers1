@@ -1,5 +1,5 @@
 import time
-from ga.ga import sort_pp
+from ga.ga import sort_pp, get_multi_random_xy
 
 class AbstractModelRunnner(object):
 
@@ -48,7 +48,7 @@ class GpuRunnner(object):
         best_xy = self.get_best_xy()
 
         best_xy = sort_pp(best_xy)
-        best_xy = best_xy[:self.distribute_best]
+        best_xy = get_multi_random_xy(best_xy, self.distribute_best)
 
         self.replace_worst_xy(best_xy)
 

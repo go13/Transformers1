@@ -17,7 +17,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.params = params
 
         current_date_time = time.strftime("%H-%M-%S", time.localtime())
-        self.log_file = open(f"evolution-{gpu_num}-{current_date_time}.txt", "w")
+        self.log_file = open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
 
         self.crossover_transformer = build_transformer(env, params)
         self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
