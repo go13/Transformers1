@@ -24,7 +24,7 @@ class GpuRunnner(object):
         params.my_device = 'cuda:' + str(gpu_num)
         self.runners = [model_runner_factory(self.gpu_num, i, params, env) for i in range(self.models_per_gpu)]
         self.exchange_best_every_n_iterations = 20
-        self.select_best_of_group = 10
+        self.select_best_of_group = 5
         self.distribute_best = 5
 
     def step(self, iteration_num):

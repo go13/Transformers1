@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     processes = []
     number_of_gpus = 1
-    models_per_gpu = 100
+    models_per_gpu = 10
     number_of_iterations = 101
     # seems like multi gpu may not work???
     for gpu_num in range(number_of_gpus):
