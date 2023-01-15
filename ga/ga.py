@@ -22,7 +22,7 @@ def replace_char_at_index(org_str, index, replacement):
     return new_str
 
 
-def mutate(d: str, mutation_p: float, xy_data_size: int) -> str:
+def mutate_string(d: str, mutation_p: float, xy_data_size: int) -> str:
     for i in range(0, xy_data_size):
         if random.random() < mutation_p:
             v = gen_rnd_chars(1)[0]
@@ -105,14 +105,12 @@ class XY(object):
     def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
-        cp = random.randint(0, xy_data_size - 1)
-
-        new_data = d1[0:cp] + d2[cp: xy_data_size]
+        new_data = crossover_string(d1, d2, xy_data_size)
 
         return XY(name, new_data, self.name, xy2.name)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
-        self.data = mutate(self.data, mutation_p, xy_data_size)
+        self.data = mutate_string(self.data, mutation_p, xy_data_size)
 
     def reuse(self, name: str, data: str, p1: str, p2: str) -> 'XY':
         self.data = data
