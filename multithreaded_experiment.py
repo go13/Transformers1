@@ -80,9 +80,9 @@ if __name__ == '__main__':
     params.models_per_gpu = 10
     params.number_of_iterations = 1000
 
-    params.exchange_best_every_n_iterations = 10
+    params.exchange_best_every_n_iterations = 1
     params.select_best_of_group = 5
-    params.distribute_best = 5
+    params.distribute_best = 10
 
     # seems like multi gpu may not work???
     for gpu_num in range(params.number_of_gpus):
