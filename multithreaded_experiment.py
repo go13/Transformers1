@@ -77,10 +77,10 @@ if __name__ == '__main__':
     processes = []
 
     params.number_of_gpus = 1
-    params.models_per_gpu = 4
+    params.models_per_gpu = 1
     params.number_of_iterations = 101
     params.log_ga_into_file = False
-    params.verbose = False
+    params.verbose = True
 
     params.use_random_exchange = False
 

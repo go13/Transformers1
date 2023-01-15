@@ -14,17 +14,17 @@ class NeuralXY(XY):
         self.env = env
         self.params = params
 
-        transformer = build_transformer(env, params)
-        self.trainer = RealtimeTrainer(transformer, env, params)
+        # transformer = build_transformer(env, params)
+        # self.trainer = RealtimeTrainer(transformer, env, params)
 
-    def crossover(self, xy2, name: str, xy_data_size: int, worst_to_be_reused) -> 'XY':
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         cp = random.randint(0, xy_data_size - 1)
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
-        return worst_to_be_reused.reuse(name, new_data, self.env, self.params)
+        return NeuralXY(name, new_data, self.env, self.params)
 
     def reuse(self, name: str, data: str, env, params):
         self.data = data
@@ -132,7 +132,7 @@ class GAModelRunnner(AbstractModelRunnner):
         for c in children:
             self.log(f"mutated,{iteration_num},{c.data}\n")
 
-        # ga.update_bottom(children)
+        ga.update_bottom(children)
 
         ga.evaluate()
         ga.sort_population()

@@ -97,14 +97,14 @@ class XY(object):
         self.p2 = p2
         self.f = None
 
-    def crossover(self, xy2: 'XY', name: str, xy_data_size: int, worst_to_be_reused) -> 'XY':
+    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         cp = random.randint(0, xy_data_size - 1)
 
         new_data = d1[0:cp] + d2[cp: xy_data_size]
 
-        return worst_to_be_reused.reuse(name, new_data, self.name, xy2.name)
+        return XY(name, new_data, self.name, xy2.name)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         self.data = mutate(self.data, mutation_p, xy_data_size)
@@ -151,6 +151,7 @@ class GA(object):
         self.xy_data_size = evaluator.get_xy_len()
         self.population = self.generate(population_size, self.xy_data_size)
         self.new_size = int(new_percentage * self.population_size)
+        self.transformer_pool = None
 
     def generate(self, population_size, xy_data_size):
         pp = []
@@ -214,17 +215,13 @@ class GA(object):
         return [rxy() for _ in range(new_size)], [rxy() for _ in range(new_size)]
 
     def generate_crossover(self, new_size):
-        to_process = []
-        worst_to_be_reused = self.get_worst_pp(new_size)
-        for worst_to_be_reused in worst_to_be_reused:
-            xy1 = get_random_xy(self.population)
-            xy2 = get_random_xy(self.population)
-            to_process += [(xy1, xy2, worst_to_be_reused)]
-
         new_families = []
         new_population = []
-        for xy1, xy2, worst_to_be_reused in to_process:
-            child = xy1.crossover(xy2, '', self.xy_data_size, worst_to_be_reused)
+        for i in range(new_size):
+            xy1 = get_random_xy(self.population)
+            xy2 = get_random_xy(self.population)
+
+            child = xy1.crossover(xy2, '', self.xy_data_size)
 
             family = (xy1, xy2, child)
 
