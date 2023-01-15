@@ -84,9 +84,9 @@ if __name__ == '__main__':
 
     params.use_random_exchange = False
 
-    params.exchange_best_every_n_iterations = 2
+    params.exchange_best_every_n_iterations = 1
     params.select_best_of_group = 5
-    params.distribute_best = 10
+    params.distribute_best = 5
 
     # seems like multi gpu may not work???
     for gpu_num in range(params.number_of_gpus):
