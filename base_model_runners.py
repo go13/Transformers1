@@ -48,8 +48,10 @@ class GpuRunnner(object):
         best_xy = self.get_best_xy()
 
         best_xy = sort_pp(best_xy)
-        #best_xy = get_multi_random_xy(best_xy, self.distribute_best)
-        best_xy = best_xy[:self.distribute_best]
+        if params.use_random_exchange:
+            best_xy = get_multi_random_xy(best_xy, self.distribute_best)
+        else:
+            best_xy = best_xy[:self.distribute_best]
 
         self.replace_worst_xy(best_xy)
 

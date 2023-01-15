@@ -80,7 +80,9 @@ if __name__ == '__main__':
     params.models_per_gpu = 10
     params.number_of_iterations = 1000
 
-    params.exchange_best_every_n_iterations = 1
+    params.use_random_exchange = False
+
+    params.exchange_best_every_n_iterations = 100
     params.select_best_of_group = 5
     params.distribute_best = 10
 
