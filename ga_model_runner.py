@@ -27,7 +27,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.training_set = set()
 
-        self.ga = GA(TargetStringEvaluator())
+        self.ga = GA(TargetStringEvaluator(), verbose=params.verbose)
         self.ga.evaluate()
         self.ga.sort_population()
 
@@ -83,8 +83,7 @@ class GAModelRunnner(AbstractModelRunnner):
         tm = time.time()
         ga = self.ga
 
-        if self.params.verbose or ga.iteration % 100 == 0:
-            ga.print_population()
+        ga.print_population()
 
         if ga.iteration > 200 and False:  # random.random() > 0.5 and
             children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)

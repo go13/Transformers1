@@ -128,8 +128,10 @@ class GA(object):
             evaluator: TargetStringEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
+            verbose=True
     ):
         self.iteration = 0
+        self.verbose = verbose
         self.population_size = population_size
         self.evaluator = evaluator
         self.mutation_p = mutation_p
@@ -240,7 +242,7 @@ class GA(object):
         return self.population[-n:]
 
     def print_population(self):
-        if params.verbose:
+        if self.verbose or self.iteration % 100 == 0:
             print(f"iteration={self.iteration}")
             for xy in self.population:
                 print(f"xy: {xy}")
