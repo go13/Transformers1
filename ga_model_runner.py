@@ -46,7 +46,7 @@ class NeuralXY(XY):
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
-        self.get_transformer_weights()
+        #self.get_transformer_weights()
 
     @timeit("get_transformer_weights")
     def get_transformer_weights(self):
