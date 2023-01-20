@@ -121,10 +121,6 @@ class TransformerEncoder(AbstractTransformer, ABC):
 
         return tensor
 
-    def to_device(self, device):
-        self.embeddings.cuda(device)
-        self.position_embeddings.cuda(device)
-
 
 class TransformerDecoder(AbstractTransformer, ABC):
 

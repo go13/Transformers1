@@ -37,6 +37,9 @@ argv = [
     '--share_inout_emb', 'false'
 ]
 
+#TODO: put xy1 and 2 into encoder and decoder should iterate and generate a child
+# as there is a triangular mask that is used in the decoder
+
 parser = get_parser()
 
 params = parser.parse_args(argv)

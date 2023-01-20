@@ -61,6 +61,4 @@ def build_transformer(env, params):
         for v in modules.values():
             v.cuda(config.my_device)
 
-    # modules['transformer'].to_device(config.my_device)
-
     return modules
