@@ -4,7 +4,6 @@ from collections import OrderedDict
 import numpy as np
 import torch
 
-from .transformer_config import TransformerConfig
 from src.optim import get_optimizer
 from src.utils import to_cuda, words2string, ids2words
 from .transformer_model import TransformerModel
@@ -12,30 +11,11 @@ from .transformer_model import TransformerModel
 logger = getLogger()
 
 
-def build_transformer(env, params):
-    modules = {}
-
-    config = TransformerConfig(params, env.id2word, False)
-
-    modules['transformer'] = TransformerModel(config)
-
-    for k, v in modules.items():
-        logger.info(f"Number of parameters ({k}): {sum([p.numel() for p in v.parameters() if p.requires_grad])}")
-
-    assert not params.cpu
-
-    if not params.cpu:
-        for v in modules.values():
-            v.cuda(config.my_device)
-
-    return modules
-
-
 class TransformerTrainer(object):
 
     def __init__(self, env, params):
         # modules / params
-        self.modules = build_transformer(env, params)
+        self.modules = TransformerModel.build_transformer(env, params)
         self.params = params
         self.env = env
         self.my_device = params.my_device

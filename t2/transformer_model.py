@@ -43,3 +43,21 @@ class TransformerModel(DispatchingModule, ABC):
 
         return tensor
 
+    @staticmethod
+    def build_transformer(env, params):
+        modules = {}
+
+        config = TransformerConfig(params, env.id2word, False)
+
+        modules['transformer'] = TransformerModel(config)
+
+        for k, v in modules.items():
+            logger.info(f"Number of parameters ({k}): {sum([p.numel() for p in v.parameters() if p.requires_grad])}")
+
+        assert not params.cpu
+
+        if not params.cpu:
+            for v in modules.values():
+                v.cuda(config.my_device)
+
+        return modules
