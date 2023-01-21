@@ -1,7 +1,6 @@
 from abc import ABC
 
 from logging import getLogger
-import torch
 import torch.nn.functional as F
 
 from .transformer_config import TransformerConfig
@@ -12,7 +11,7 @@ from .abstract_transformer import TransformerEncoder, TransformerDecoder
 logger = getLogger()
 
 
-class Transformer(DispatchingModule, ABC):
+class TransformerModel(DispatchingModule, ABC):
 
     def __init__(self, config: TransformerConfig):
         super().__init__()
@@ -44,21 +43,3 @@ class Transformer(DispatchingModule, ABC):
 
         return tensor
 
-
-def build_transformer(env, params):
-    modules = {}
-
-    config = TransformerConfig(params, env.id2word, False)
-
-    modules['transformer'] = Transformer(config)
-
-    for k, v in modules.items():
-        logger.info(f"Number of parameters ({k}): {sum([p.numel() for p in v.parameters() if p.requires_grad])}")
-
-    assert not params.cpu
-
-    if not params.cpu:
-        for v in modules.values():
-            v.cuda(config.my_device)
-
-    return modules
