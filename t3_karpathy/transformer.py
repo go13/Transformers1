@@ -62,7 +62,6 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
 
@@ -137,6 +136,30 @@ class KarpathyTransformerModel(nn.Module):
         return idx
 
 
+class Sentimental(nn.Module):
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+
+        inp_size = config.n_embd * config.block_size
+        hidden_size = config.hidden_size * config.block_size
+        dropout = config.dropout
+        out_size = 1
+
+        self.net = nn.Sequential(
+            # nn.Linear(inp_size, out_size),
+            nn.Linear(inp_size, hidden_size),
+            #nn.ReLU(),
+            nn.Sigmoid(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, out_size),
+            # nn.Dropout(dropout),
+            # FeedForward(hidden_size, hidden_size, out_size, dropout),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 class SentimentalTransformerModel(nn.Module):
 
     def __init__(self, config: TransformerConfig):
@@ -146,11 +169,8 @@ class SentimentalTransformerModel(nn.Module):
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        out_inp_size = config.n_embd * config.block_size
-        out_hidden_size = out_inp_size * 4
-        # self.out = FeedForward(out_inp_size, out_hidden_size, 1, self.config.dropout)
-        self.out = nn.Linear(out_inp_size, 1)
+        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.out = Sentimental(config)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
@@ -171,5 +191,5 @@ class SentimentalTransformerModel(nn.Module):
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
         x = self.out(x)
-        output = x.reshape(b)
-        return output
+        x = x.reshape(b)
+        return x
