@@ -8,14 +8,17 @@ from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.transformer_runner import KarpathyRunner
 
 
-def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_dvice):
+def neural_crossover_and_mutate(xy1, xy2, my_device):
+    xy1_weights = xy1.get_transformer_weights()
+    xy2_weights = xy2.get_transformer_weights()
+
     new_weights = []
     for k1, _ in xy1_weights.items():
         shape = xy1_weights[k1].shape
         v1 = xy1_weights[k1].reshape(-1)
         v2 = xy2_weights[k1].reshape(-1)
 
-        rnd1 = torch.rand(v1.shape, device=my_dvice)
+        rnd1 = torch.rand(v1.shape, device=my_device)
 
         update = (v1 * rnd1 + (1 - rnd1) * v2)
 
@@ -24,15 +27,15 @@ def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_dvice):
         mutation_rate = 0.01
         num_of_ones = int(mutation_rate * ln)
         num_of_zeros = ln - num_of_ones
-        ones_to_mutate = torch.ones(num_of_ones, device=my_dvice)
-        zeros_to_mutate = torch.zeros(num_of_zeros, device=my_dvice)
+        ones_to_mutate = torch.ones(num_of_ones, device=my_device)
+        zeros_to_mutate = torch.zeros(num_of_zeros, device=my_device)
         to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
 
-        idxs = torch.randperm(ln, device=my_dvice)
+        idxs = torch.randperm(ln, device=my_device)
 
         to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
 
-        rnd2 = torch.rand(ln, device=my_dvice)
+        rnd2 = torch.rand(ln, device=my_device)
 
         update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
 
@@ -69,12 +72,9 @@ class NeuralXY(XY):
         self.transformer_pool = transformer_pool
 
     def crossover_transformer(self, xy1, xy2):
-        xy1_weights = xy1.get_transformer_weights()
-        xy2_weights = xy2.get_transformer_weights()
-
         trainer = self.transformer_pool.acquire()
 
-        new_weights = neural_crossover_and_mutate(xy1_weights, xy2_weights, my_dvice=self.params.my_device)
+        new_weights = neural_crossover_and_mutate(xy1, xy2, my_device=self.params.my_device)
 
         trainer.set_weights(new_weights)
 
