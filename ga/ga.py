@@ -71,7 +71,7 @@ def get_random_xy(population):
 
 class AbstractEvaluator(ABC):
     @abstractmethod
-    def func(self, data: str) -> float:
+    def func(self, data: 'XY') -> float:
         pass
 
     @abstractmethod
@@ -200,6 +200,18 @@ class GA(object):
     def evaluate(self):
         for xy in self.population:
             xy.f = self.evaluator.func(xy)
+
+        self.inverse_f()
+
+    def inverse_f(self):
+        if self.inverse_fitness:
+            mx = self.population[0].f
+            for xy in self.population:
+                if xy.f > mx:
+                    mx = xy.f
+
+            for xy in self.population:
+                xy.f = mx - xy.f
 
     def mutate(self, pp, mp=None):
         # if not self.mutation_enabled:

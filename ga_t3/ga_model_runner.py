@@ -155,7 +155,13 @@ class GAModelRunnner(AbstractModelRunnner):
         def neural_xy_factory(i, xy_data_size):
             return NeuralXY.createNeuralXY(i, xy_data_size, params, self.transformer_pool)
 
-        self.ga = GA(TargetStringTransformerEvaluator(self.config), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
+        self.ga = GA(
+            TargetStringTransformerEvaluator(self.config),
+            population_size=self.population_size,
+            verbose=params.verbose,
+            xy_factory=neural_xy_factory,
+            inverse_fitness=True
+        )
         self.ga.evaluate()
         self.ga.sort_population()
 
