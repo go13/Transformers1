@@ -168,7 +168,7 @@ class SentimentalTransformerModel(nn.Module):
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
 
-        mse_loss = torch.nn.MSELoss(reduction='sum')
+        mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
         return output, loss
