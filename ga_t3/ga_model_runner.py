@@ -1,14 +1,11 @@
 import time
 import random
 import torch
-from collections import OrderedDict
-import torch.nn as nn
-from envs import build_env
 from ga.ga import GA, TargetStringEvaluator, XY, gen_rnd_chars, crossover_string
-from base_model_runners import AbstractModelRunnner
+from ga_t3.base_model_runner import AbstractModelRunnner
 from src.performance_utils import timeit
-from t2.realtime_trainer import RealtimeTrainer
-from t2.transformer import build_transformer
+from t3_karpathy.transformer_config import TransformerConfig
+from t3_karpathy.transformer_runner import KarpathyRunner
 
 
 def neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights):
@@ -42,18 +39,18 @@ def neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights):
         update = update.reshape(shape)
         new_state.append((k1, update))
 
-    trainer.get_transformer().load_state_dict(OrderedDict(new_state))
+    trainer.set_weights(new_state)
 
 
 class TransformerPool(object):
 
-    def __init__(self, params, env, model_num):
+    def __init__(self, params, model_num):
         super().__init__()
         print("Creating transformers")
+        config = TransformerConfig(params.my_device)
         self.trainers = []
         for i in range(model_num * 2):
-            transformer = build_transformer(env, params)
-            trainer = RealtimeTrainer(transformer, env, params)
+            trainer = KarpathyRunner(config)
             self.trainers += [trainer]
             print(f"Transformer created {i}")
 
@@ -63,10 +60,10 @@ class TransformerPool(object):
     def release(self, trainer):
         self.trainers += [trainer]
 
+
 class NeuralXY(XY):
-    def __init__(self, name: str, data: str, env, params, trainer, transformer_pool):
+    def __init__(self, name: str, data: str, params, trainer, transformer_pool):
         super().__init__(name, data)
-        self.env = env
         self.params = params
         self.trainer = trainer
         self.transformer_pool = transformer_pool
@@ -87,7 +84,7 @@ class NeuralXY(XY):
         trainer = self.crossover_transformer(xy1, xy2)
         new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
 
-        return NeuralXY(name, new_data, self.env, self.params, trainer, self.transformer_pool)
+        return NeuralXY(name, new_data, self.params, trainer, self.transformer_pool)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         super().mutate(mutation_p, xy_data_size)
@@ -95,7 +92,7 @@ class NeuralXY(XY):
 
     # @timeit("get_transformer_weights")
     def get_transformer_weights(self):
-        model_weights = self.trainer.get_transformer().state_dict()
+        model_weights = self.trainer.get_weights()
         # model_weights = {k: v.cpu() for k, v in model_weights.items()}
         return model_weights
 
@@ -103,32 +100,32 @@ class NeuralXY(XY):
         self.transformer_pool.release(self.trainer)
 
     @staticmethod
-    def create(name, xy_data_size: int, env, params, transformer_pool):
+    def create(name, xy_data_size: int, params, transformer_pool):
         data = gen_rnd_chars(xy_data_size)
         trainer = transformer_pool.acquire()
-        return NeuralXY(name, data, env, params, trainer, transformer_pool)
+        return NeuralXY(name, data, params, trainer, transformer_pool)
 
 
 class GAModelRunnner(AbstractModelRunnner):
 
-    def __init__(self, gpu_num, model_num, params, env):
+    def __init__(self, gpu_num, model_num, params):
         self.gpu_num = gpu_num
         self.model_num = model_num
         self.params = params
 
         self.population_size = params.ga_population_size
-        self.transformer_pool = TransformerPool(params, env, self.population_size)
+        self.transformer_pool = TransformerPool(params, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
-        if self.params.use_neural_crossover:
-            self.crossover_transformer = build_transformer(env, params)
-            self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, env, params)
+        # if self.params.use_neural_crossover:
+        #     self.crossover_transformer = build_transformer(params)
+        #     self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, params)
 
         self.training_set = set()
 
         def neural_xy_factory(i, xy_data_size):
-            return NeuralXY.create(i, xy_data_size, env, params, self.transformer_pool)
+            return NeuralXY.create(i, xy_data_size, params, self.transformer_pool)
 
         self.ga = GA(TargetStringEvaluator(), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()
@@ -172,7 +169,6 @@ class GAModelRunnner(AbstractModelRunnner):
     def xy_to_data(self, p1):
         pp1 = [p.data for p in p1]
         return pp1
-
 
     @timeit("GAModelRunnner")
     def step(self, iteration_num, gpu_num):
