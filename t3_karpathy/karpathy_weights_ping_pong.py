@@ -7,8 +7,6 @@ from t3_karpathy.transformer_config import TransformerConfig
 
 from t3_karpathy.transformer_runner import KarpathyRunner
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 torch.manual_seed(1337)
 
 config = TransformerConfig()
