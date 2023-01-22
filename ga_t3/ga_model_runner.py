@@ -6,7 +6,7 @@ from ga_t3.base_model_runner import AbstractModelRunnner
 from src.performance_utils import timeit
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.transformer_runner import KarpathyRunner
+from t3_karpathy.transformer_runner import KarpathyRunner, SentimentalRunner
 
 
 def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device):
@@ -157,7 +157,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.log_file = self.setup_logger(gpu_num, params)
 
         if self.params.use_neural_estimator:
-            self.neural_estimator_trainer = KarpathyRunner(self.config)
+            self.neural_estimator_trainer = SentimentalRunner(self.config)
 
         self.training_set = set()
 
