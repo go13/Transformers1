@@ -300,14 +300,14 @@ class GAModelRunnner(AbstractModelRunnner):
 
     def learn_neural_estimator(self):
         def get_rnd_n_from_tensor(x, n):
-            indices = torch.randperm(len(x))[:n]
+            indices = torch.randperm(n)
             return x[indices]
         if self.params.use_neural_estimator:
 
             x = torch.tensor([ self.gptnano_dataloader.encode(xy.data) for xy in self.ga.population], device=self.config.my_device, dtype=torch.long)
             y = torch.tensor([xy.f for xy in self.ga.population], device=self.config.my_device)
 
-            x = get_rnd_n_from_tensor(x, self.params.batch_size)
-            y = get_rnd_n_from_tensor(y, self.params.batch_size)
+            x = get_rnd_n_from_tensor(x, self.config.batch_size)
+            y = get_rnd_n_from_tensor(y, self.config.batch_size)
 
             self.neural_estimator_trainer.learn(x, y)

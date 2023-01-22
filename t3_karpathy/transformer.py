@@ -141,7 +141,7 @@ class Sentimental(nn.Module):
         super().__init__()
 
         inp_size = config.n_embd * config.block_size
-        hidden_size = config.hidden_size # * config.block_size
+        hidden_size = inp_size #config.hidden_size # * config.block_size
         dropout = config.dropout
         out_size = 1
 
