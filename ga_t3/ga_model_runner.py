@@ -90,7 +90,6 @@ class NeuralXY(XY):
         super().mutate(mutation_p, xy_data_size)
         # model_weights = self.get_transformer_weights()
 
-    # @timeit("get_transformer_weights")
     def get_transformer_weights(self):
         model_weights = self.trainer.get_weights()
         # model_weights = {k: v.cpu() for k, v in model_weights.items()}
@@ -100,7 +99,7 @@ class NeuralXY(XY):
         self.transformer_pool.release(self.trainer)
 
     @staticmethod
-    def create(name, xy_data_size: int, params, transformer_pool):
+    def createNeuralXY(name, xy_data_size: int, params, transformer_pool):
         data = gen_rnd_chars(xy_data_size)
         trainer = transformer_pool.acquire()
         return NeuralXY(name, data, params, trainer, transformer_pool)
@@ -125,7 +124,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.training_set = set()
 
         def neural_xy_factory(i, xy_data_size):
-            return NeuralXY.create(i, xy_data_size, params, self.transformer_pool)
+            return NeuralXY.createNeuralXY(i, xy_data_size, params, self.transformer_pool)
 
         self.ga = GA(TargetStringEvaluator(), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()

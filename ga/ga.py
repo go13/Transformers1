@@ -131,7 +131,7 @@ class XY(object):
         )
 
     @staticmethod
-    def create(name, xy_data_size: int):
+    def createXY(name, xy_data_size: int):
         data = gen_rnd_chars(xy_data_size)
         return XY(name, data)
 
@@ -142,7 +142,7 @@ class GA(object):
             evaluator: TargetStringEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
-            xy_factory=XY.create,
+            xy_factory=XY.createXY,
             verbose=True,
     ):
         self.iteration = 0
