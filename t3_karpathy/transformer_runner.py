@@ -72,11 +72,11 @@ class SentimentalRunner(object):
 
     def learn(self, x, y):
         self.model.train()
-        logits, loss = self.model.forward_vs_target(x, y)
+        output, loss = self.model.forward_vs_target(x, y)
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
-        return logits, loss
+        return output, loss
 
     @torch.no_grad()
     def evaluate(self, get_batch, eval_iters):

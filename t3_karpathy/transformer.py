@@ -50,13 +50,13 @@ class MultiHeadAttention(nn.Module):
 class FeedForward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, inp_size, hidden_size, out_size, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(config.n_embd, 4 * config.n_embd),
+            nn.Linear(inp_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(4 * config.n_embd, config.n_embd),
-            nn.Dropout(config.dropout),
+            nn.Linear(hidden_size, out_size),
+            nn.Dropout(dropout),
         )
 
     def forward(self, x):
@@ -69,8 +69,13 @@ class Block(nn.Module):
     def __init__(self, config: TransformerConfig):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
+
+        inp_size = config.n_embd
+        hidden_size = 4 * config.n_embd
+        dropout = config.dropout
+
         self.sa = MultiHeadAttention(config)
-        self.ffwd = FeedForward(config)
+        self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
         self.ln1 = nn.LayerNorm(config.n_embd)
         self.ln2 = nn.LayerNorm(config.n_embd)
 
@@ -142,7 +147,7 @@ class SentimentalTransformerModel(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        self.lm_head = nn.Linear(config.n_embd * config.block_size, 1)
+        self.ffwd = FeedForward(config.n_embd * config.block_size, config.n_embd * config.block_size, 1, self.config.dropout)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
@@ -162,6 +167,6 @@ class SentimentalTransformerModel(nn.Module):
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
-        x = self.lm_head(x)
+        x = self.ffwd(x)
         output = x.reshape(b)
         return output
