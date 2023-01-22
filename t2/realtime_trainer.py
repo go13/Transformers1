@@ -1,7 +1,4 @@
-import os
-import sys
 from logging import getLogger
-import torch
 import numpy as np
 from t2.abstract_trainer import AbstractTrainer
 from t2.utils import join_sai
