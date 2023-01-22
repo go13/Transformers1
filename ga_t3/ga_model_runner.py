@@ -157,7 +157,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.log_file = self.setup_logger(gpu_num, params)
 
         if self.params.use_neural_estimator:
-            self.estimator_trainer = KarpathyRunner(self.config)
+            self.neural_estimator_trainer = KarpathyRunner(self.config)
 
         self.training_set = set()
 
@@ -253,7 +253,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.learn_crossover(families)
 
-        # sentimental_trainer.learn_accumulate()
+        self.learn_neural_estimator()
 
         # model_weights = self.crossover_transformer['transformer'].state_dict()
         # model_weights = {k: v.cpu() for k, v in model_weights.items()}
@@ -296,3 +296,9 @@ class GAModelRunnner(AbstractModelRunnner):
             return open(f"./logs/evolution-{gpu_num}-{current_date_time}.txt", "w")
         else:
             return None
+
+    def learn_neural_estimator(self):
+        if self.params.use_neural_estimator:
+            x = None
+            y = 0
+            self.neural_estimator_trainer.learn(x, y)

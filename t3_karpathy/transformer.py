@@ -84,13 +84,13 @@ class KarpathyTransformerModel(nn.Module):
 
     def __init__(self, config: TransformerConfig):
         super().__init__()
+        self.config = config
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
-        self.config = config
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)
@@ -131,3 +131,37 @@ class KarpathyTransformerModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
 
+
+class SentimentalTransformerModel(nn.Module):
+
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+        # each token directly reads off the logits for the next token from a lookup table
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
+        self.lm_head = nn.Linear(config.n_embd * config.block_size, 1)
+
+    def forward_vs_target(self, idx, targets):
+        output = self.forward(idx)
+
+        mse_loss = torch.nn.MSELoss(reduction='sum')
+        loss = mse_loss(output, targets)
+
+        return output, loss
+
+    def forward(self, idx):
+        b, t = idx.shape
+
+        # idx and targets are both (B,T) tensor of integers
+        tok_emb = self.token_embedding_table(idx)  # (B,T,C)
+        pos_emb = self.position_embedding_table(torch.arange(t, device=self.config.my_device))  # (T,C)
+        x = tok_emb + pos_emb  # (B,T,C)
+        x = self.blocks(x)  # (B,T,C)
+        x = self.ln_f(x)  # (B,T,C)
+        x = x.reshape(b, -1)
+        x = self.lm_head(x)
+        output = x.reshape(b)
+        return output
