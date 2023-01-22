@@ -15,14 +15,14 @@ from t2.realtime_trainer import RealtimeTrainer
 from src.utils import initialize_exp, str_diff
 from t2.utils import get_parser, join_sai, to_sai_str
 
-from t2.transformer import build_transformer
+from t2.transformer_model import TransformerModel
 
 argv = [
     '--exp_name', 'first_train',
     '--tasks', 'add_dataset',
     '--n_enc_layers', '16',
     '--n_heads', '4',
-    '--sinusoidal_embeddings', 'true',
+    '--sinusoidal_embeddings', 'false',
     '--num_workers', '4',
     '--eval_onl', '0',
     '--save_periodic', '0',
@@ -60,12 +60,17 @@ src.utils.CUDA = not params.cpu
 
 env = build_env(params)
 
-modules = build_transformer(env, params)
+modules = TransformerModel.build_transformer(env, params)
 trainer = RealtimeTrainer(modules, env, params)
 
 A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
 a = join_sai(A)
-print(trainer.single_act_detailed(a, a))
+print(trainer.act_single(a, a))
+
+for i in range(32):
+    print(trainer.learn_accumulate(a, a, a, 1))
+
+
 
 # A = 'KAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE'
 # a = join_sai(A)

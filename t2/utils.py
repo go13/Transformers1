@@ -34,8 +34,8 @@ def get_parser():
                         help="Use AMP wrapper for float16 / distributed / gradient accumulation. Level of optimization. -1 to disable.")
 
     # model parameters
-    parser.add_argument("--emb_dim", type=int, default=256,
-                        help="Embedding layer size")
+    parser.add_argument("--emb_dim", type=int, default=256, help="Embedding layer size")
+    parser.add_argument("--emb_token_size", type=int, default=65, help="Embedding Dict size")
     parser.add_argument("--bottleneck_dim", type=int, default=8, help="Encoded vector size")
 
     parser.add_argument("--nn_output", type=int, default=0,

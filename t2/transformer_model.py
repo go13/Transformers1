@@ -22,11 +22,11 @@ class TransformerModel(DispatchingModule, ABC):
         self.te1 = TransformerEncoder(config, False)
         self.td1 = TransformerDecoder(config, True, False)
 
-        self.output = self.td1
+        self.output = self.te1
 
     def learn(self, tensor, pred_mask, y):
         scores = self.generate(tensor, pred_mask)
-        loss = F.cross_entropy(scores, y, reduction='mean')
+        loss = F.cross_entropy(scores, y.reshape(-1), reduction='mean')
 
         return scores, loss
 
@@ -39,9 +39,9 @@ class TransformerModel(DispatchingModule, ABC):
 
     def fwd(self, x1, len1, x2, len2):
         encoded1 = self.te1.fwd(x=x1, lengths=len1, causal=False)
-        tensor = self.td1.fwd(x=x2, lengths=len2, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
+        # tensor = self.td1.fwd(x=x2, lengths=len2, causal=True, src_enc=encoded1.transpose(0, 1), src_len=len1)
 
-        return tensor
+        return encoded1
 
     @staticmethod
     def build_transformer(env, params):

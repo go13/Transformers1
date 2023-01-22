@@ -6,8 +6,8 @@ import torch
 
 from src.optim import get_optimizer
 from src.utils import to_cuda, words2string, ids2words
-from .transformer_model import TransformerModel
-
+from t2.encoder_transformer import EncoderTransformer
+from torch.nn import functional as F
 logger = getLogger()
 
 
@@ -15,7 +15,7 @@ class TransformerTrainer(object):
 
     def __init__(self, env, params):
         # modules / params
-        self.modules = TransformerModel.build_transformer(env, params)
+        self.modules = EncoderTransformer.build_transformer(env, params)
         self.params = params
         self.env = env
         self.my_device = params.my_device
@@ -59,6 +59,8 @@ class TransformerTrainer(object):
         )
         self.last_time = time.time()
 
+        self.training_queue = []
+        self.learning_queue = []
         if params.env_base_seed < 0:
             params.env_base_seed = np.random.randint(1_000_000_000)
 
@@ -93,8 +95,6 @@ class TransformerTrainer(object):
             logger.warning("NaN detected")
             # exit()
 
-        params = self.params
-
         # optimizers
         names = self.optimizers.keys()
         optimizers = [self.optimizers[k] for k in names]
@@ -107,79 +107,20 @@ class TransformerTrainer(object):
         for optimizer in optimizers:
             optimizer.step()
 
-    def iter(self):
-        """
-        End of iteration.
-        """
-        self.n_iter += 1
-        self.n_total_iter += 1
-        self.print_stats()
 
-    def print_stats(self):
-        """
-        Print statistics about the training.
-        """
-        if self.n_total_iter % 20 != 0:
-            return
-
-        s_iter = "%7i - " % self.n_total_iter
-        s_stat = ' || '.join([
-            '{}: {:7.4f}'.format(k.upper().replace('_', '-'), np.mean(v))
-            for k, v in self.stats.items()
-            if type(v) is list and len(v) > 0
-        ])
-        for k in self.stats.keys():
-            if type(self.stats[k]) is list:
-                del self.stats[k][:]
-
-        # learning rates
-        s_lr = ""
-        for k, v in self.optimizers.items():
-            s_lr = s_lr + (" - %s LR: " % k) + " / ".join("{:.4e}".format(group['lr']) for group in v.param_groups)
-
-        # processing speed
-        new_time = time.time()
-        diff = new_time - self.last_time
-        s_speed = "{:7.2f} equations/s - {:8.2f} words/s - ".format(
-            self.stats['processed_e'] * 1.0 / diff,
-            self.stats['processed_w'] * 1.0 / diff
-        )
-        self.stats['processed_e'] = 0
-        self.stats['processed_w'] = 0
-        self.last_time = new_time
-
-        # log speed + stats + learning rate
-        logger.info(s_iter + s_speed + s_stat + s_lr)
-
-    def seq2tensor(self, seq):
-        return torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id])
-
-    def learn(self, x1, len1, x2, len2, y, y_len):
+    def learn(self, x1, len1, y):
 
         transformer = self.modules['transformer']
         transformer.train()
 
-        x1, len1, x2, len2, y = to_cuda(self.my_device, x1, len1, x2, len2, y)
-
-        pred_mask = self.get_pred_mask(len1)
-
-        y = y[1:].masked_select(pred_mask[:-1])
-        # y = x1[1:].masked_select(pred_mask[:-1])
-        assert len(y) == (len1 - 1).sum().item()
-
-        # pred_mask = pred_mask.transpose(0, 1)
-
-        # x1 = x1.transpose(0, 1)
-
-        tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
-        output, loss = transformer('learn', tensor=tensor, pred_mask=pred_mask, y=y)
-
-        # logger.info(f"learning: loss={loss}")
+        loss = self.fwd2(transformer, x1, len1, y)
 
         self.optimize(loss)
 
-        bs = self.params.batch_size
-        result = self.log_in_out(bs, output, x1, len1, x2)
+        if False:
+            result = self.log_in_out(bs, output, x1, len1, x2)
+
+        # print(f"learning: device={self.my_device}, loss={loss.item()}")
 
         logger.info(f"learning: device={self.my_device}, loss={loss.item()}")
 
@@ -187,64 +128,203 @@ class TransformerTrainer(object):
 
         return loss
 
-    def act(self, x1, len1, x2, len2):
+    @torch.no_grad()
+    def estimate_loss(self):
+        from torch.nn import functional as F
+
         transformer = self.modules['transformer']
         transformer.eval()
+        out = {}
+        for split in ['train', 'val']:
+            losses = torch.zeros(eval_iters)
+            for k in range(eval_iters):
+                x, y, len1 = get_batch(split)
 
-        x1, len1, x2, len2 = to_cuda(self.my_device, x1, len1, x2, len2)
+                loss = self.fwd2(transformer, x, len1, y)
+                # print(decode(transformer_trainer.generate(xb, max_new_tokens=1000)[0].tolist()))
 
-        pred_mask = self.get_pred_mask(len1)
+                losses[k] = loss.item()
+            out[split] = losses.mean()
+        transformer.train()
+        return out
 
-        tensor = transformer('fwd', x1=x1, len1=len1, x2=x2, len2=len2)
-        output = transformer('generate', tensor=tensor, pred_mask=pred_mask)
+    def fwd2(self, transformer, x1, len1, targets):
+        # targets = to_cuda(self.my_device, targets)
+        x1, len1 = to_cuda(self.my_device, x1, len1)
+        logits = transformer('fwd', x1=x1, len1=len1)
+        # logits = output.max(1)[1].reshape(-1, bs)
 
-        bs = self.params.batch_size
-        result = self.log_in_out(bs, output, x1, len1, x2)
+        logits = logits.view(-1, self.params.emb_token_size)
+        targets = targets.reshape(-1)
+        loss = F.cross_entropy(logits, targets)
+        return loss
 
-        # logger.info(f"acting: av-score={av_score}")
+    def generate(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            # crop idx to the last block_size tokens
+            idx_cond = idx[:, -block_size:]
+            # get the predictions
+            logits = self.fwd(idx_cond)
+            # focus only on the last time step
+            logits = logits[-1, :] # becomes (B, C)
+            # apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1) # (B, C)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1).unsqueeze(0)
+            # append sampled index to the running sequence
+            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+        return idx
 
-        return result
+    def fwd(self, x1):
+        len1 = torch.full((1, ), x1.shape[0], device='cuda')
+
+        x1, len1 = to_cuda(self.my_device, x1, len1)
+
+        logits = transformer('fwd', x1=x1, len1=len1)
+        logits = logits.view(-1, self.params.emb_token_size)
+        return logits
 
     def get_pred_mask(self, len1):
         alen = torch.arange(len1.max(), dtype=torch.long, device=self.my_device)
-        pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+        # pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+        pred_mask = alen[:, None] <= len1[None] - 1  # let's predict all n words as it is a generator only
         return pred_mask
-
-    def log_in_out(self, bs, output, x1, len1, x2, verbose=False):
-        o = output.max(1)[1].reshape(-1, bs)
-        result = []
-        for i in range(bs):
-            pred = o[0:len1[i] - 2, i].tolist()
-            pred = words2string(ids2words(self.env.id2word, pred))
-
-            if verbose:
-                src1 = x1[1:len1[i] - 1, i].tolist()
-                src1 = words2string(ids2words(self.env.id2word, src1))
-                src2 = x2[1:len1[i] - 1, i].tolist()
-                src2 = words2string(ids2words(self.env.id2word, src2))
-
-                logger.info(f"src1={src1}, src2={src2}, pred={pred}")
-
-            result += [pred]
-        return result
-
-    def collate_fn(self, elements):
-        """
-        Collate samples into a batch.
-        """
-        x1, x2, y = zip(*elements)
-
-        nb_ops = [sum(int(word in self.env.WORD_DICTIONARY) for word in seq) for seq in x1]
-
-        x1 = [self.seq2tensor(seq) for seq in x1]
-        x2 = [self.seq2tensor(seq) for seq in x2]
-        y = [self.seq2tensor(seq) for seq in y]
-
-        x1, x1_len = self.env.batch_sequences(x1)
-        x2, x2_len = self.env.batch_sequences(x2)
-        y, y_len = self.env.batch_sequences(y)
-
-        return (x1, x1_len), (x2, x2_len), (y, y_len), torch.LongTensor(nb_ops)
 
     def get_transformer(self):
         return self.modules['transformer']
+
+
+import torch
+
+import src
+from envs import build_env
+from t2.utils import get_parser
+
+argv = [
+    '--exp_name', 'first_train',
+    '--tasks', 'add_dataset',
+    '--n_enc_layers', '4',
+    '--n_heads', '4',
+    '--sinusoidal_embeddings', 'false',
+    '--emb_token_size', '65',
+    '--num_workers', '4',
+    '--batch_size', '16',
+    '--dropout', '0.1',
+    '--attention_dropout', '0.1',
+    '--emb_dim', '64',
+    '--bottleneck_dim', '64',
+    '--nn_output', '1',
+    '--input_seq_length', '32',
+    '--share_inout_emb', 'false',
+    '--eval_onl', '0',
+    '--save_periodic', '0',
+    '--epoch_size', '10000',
+]
+
+#TODO: put xy1 and 2 into encoder and decoder should iterate and generate a child
+# as there is a triangular mask that is used in the decoder
+
+parser = get_parser()
+
+params = parser.parse_args(argv)
+params.my_device = 'cuda'
+
+src.utils.CUDA = not params.cpu
+
+env = build_env(params)
+
+print(params)
+
+bs = params.batch_size
+
+# CPU / CUDA
+if params.cpu:
+    assert not params.multi_gpu
+else:
+    assert torch.cuda.is_available()
+
+transformer_trainer = TransformerTrainer(env, params)
+transformer = transformer_trainer.get_transformer()
+
+
+# hyperparameters
+batch_size = 16 # how many independent sequences will we process in parallel?
+block_size = 32 # what is the maximum context length for predictions?
+max_iters = 5
+eval_interval = 100
+learning_rate = 1e-3
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+eval_iters = 200
+n_embd = 64
+n_head = 4
+n_layer = 4
+dropout = 0.0
+# ------------
+
+# torch.manual_seed(1337)
+
+# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+with open('F://workspace//ai//Transformers1//input.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+
+# here are all the unique characters that occur in this text
+chars = sorted(list(set(text)))
+vocab_size = len(chars)
+print(f"vocab_size={vocab_size}")
+# create a mapping from characters to integers
+stoi = { ch:i for i,ch in enumerate(chars) }
+itos = { i:ch for i,ch in enumerate(chars) }
+encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
+decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+
+# Train and test splits
+data = torch.tensor(encode(text), dtype=torch.long)
+n = int(0.9*len(data)) # first 90% will be train, rest val
+train_data = data[:n]
+val_data = data[n:]
+
+
+def get_batch(split):
+    # generate a small batch of data of inputs x and targets y
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    xl=[data[i:i + block_size] for i in ix]
+    x = torch.stack(xl)
+    yl=[data[i + 1:i + block_size + 1] for i in ix]
+    y = torch.stack(yl)
+
+    # print(decode(xl[0].tolist()))
+    # print(decode(yl[0].tolist()))
+
+    len1=torch.full((batch_size, ), block_size, device='cuda')
+    x, y = x.to(device), y.to(device)
+    return x, y, len1
+
+def get_constant_batch(split, offset):
+    # generate a small batch of data of inputs x and targets y
+    data = train_data if split == 'train' else val_data
+    xl=[data[offset:offset + block_size] for i in range(batch_size)]
+    x = torch.stack(xl)
+    yl=[data[offset + 1:offset + block_size + 1] for i in range(batch_size)]
+    y = torch.stack(yl)
+
+    len1=torch.full((batch_size, ), block_size, device='cuda')
+    x, y = x.to(device), y.to(device)
+    return x, y, len1
+
+
+for iter in range(max_iters):
+
+    # every once in a while evaluate the loss on train and val sets
+    if iter % eval_interval == 0 or iter == max_iters - 1:
+        losses = transformer_trainer.estimate_loss()
+        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
+    x, y, len1 = get_batch('train')
+
+    loss = transformer_trainer.learn(x1=x, len1=len1, y=y)
+
+# generate from the model
+context = torch.zeros((1, 1), dtype=torch.long, device=device)
+print(decode(transformer_trainer.generate(context, max_new_tokens=2000)[0].tolist()))

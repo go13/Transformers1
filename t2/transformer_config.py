@@ -12,16 +12,17 @@ class TransformerConfig:
         self.sinusoidal_embeddings = params.sinusoidal_embeddings
 
         # dictionary
-        self.n_words = params.n_words
+        self.n_words = params.emb_token_size
         self.eos_index = params.eos_index
         self.pad_index = params.pad_index
         self.id2word = id2word
-        assert len(self.id2word) == self.n_words
+        # assert len(self.id2word) == self.n_words
 
         # model parameters
         self.dim = params.emb_dim  # 512 by default
         self.hidden_dim = self.dim * 4  # 2048 by default
         self.bottleneck_dim = params.bottleneck_dim
+        self.emb_token_size = params.emb_token_size
         self.n_heads = params.n_heads  # 8 by default
         self.n_enc_layers = params.n_enc_layers
         self.n_dec_layers = params.n_dec_layers

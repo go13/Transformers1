@@ -49,11 +49,14 @@ class TransformerEncoder(AbstractTransformer, ABC):
             self.ffns.append(TransformerFFN(self.config.dim, self.config.hidden_dim, self.config.dim, dropout=self.config.dropout))
             self.layer_norm2.append(nn.LayerNorm(self.config.dim, eps=1e-12))
 
+        self.layer_norm_out = nn.LayerNorm(self.config.dim)
+        self.layer_lin_out = nn.Linear(self.config.dim, self.config.n_words)
+
     def fwd(self, x, lengths, causal, positions=None, cache=None, previous_state=None):
         # check inputs
         # bs, slen = x.size()
-        slen, bs = x.size()
-        x = x.transpose(0, 1)  # batch size as dimension 0
+        bs, slen = x.size()
+        # x = x.transpose(0, 1)  # batch size as dimension 0
         if self.is_raw_input:
             slen = self.config.input_seq_length
             x = x.reshape(self.config.batch_size, slen, self.config.dim)
@@ -117,7 +120,11 @@ class TransformerEncoder(AbstractTransformer, ABC):
             cache['slen'] += tensor.size(1)
 
         # move back sequence length to dimension 0
-        tensor = tensor.transpose(0, 1)
+        # tensor = tensor.transpose(0, 1) ## TODO: is it necessary?
+
+        tensor = self.layer_norm_out(tensor)
+
+        tensor = self.layer_lin_out(tensor)
 
         return tensor
 
