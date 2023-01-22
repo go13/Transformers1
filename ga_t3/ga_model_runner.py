@@ -1,7 +1,7 @@
 import time
 import random
 import torch
-from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator
+from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator
 from ga_t3.base_model_runner import AbstractModelRunnner
 from src.performance_utils import timeit
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
@@ -152,9 +152,8 @@ class GAModelRunnner(AbstractModelRunnner):
 
         self.log_file = self.setup_logger(gpu_num, params)
 
-        # if self.params.use_neural_crossover:
-        #     self.crossover_transformer = build_transformer(params)
-        #     self.crossover_trainer = RealtimeTrainer(self.crossover_transformer, params)
+        if self.params.use_neural_estimator:
+            self.estimator_trainer = KarpathyRunner(self.config)
 
         self.training_set = set()
 
@@ -162,7 +161,8 @@ class GAModelRunnner(AbstractModelRunnner):
             return NeuralXY.createNeuralXY(i, xy_data_size, params, self.transformer_pool)
 
         self.ga = GA(
-            TargetStringTransformerEvaluator(self.config),
+            # TargetStringTransformerEvaluator(self.config),
+            TargetStringEvaluator(),
             population_size=self.population_size,
             verbose=params.verbose,
             xy_factory=neural_xy_factory,
