@@ -9,10 +9,7 @@ from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.transformer_runner import KarpathyRunner
 
 
-def neural_crossover_and_mutate(xy1, xy2, my_device):
-    xy1_weights = xy1.get_transformer_weights()
-    xy2_weights = xy2.get_transformer_weights()
-
+def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device):
     new_weights = []
     for k1, _ in xy1_weights.items():
         shape = xy1_weights[k1].shape
@@ -22,23 +19,23 @@ def neural_crossover_and_mutate(xy1, xy2, my_device):
         rnd1 = torch.rand(v1.shape, device=my_device)
 
         update = (v1 * rnd1 + (1 - rnd1) * v2)
-
-        # mutate
-        ln = len(v1)
-        mutation_rate = 0.01
-        num_of_ones = int(mutation_rate * ln)
-        num_of_zeros = ln - num_of_ones
-        ones_to_mutate = torch.ones(num_of_ones, device=my_device)
-        zeros_to_mutate = torch.zeros(num_of_zeros, device=my_device)
-        to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
-
-        idxs = torch.randperm(ln, device=my_device)
-
-        to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
-
-        rnd2 = torch.rand(ln, device=my_device)
-
-        update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
+        #
+        # # mutate
+        # ln = len(v1)
+        # mutation_rate = 0.01
+        # num_of_ones = int(mutation_rate * ln)
+        # num_of_zeros = ln - num_of_ones
+        # ones_to_mutate = torch.ones(num_of_ones, device=my_device)
+        # zeros_to_mutate = torch.zeros(num_of_zeros, device=my_device)
+        # to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
+        #
+        # idxs = torch.randperm(ln, device=my_device)
+        #
+        # to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
+        #
+        # rnd2 = torch.rand(ln, device=my_device)
+        #
+        # update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
 
         update = update.reshape(shape)
         new_weights.append((k1, update))
@@ -74,7 +71,10 @@ class NeuralXY(XY):
     def crossover_transformer(self, xy1, xy2):
         trainer = self.transformer_pool.acquire()
 
-        new_weights = neural_crossover_and_mutate(xy1, xy2, my_device=self.params.my_device)
+        xy1_weights = xy1.get_transformer_weights()
+        xy2_weights = xy2.get_transformer_weights()
+
+        new_weights = neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device=self.params.my_device)
 
         trainer.set_weights(new_weights)
 
@@ -124,7 +124,7 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
         # diff = random.random() * 0.001
         # diff += (self.xy_data_size_const - str_diff(self.target, data))
 
-        for i in range(10):
+        for i in range(5):
             x, y = self.dataloader.get_train_batch()
             logits, loss = xy.trainer.learn(x, y)
 
