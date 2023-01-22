@@ -17,7 +17,7 @@ class TransformerConfig:
         self.eval_interval = 100
         self.learning_rate = 1e-3
         self.eval_iters = 200
-        self.vocab_size =  65 #params.vocab_size
+        self.vocab_size = 65 #params.vocab_size
         self.eval_interval = 100
 
         self.learning_rate = 1e-3

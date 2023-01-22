@@ -35,4 +35,4 @@ for i in range(n_iter):
     w = runner1.get_weights()
     runner2.set_weights(w)
 t = time.time() - t
-print(f"Time to run {n_iter} iterations: {t}, {n_iter / (t)} it/s")
+print(f"Time to run {n_iter} iterations: {t}, {n_iter / t} it/s")
