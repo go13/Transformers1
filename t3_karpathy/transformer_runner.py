@@ -1,4 +1,5 @@
 import torch
+from collections import OrderedDict
 
 from t3_karpathy.transformer import KarpathyTransformerModel
 from t3_karpathy.transformer_config import TransformerConfig
@@ -49,4 +50,10 @@ class KarpathyRunner(object):
             logits, loss = self.learn(x, y)
 
             self.current_iteration += 1
+
+    def get_weights(self):
+        return self.model.state_dict()
+
+    def set_weights(self, new_state_dict):
+        self.model.load_state_dict(OrderedDict(new_state_dict))
 

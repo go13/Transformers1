@@ -1,3 +1,5 @@
+import time
+
 import torch
 
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
@@ -10,10 +12,27 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(1337)
 
 config = TransformerConfig()
-runner = KarpathyRunner(config)
 dataloader = GptNanoDataloader(config)
 
-runner.train_iterate(50, dataloader.get_train_batch, dataloader.get_val_batch)
-
+print("Training runner 1")
+runner1 = KarpathyRunner(config)
+runner1.train_iterate(50, dataloader.get_train_batch, dataloader.get_val_batch)
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(dataloader.decode(runner.generate(context, max_new_tokens=2000)[0].tolist()))
+print(dataloader.decode(runner1.generate(context, max_new_tokens=2000)[0].tolist()))
+
+
+print("Training runner 2")
+runner2 = KarpathyRunner(config)
+runner2.train_iterate(50, dataloader.get_train_batch, dataloader.get_val_batch)
+context = torch.zeros((1, 1), dtype=torch.long, device=device)
+print(dataloader.decode(runner2.generate(context, max_new_tokens=2000)[0].tolist()))
+
+# Now let's play ping pong
+
+n_iter = 1000
+t = time.time()
+for i in range(n_iter):
+    w = runner1.get_weights()
+    runner2.set_weights(w)
+t = t - time.time()
+print(f"Time to run {n_iter} iterations: {t}, {n_iter / (t)} it/s")
