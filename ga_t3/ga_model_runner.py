@@ -150,6 +150,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.params = params
 
         self.config = TransformerConfig(params.my_device)
+        self.config.block_size = 45
 
         self.population_size = params.ga_population_size
         self.transformer_pool = TransformerPool(self.config, self.population_size)
@@ -158,6 +159,7 @@ class GAModelRunnner(AbstractModelRunnner):
 
         if self.params.use_neural_estimator:
             self.gptnano_dataloader = GptNanoDataloader(self.config)
+            self.config.vocab_size = self.gptnano_dataloader.vocab_size
             self.neural_estimator_trainer = SentimentalRunner(self.config)
 
         self.training_set = set()
