@@ -29,10 +29,10 @@ class KarpathyRunner(object):
         return logits, loss
 
     @torch.no_grad()
-    def evaluate(self, get_batch):
+    def evaluate(self, get_batch, eval_iters):
         self.model.eval()
-        losses = torch.zeros(self.config.eval_iters)
-        for k in range(self.config.eval_iters):
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
             x, y = get_batch()
             logits, loss = self.model.forward_vs_target(x, y)
             losses[k] = loss.item()
@@ -41,8 +41,8 @@ class KarpathyRunner(object):
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
         for _ in range(n_iter):
             if self.current_iteration % self.config.eval_interval == 0:
-                train_losses = self.evaluate(get_train_batch)
-                val_losses = self.evaluate(get_val_batch)
+                train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
+                val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
                 print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}")
 
             x, y = get_train_batch()

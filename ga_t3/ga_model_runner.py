@@ -8,14 +8,14 @@ from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.transformer_runner import KarpathyRunner
 
 
-def neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights):
-    new_state = []
+def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_dvice):
+    new_weights = []
     for k1, _ in xy1_weights.items():
         shape = xy1_weights[k1].shape
         v1 = xy1_weights[k1].reshape(-1)
         v2 = xy2_weights[k1].reshape(-1)
 
-        rnd1 = torch.rand(v1.shape, device="cuda")
+        rnd1 = torch.rand(v1.shape, device=my_dvice)
 
         update = (v1 * rnd1 + (1 - rnd1) * v2)
 
@@ -24,22 +24,22 @@ def neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights):
         mutation_rate = 0.01
         num_of_ones = int(mutation_rate * ln)
         num_of_zeros = ln - num_of_ones
-        ones_to_mutate = torch.ones(num_of_ones, device="cuda")
-        zeros_to_mutate = torch.zeros(num_of_zeros, device="cuda")
+        ones_to_mutate = torch.ones(num_of_ones, device=my_dvice)
+        zeros_to_mutate = torch.zeros(num_of_zeros, device=my_dvice)
         to_mutate = torch.cat((ones_to_mutate, zeros_to_mutate), -1).reshape(-1)
 
-        idxs = torch.randperm(ln, device="cuda")
+        idxs = torch.randperm(ln, device=my_dvice)
 
         to_mutate_one_zeros = torch.gather(to_mutate, 0, idxs)
 
-        rnd2 = torch.rand(ln, device="cuda")
+        rnd2 = torch.rand(ln, device=my_dvice)
 
         update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
 
         update = update.reshape(shape)
-        new_state.append((k1, update))
+        new_weights.append((k1, update))
 
-    trainer.set_weights(new_state)
+    return new_weights
 
 
 class TransformerPool(object):
@@ -74,7 +74,9 @@ class NeuralXY(XY):
 
         trainer = self.transformer_pool.acquire()
 
-        neural_crossover_and_mutate(trainer, xy1_weights, xy2_weights)
+        new_weights = neural_crossover_and_mutate(xy1_weights, xy2_weights, my_dvice=self.params.my_device)
+
+        trainer.set_weights(new_weights)
 
         return trainer
 
