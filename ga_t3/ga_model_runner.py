@@ -312,4 +312,5 @@ class GAModelRunnner(AbstractModelRunnner):
             x = get_rnd_n_from_tensor(x, self.config.batch_size)
             y = get_rnd_n_from_tensor(y, self.config.batch_size)
 
-            self.neural_estimator_trainer.learn(x, y)
+            output, loss = self.neural_estimator_trainer.learn(x, y)
+            print(f"Neural estimator loss = {loss}")
