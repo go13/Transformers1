@@ -1,7 +1,7 @@
 class TransformerConfig:
 
-    def __init__(self):#params
-        self.my_device = 'cuda'
+    def __init__(self, my_device='cuda'):
+        self.my_device = my_device
 
         # karpathy parameters
         self.batch_size = 16 # how many independent sequences will we process in parallel?
