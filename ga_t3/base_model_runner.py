@@ -15,6 +15,7 @@ class AbstractModelRunnner(object):
 
 class GpuRunnner(object):
     def __init__(self, gpu_num, params, model_runner_factory):
+        self.inverse_fitness = False
         self.gpu_num = gpu_num
         self.models_per_gpu = params.models_per_gpu
         self.params = params
@@ -61,5 +62,5 @@ class GpuRunnner(object):
     def get_best_xy(self):
         top_xy = []
         for r in self.runners:
-            top_xy.extend(r.get_best_xy(self.select_best_of_group ))
+            top_xy.extend(r.get_best_xy(self.select_best_of_group))
         return top_xy

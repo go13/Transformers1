@@ -135,17 +135,19 @@ class XY(object):
         data = gen_rnd_chars(xy_data_size)
         return XY(name, data)
 
-class GA(object):
 
+class GA(object):
     def __init__(
             self,
-            evaluator: TargetStringEvaluator,
+            evaluator: AbstractEvaluator,
             population_size=20,
             mutation_p=mutation_p_const,
             xy_factory=XY.createXY,
             verbose=True,
+            inverse_fitness=False
     ):
         self.iteration = 0
+        self.inverse_fitness = inverse_fitness
         self.xy_factory = xy_factory
         self.verbose = verbose
         self.population_size = population_size

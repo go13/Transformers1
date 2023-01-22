@@ -1,9 +1,10 @@
 import time
 import random
 import torch
-from ga.ga import GA, TargetStringEvaluator, XY, gen_rnd_chars, crossover_string
+from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator
 from ga_t3.base_model_runner import AbstractModelRunnner
 from src.performance_utils import timeit
+from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.transformer_runner import KarpathyRunner
 
@@ -47,10 +48,9 @@ def neural_crossover_and_mutate(xy1, xy2, my_device):
 
 class TransformerPool(object):
 
-    def __init__(self, params, model_num):
+    def __init__(self, config, model_num):
         super().__init__()
         print("Creating transformers")
-        config = TransformerConfig(params.my_device)
         self.trainers = []
         for i in range(model_num * 2):
             trainer = KarpathyRunner(config)
@@ -107,6 +107,31 @@ class NeuralXY(XY):
         return NeuralXY(name, data, params, trainer, transformer_pool)
 
 
+class TargetStringTransformerEvaluator(AbstractEvaluator):
+    def __init__(self, config):
+        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
+        self.xy_data_size_const = len(self.target)
+        self.dataloader = GptNanoDataloader(config)
+
+    def func(self, xy) -> float:
+        # data = xy.data
+        # diff = random.random() * 0.001
+        # diff += (self.xy_data_size_const - str_diff(self.target, data))
+
+        for i in range(100):
+            x, y = self.dataloader.get_train_batch()
+            logits, loss = xy.trainer.learn(x, y)
+
+        # xy.trainer.train_iterate(100, self.dataloader.get_train_batch())
+
+        val = xy.trainer.evaluate(self.dataloader.get_train_batch, 100).item()
+
+        return val
+
+    def get_xy_len(self) -> int:
+        return self.xy_data_size_const
+
+
 class GAModelRunnner(AbstractModelRunnner):
 
     def __init__(self, gpu_num, model_num, params):
@@ -114,8 +139,10 @@ class GAModelRunnner(AbstractModelRunnner):
         self.model_num = model_num
         self.params = params
 
+        self.config = TransformerConfig(params.my_device)
+
         self.population_size = params.ga_population_size
-        self.transformer_pool = TransformerPool(params, self.population_size)
+        self.transformer_pool = TransformerPool(self.config, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
@@ -128,7 +155,7 @@ class GAModelRunnner(AbstractModelRunnner):
         def neural_xy_factory(i, xy_data_size):
             return NeuralXY.createNeuralXY(i, xy_data_size, params, self.transformer_pool)
 
-        self.ga = GA(TargetStringEvaluator(), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
+        self.ga = GA(TargetStringTransformerEvaluator(self.config), population_size=self.population_size, verbose=params.verbose, xy_factory=neural_xy_factory)
         self.ga.evaluate()
         self.ga.sort_population()
 
