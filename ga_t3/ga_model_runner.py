@@ -71,12 +71,13 @@ class NeuralXY(XY):
     def crossover_transformer(self, xy1, xy2):
         trainer = self.transformer_pool.acquire()
 
-        xy1_weights = xy1.get_transformer_weights()
-        xy2_weights = xy2.get_transformer_weights()
+        if self.params.use_neural_crossover:
+            xy1_weights = xy1.get_transformer_weights()
+            xy2_weights = xy2.get_transformer_weights()
 
-        new_weights = neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device=self.params.my_device)
+            new_weights = neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device=self.params.my_device)
 
-        trainer.set_weights(new_weights)
+            trainer.set_weights(new_weights)
 
         return trainer
 
