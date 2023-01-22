@@ -109,8 +109,8 @@ class NeuralXY(XY):
 
     def __str__(self):
         return "f={f}, d={data}".format(
-            f=1/self.f,
-            data="",
+            f=self.f,
+            data=self.data,
         )
 
 
