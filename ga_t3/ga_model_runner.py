@@ -106,6 +106,12 @@ class NeuralXY(XY):
         trainer = transformer_pool.acquire()
         return NeuralXY(name, data, params, trainer, transformer_pool)
 
+    def __str__(self):
+        return "f={f}, d={data}".format(
+            f=1/self.f,
+            data="",
+        )
+
 
 class TargetStringTransformerEvaluator(AbstractEvaluator):
     def __init__(self, config):
@@ -118,13 +124,13 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
         # diff = random.random() * 0.001
         # diff += (self.xy_data_size_const - str_diff(self.target, data))
 
-        for i in range(100):
+        for i in range(10):
             x, y = self.dataloader.get_train_batch()
             logits, loss = xy.trainer.learn(x, y)
 
         # xy.trainer.train_iterate(100, self.dataloader.get_train_batch())
 
-        val = xy.trainer.evaluate(self.dataloader.get_train_batch, 100).item()
+        val = xy.trainer.evaluate(self.dataloader.get_train_batch, 20).item()
 
         return val
 

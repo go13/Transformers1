@@ -205,13 +205,16 @@ class GA(object):
 
     def inverse_f(self):
         if self.inverse_fitness:
-            mx = self.population[0].f
             for xy in self.population:
-                if xy.f > mx:
-                    mx = xy.f
+                xy.f = 1 / xy.f
 
-            for xy in self.population:
-                xy.f = mx - xy.f
+            # mx = self.population[0].f
+            # for xy in self.population:
+            #     if xy.f > mx:
+            #         mx = xy.f
+
+            # for xy in self.population:
+            #     xy.f = mx - xy.f
 
     def mutate(self, pp, mp=None):
         # if not self.mutation_enabled:

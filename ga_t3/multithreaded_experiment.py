@@ -53,7 +53,7 @@ if __name__ == '__main__':
     params.verbose = True
 
     params.ga_use_random_exchange = False
-    params.ga_population_size = 20
+    params.ga_population_size = 10
 
     params.use_neural_crossover = False
     params.neural_crossover_iteration_threshold = 200
