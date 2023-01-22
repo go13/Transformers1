@@ -138,6 +138,9 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
     def get_xy_len(self) -> int:
         return self.xy_data_size_const
 
+    def is_inverse_fitness(self):
+        return True
+
 
 class GAModelRunnner(AbstractModelRunnner):
 
@@ -166,8 +169,7 @@ class GAModelRunnner(AbstractModelRunnner):
             TargetStringEvaluator(),
             population_size=self.population_size,
             verbose=params.verbose,
-            xy_factory=neural_xy_factory,
-            inverse_fitness=True
+            xy_factory=neural_xy_factory
         )
         self.ga.evaluate()
         self.ga.sort_population()

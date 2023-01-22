@@ -78,6 +78,9 @@ class AbstractEvaluator(ABC):
     def get_xy_len(self) -> int:
         pass
 
+    def is_inverse_fitness(self):
+        return False
+
 
 class TargetStringEvaluator(AbstractEvaluator):
     def __init__(self):
@@ -92,6 +95,9 @@ class TargetStringEvaluator(AbstractEvaluator):
 
     def get_xy_len(self) -> int:
         return self.xy_data_size_const
+
+    def is_inverse_fitness(self):
+        return False
 
 
 class XY(object):
@@ -147,7 +153,7 @@ class GA(object):
             inverse_fitness=False
     ):
         self.iteration = 0
-        self.inverse_fitness = inverse_fitness
+        self.inverse_fitness = evaluator.is_inverse_fitness()
         self.xy_factory = xy_factory
         self.verbose = verbose
         self.population_size = population_size
