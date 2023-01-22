@@ -141,19 +141,12 @@ class Sentimental(nn.Module):
         super().__init__()
 
         inp_size = config.n_embd * config.block_size
-        hidden_size = config.hidden_size * config.block_size
+        hidden_size = config.hidden_size # * config.block_size
         dropout = config.dropout
         out_size = 1
 
         self.net = nn.Sequential(
-            # nn.Linear(inp_size, out_size),
-            nn.Linear(inp_size, hidden_size),
-            #nn.ReLU(),
-            nn.Sigmoid(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_size, out_size),
-            # nn.Dropout(dropout),
-            # FeedForward(hidden_size, hidden_size, out_size, dropout),
+            FeedForward(inp_size, hidden_size, out_size, dropout),
         )
 
     def forward(self, x):
