@@ -1,6 +1,7 @@
 import time
 from ga.ga import sort_pp, get_multi_random_xy
 
+
 class AbstractModelRunnner(object):
 
     def __init__(self, gpu_num, models_per_gpu, params):
@@ -10,6 +11,7 @@ class AbstractModelRunnner(object):
 
     def step(self, iteration_num, gpu_num, params):
         raise NotImplementedError()
+
 
 class GpuRunnner(object):
     def __init__(self, gpu_num, params, env, model_runner_factory):

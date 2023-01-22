@@ -120,7 +120,7 @@ class KarpathyTransformerModel(nn.Module):
             # crop idx to the last block_size tokens
             idx_cond = idx[:, -self.config.block_size:]
             # get the predictions
-            logits, loss = self(idx_cond)
+            logits = self.forward(idx_cond)
             # focus only on the last time step
             logits = logits[:, -1, :]  # becomes (B, C)
             # apply softmax to get probabilities

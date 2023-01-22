@@ -61,7 +61,7 @@ def get_val_batch():
 config = TransformerConfig()
 runner = KarpathyRunner(config)
 
-runner.train_iterate(1000, get_train_batch, get_val_batch)
+runner.train_iterate(100, get_train_batch, get_val_batch)
 
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
 print(decode(runner.generate(context, max_new_tokens=2000)[0].tolist()))
