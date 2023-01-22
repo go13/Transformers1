@@ -157,6 +157,7 @@ class GAModelRunnner(AbstractModelRunnner):
         self.log_file = self.setup_logger(gpu_num, params)
 
         if self.params.use_neural_estimator:
+            self.gptnano_dataloader = GptNanoDataloader(self.config)
             self.neural_estimator_trainer = SentimentalRunner(self.config)
 
         self.training_set = set()
@@ -298,7 +299,15 @@ class GAModelRunnner(AbstractModelRunnner):
             return None
 
     def learn_neural_estimator(self):
+        def get_rnd_n_from_tensor(x, n):
+            indices = torch.randperm(len(x))[:n]
+            return x[indices]
         if self.params.use_neural_estimator:
-            x = None
-            y = 0
+
+            x = torch.tensor([ self.gptnano_dataloader.encode(xy.data) for xy in self.ga.population], device=self.config.my_device, dtype=torch.long)
+            y = torch.tensor([xy.f for xy in self.ga.population], device=self.config.my_device)
+
+            x = get_rnd_n_from_tensor(x, self.params.batch_size)
+            y = get_rnd_n_from_tensor(y, self.params.batch_size)
+
             self.neural_estimator_trainer.learn(x, y)

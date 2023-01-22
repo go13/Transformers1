@@ -147,7 +147,10 @@ class SentimentalTransformerModel(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        self.ffwd = FeedForward(config.n_embd * config.block_size, config.n_embd * config.block_size, 1, self.config.dropout)
+        out_inp_size = config.n_embd * config.block_size
+        out_hidden_size = out_inp_size * 4
+        # self.out = FeedForward(out_inp_size, out_hidden_size, 1, self.config.dropout)
+        self.out = nn.Linear(out_inp_size, 1)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
@@ -167,6 +170,6 @@ class SentimentalTransformerModel(nn.Module):
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
-        x = self.ffwd(x)
+        x = self.out(x)
         output = x.reshape(b)
         return output
