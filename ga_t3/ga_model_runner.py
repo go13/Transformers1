@@ -315,36 +315,7 @@ class GAModelRunner(AbstractModelRunnner):
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
         #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
 
-        mp = ga.mutation_p
-        generated_children = []
-
-        while True:
-            if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
-                children, families = ga.generate_crossover(ga.new_size * 10)
-                children = ga.mutate(children, mp)
-                data_list = [xy.data for xy in children]
-                estimations_list = self.accumulative_runner.predict_list(data_list)
-                estimated_children = list(zip(children, estimations_list))
-                sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
-                children = [x[0] for x in sorted_children]
-            else:
-                children, families = ga.crossover()
-                children = ga.mutate(children)
-
-            if self.params.ga_generate_only_unique_xy:
-                for c in children:
-                    if c not in self.accumulative_runner.data_dict:
-                        generated_children += [c]
-            else:
-                generated_children += children
-
-            if len(generated_children) < ga.new_size:
-                mp *= 2
-                print(f"Mutation probability increased to {mp}, generated unique {len(generated_children)} children")
-            else:
-                break
-
-        children = generated_children[0:ga.new_size]
+        children = self.generate_children(ga)
 
         # for a, b, c in families:
         #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
@@ -387,6 +358,37 @@ class GAModelRunner(AbstractModelRunnner):
         #
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
+
+    def generate_children(self, ga):
+        mp = ga.mutation_p
+        generated_children = []
+        while True:
+            if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
+                children, families = ga.generate_crossover(ga.new_size * 10)
+                children = ga.mutate(children, mp)
+                data_list = [xy.data for xy in children]
+                estimations_list = self.accumulative_runner.predict_list(data_list)
+                estimated_children = list(zip(children, estimations_list))
+                sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
+                children = [x[0] for x in sorted_children]
+            else:
+                children, families = ga.crossover()
+                children = ga.mutate(children)
+
+            if self.params.ga_generate_only_unique_xy:
+                for c in children:
+                    if c not in self.accumulative_runner.data_dict:
+                        generated_children += [c]
+            else:
+                generated_children += children
+
+            if len(generated_children) < ga.new_size:
+                mp *= 2
+                print(f"Mutation probability increased to {mp}, generated unique {len(generated_children)} children")
+            else:
+                break
+        children = generated_children[0:ga.new_size]
+        return children
 
     def learn_crossover(self, families):
         if self.params.use_neural_crossover:
