@@ -242,10 +242,10 @@ class GAModelRunner(AbstractModelRunnner):
 
         self.log_file = self.setup_logger(gpu_num, params)
 
-        if self.params.use_neural_estimator:
-            self.config.vocab_size = self.config.token_codec.vocab_size
-            self.neural_estimator_trainer = SentimentalRunner(self.config)
-            self.accumulative_runner = AccumulativeTrainer(self.config, self.neural_estimator_trainer)
+        # if self.params.use_neural_estimator:
+        self.config.vocab_size = self.config.token_codec.vocab_size
+        self.neural_estimator_trainer = SentimentalRunner(self.config)
+        self.accumulative_runner = AccumulativeTrainer(self.config, self.neural_estimator_trainer)
 
         self.training_set = set()
 
