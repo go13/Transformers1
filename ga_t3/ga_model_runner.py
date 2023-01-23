@@ -149,17 +149,21 @@ class AccumulativeTrainer(object):
         self.data_x = []
         self.data_y = []
         self.data_dict = dict()
+        self.loss_hist = []
 
     def get_histogram(self):
-        hist = dict()
+        f_hist = dict()
         for x, y in zip(self.data_x, self.data_y):
             num = self.data_dict[x]
             f = int(y)
-            if f in hist:
-                hist[f] += num
+            if f in f_hist:
+                f_hist[f] += num
             else:
-                hist[f] = num
-        return hist
+                f_hist[f] = num
+        return f_hist
+
+    def get_loss_hist(self):
+        return self.loss_hist
 
     def get_batch(self):
         ix = torch.randint(len(self.data_x), (self.config.batch_size,))
@@ -183,6 +187,7 @@ class AccumulativeTrainer(object):
     def predict(self, x):
         encoded_x = self.config.token_codec.encode(x)
         x = torch.tensor(encoded_x).to(self.config.my_device)
+        x = x.reshape(1, x.shape[0])
         out = self.runner.forward(x)
         return out
 
@@ -191,8 +196,11 @@ class AccumulativeTrainer(object):
         for i in range(n):
             x, y = self.get_batch()
             o, loss = self.runner.learn(x, y)
-            losses += loss.item()
+            l = loss.item()
+            self.loss_hist += [l]
+            losses += l
         av_loss = losses / n
+
         return av_loss, len(self.data_x)
 
 
