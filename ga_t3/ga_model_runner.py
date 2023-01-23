@@ -307,31 +307,31 @@ class GAModelRunner(AbstractModelRunnner):
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
         #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
 
-        if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
-            mp = ga.mutation_p
-
-            generated_children = []
-            while len(generated_children) < ga.new_size:
+        mp = ga.mutation_p
+        generated_children = []
+        while len(generated_children) < ga.new_size:
+            if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
                 children, families = ga.generate_crossover(ga.new_size * 10)
                 children = ga.mutate(children, mp)
                 data_list = [xy.data for xy in children]
                 estimations_list = self.accumulative_runner.predict_list(data_list)
                 estimated_children = list(zip(children, estimations_list))
-                # print(estimated_children)
                 sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
-                selected_children = sorted_children[0:ga.new_size]
-                children = [x[0] for x in selected_children]
+                children = [x[0] for x in sorted_children]
+            else:
+                children, families = ga.crossover()
+                children = ga.mutate(children)
 
+            if self.params.ga_generate_only_unique_xy:
                 for c in children:
                     if c not in self.accumulative_runner.data_dict:
                         generated_children += [c]
+            else:
+                generated_children += children
 
-                mp *= 2
+            mp *= 2
 
-            children = generated_children
-        else:
-            children, families = ga.crossover()
-            children = ga.mutate(children)
+        children = generated_children[0:ga.new_size]
 
         # for a, b, c in families:
         #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
@@ -355,7 +355,10 @@ class GAModelRunner(AbstractModelRunnner):
 
         # self.learn_crossover(families)
 
-        self.learn_neural_estimator()
+        if self.params.ga_generate_only_unique_xy:
+            self.learn_neural_estimator(children)
+        else:
+            self.learn_neural_estimator(ga.population)
 
         ga.iteration += 1
 
@@ -396,9 +399,9 @@ class GAModelRunner(AbstractModelRunnner):
         else:
             return None
 
-    def learn_neural_estimator(self):
+    def learn_neural_estimator(self, new_samples):
         if self.params.use_neural_estimator:
-            for xy in self.ga.population:
+            for xy in new_samples:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
 
             av_loss, total_samples = self.accumulative_runner.train(n=self.params.ga_neural_estimator_iterations_per_ga_iteration)
