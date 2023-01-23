@@ -45,9 +45,10 @@ def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device):
 
 class TransformerPool(object):
 
-    def __init__(self, config, model_num):
+    def __init__(self, config, params, model_num):
         super().__init__()
         print("Creating transformers")
+        self.params = params
         self.trainers = []
         for i in range(model_num * 2):
             trainer = KarpathyRunner(config)
@@ -55,23 +56,31 @@ class TransformerPool(object):
             print(f"Transformer created {i}")
 
     def acquire(self):
-        return self.trainers.pop()
+        if self.params.use_neural_crossover:
+            return self.trainers.pop()
+        else:
+            return None
 
     def release(self, trainer):
-        self.trainers += [trainer]
+        if self.params.use_neural_crossover:
+            self.trainers += [trainer]
+        else:
+            pass
 
 
 class NeuralXY(XY):
-    def __init__(self, name: str, data: str, params, trainer, transformer_pool):
+    def __init__(self, name: str, data: str, params, trainer, transformer_pool: TransformerPool):
         super().__init__(name, data)
         self.params = params
         self.trainer = trainer
         self.transformer_pool = transformer_pool
 
     def crossover_transformer(self, xy1, xy2):
-        trainer = self.transformer_pool.acquire()
+        trainer = None
 
         if self.params.use_neural_crossover:
+            trainer = self.transformer_pool.acquire()
+
             xy1_weights = xy1.get_transformer_weights()
             xy2_weights = xy2.get_transformer_weights()
 
@@ -184,12 +193,18 @@ class AccumulativeTrainer(object):
 
         return 1
 
+    def predict_list(self, lst):
+        lst = [self.config.token_codec.encode(x) for x in lst]
+        x = torch.tensor(lst).to(self.config.my_device)
+        out = self.runner.forward(x)
+        return out.tolist()
+
     def predict(self, x):
         encoded_x = self.config.token_codec.encode(x)
         x = torch.tensor(encoded_x).to(self.config.my_device)
         x = x.reshape(1, x.shape[0])
         out = self.runner.forward(x)
-        return out
+        return out.item()
 
     def train(self, n=1):
         losses = 0
@@ -215,7 +230,7 @@ class GAModelRunner(AbstractModelRunnner):
         self.config.block_size = 45
 
         self.population_size = params.ga_population_size
-        self.transformer_pool = TransformerPool(self.config, self.population_size)
+        self.transformer_pool = TransformerPool(self.config, params, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
@@ -292,13 +307,14 @@ class GAModelRunner(AbstractModelRunnner):
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
         #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
 
-        # if self.params.use_neural_estimator:
-        #     predicted = self.accumulative_runner.forward(0)
+        if self.params.use_neural_estimator:
+            children, families = ga.generate_crossover(ga.new_size * 10)
+            predicted_list = self.accumulative_runner.predict_list([xy.data for xy in children])
+        else:
+            children, families = ga.crossover()
 
-        children, families = ga.crossover()
-
-        for a, b, c in families:
-            self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
+        # for a, b, c in families:
+        #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
 
         # for xy in ga.population:
         #     print(crossover_trainer.modules['transformer'].state_dict())
