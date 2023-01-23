@@ -269,7 +269,7 @@ class GA(object):
         self.population = new_population
 
     def sort_population(self):
-        sort_pp(self.population)
+        self.population = sort_pp(self.population)
 
     def get_best_pp(self, n):
         return self.population[: n]

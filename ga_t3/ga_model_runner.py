@@ -51,9 +51,10 @@ class TransformerPool(object):
         self.params = params
         self.trainers = []
         for i in range(model_num * 2):
-            trainer = KarpathyRunner(config)
-            self.trainers += [trainer]
-            print(f"Transformer created {i}")
+            # trainer = KarpathyRunner(config)
+            # self.trainers += [trainer]
+            # print(f"Transformer created {i}")
+            pass
 
     def acquire(self):
         if self.params.use_neural_crossover:

@@ -21,7 +21,6 @@ class GpuRunnner(object):
         self.params = params
         params.my_device = 'cuda:' + str(gpu_num)
         self.runners = [model_runner_factory(self.gpu_num, i, params) for i in range(self.models_per_gpu)]
-        self.exchange_best_every_n_iterations = params.exchange_best_every_n_iterations
         self.select_best_of_group = params.select_best_of_group
         self.distribute_best = params.distribute_best
 
@@ -39,10 +38,12 @@ class GpuRunnner(object):
             end = time.time()
             print(f"Ended iteration {iteration_num} on gpu {self.gpu_num}, taken = {end - start}, time/iteration = {(end - start) / self.models_per_gpu}, models_per_gpu={self.models_per_gpu}")
 
-            if iteration_num % self.exchange_best_every_n_iterations == 0:
-                self.exchange_best_models()
+            self.exchange_best_models(iteration_num)
 
-    def exchange_best_models(self):
+    def exchange_best_models(self, iteration_num):
+        if not self.params.exchange_best_between_gpus or self.params.number_of_gpus == 1 or not iteration_num % self.params.exchange_best_every_n_iterations == 0:
+            return
+
         best_xy = self.get_best_xy()
 
         best_xy = sort_pp(best_xy)
