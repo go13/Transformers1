@@ -149,8 +149,6 @@ class AccumulativeTrainer(object):
         self.data_x = []
         self.data_y = []
         self.data_dict = dict()
-        self.get_train_batch = None
-        self.get_val_batch = None
 
     def get_batch(self):
         ix = torch.randint(len(self.data_x), (self.config.batch_size,))
@@ -167,9 +165,9 @@ class AccumulativeTrainer(object):
         self.data_x += [x]
         self.data_y += [y]
 
-        self.data_dict[x] = 0
+        self.data_dict[x] = 1
 
-        return 0
+        return 1
 
     def train(self, n=1):
         losses = 0
