@@ -307,8 +307,9 @@ class GAModelRunner(AbstractModelRunnner):
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
         #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
 
-        if self.params.use_neural_estimator:
+        if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
             children, families = ga.generate_crossover(ga.new_size * 10)
+            children = ga.mutate(children)
             data_list = [xy.data for xy in children]
             estimations_list = self.accumulative_runner.predict_list(data_list)
             estimated_children = list(zip(children, estimations_list))
@@ -318,14 +319,13 @@ class GAModelRunner(AbstractModelRunnner):
             children = [x[0] for x in selected_children]
         else:
             children, families = ga.crossover()
+            children = ga.mutate(children)
 
         # for a, b, c in families:
         #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
 
         # for xy in ga.population:
         #     print(crossover_trainer.modules['transformer'].state_dict())
-
-        children = ga.mutate(children)
 
         for c in children:
             self.log(f"mutated,{iteration_num},{c.data}\n")
