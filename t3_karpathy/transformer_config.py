@@ -19,7 +19,7 @@ class TransformerConfig:
 
         self.max_iters = 15000
         self.eval_interval = 100
-        self.learning_rate = 1e-4
+        self.learning_rate = 1e-3
         self.eval_iters = 200
         self.vocab_size = 65
         self.eval_interval = 100
