@@ -56,15 +56,6 @@ if __name__ == '__main__':
     params.number_of_gpus = 1
     params.models_per_gpu = 1
 
-    params.ga_use_random_exchange = False
-
-    params.use_neural_crossover = False
-    params.neural_crossover_iteration_threshold = 200
-
-    params.exchange_best_every_n_iterations = 1
-    params.select_best_of_group = 5
-    params.distribute_best = 5
-
     # seems like multi gpu may not work???
     for gpu_num in range(params.number_of_gpus):
         p = mp.Process(target=run_gpu, args=(gpu_num, params))
