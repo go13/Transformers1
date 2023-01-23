@@ -341,10 +341,6 @@ class GAModelRunner(AbstractModelRunnner):
             return None
 
     def learn_neural_estimator(self):
-        def get_rnd_n_from_tensor(x, n):
-            indices = torch.randperm(n)
-            return x[indices]
-
         if self.params.use_neural_estimator:
             for xy in self.ga.population:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
