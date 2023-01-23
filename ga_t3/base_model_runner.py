@@ -41,7 +41,7 @@ class GpuRunnner(object):
             self.exchange_best_models(iteration_num)
 
     def exchange_best_models(self, iteration_num):
-        if not self.params.exchange_best_between_gpus or self.params.number_of_gpus == 1 or not iteration_num % self.params.exchange_best_every_n_iterations == 0:
+        if not self.params.exchange_best_between_gpus or not iteration_num % self.params.exchange_best_every_n_iterations == 0:
             return
 
         best_xy = self.get_best_xy()

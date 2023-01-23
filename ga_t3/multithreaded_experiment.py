@@ -20,16 +20,17 @@ parser.add_argument("--number_of_iterations", type=int, default=500)
 
 parser.add_argument("--neural_crossover_iteration_threshold", type=int, default=200)
 
+parser.add_argument("--use_neural_estimator", type=bool, default=False)
 parser.add_argument("--neural_estimator_iteration_start", type=int, default=0)
 parser.add_argument("--ga_neural_estimator_iterations_per_ga_iteration", type=int, default=1)
-parser.add_argument("--ga_generate_only_unique_xy", type=bool, default=True)
+parser.add_argument("--ga_generate_only_unique_xy", type=bool, default=False)
 
 parser.add_argument("--log_ga_into_file", type=bool, default=True)
 parser.add_argument("--verbose", type=bool, default=True)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
 parser.add_argument("--use_neural_crossover", type=bool, default=False)
-parser.add_argument("--use_neural_estimator", type=bool, default=True)
-parser.add_argument("--exchange_best_between_gpus", type=bool, default=True)
+
+parser.add_argument("--exchange_best_between_gpus", type=bool, default=False)
 parser.add_argument("--exchange_best_every_n_iterations", type=int, default=1)
 parser.add_argument("--select_best_of_group", type=int, default=5)
 parser.add_argument("--distribute_best", type=int, default=10)
@@ -58,12 +59,8 @@ if __name__ == '__main__':
 
     params.number_of_gpus = 1
     params.models_per_gpu = 1
-    params.number_of_iterations = 1000
-    params.log_ga_into_file = False
-    params.verbose = True
 
     params.ga_use_random_exchange = False
-    params.ga_population_size = 20
 
     params.use_neural_crossover = False
     params.neural_crossover_iteration_threshold = 200
