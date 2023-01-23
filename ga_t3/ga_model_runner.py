@@ -173,7 +173,8 @@ class AccumulativeTrainer(object):
             x, y = self.get_batch()
             o, loss = self.runner.learn(x, y)
             losses += loss.item()
-        return losses / n
+        av_loss = losses / n
+        return av_loss, len(self.data_x)
 
 
 class GAModelRunner(AbstractModelRunnner):
@@ -344,5 +345,5 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in self.ga.population:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
 
-            av_loss = self.accumulative_runner.train()
-            print(f"Average loss is {av_loss}")
+            av_loss, total_samples = self.accumulative_runner.train(n=1)
+            print(f"Average loss={av_loss}, total_samples={total_samples}")
