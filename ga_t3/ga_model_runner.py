@@ -342,7 +342,7 @@ class GAModelRunner(AbstractModelRunnner):
         # self.learn_crossover(families)
 
         if self.params.ga_generate_only_unique_xy:
-            self.learn_neural_estimator(children)
+            self.learn_neural_estimator(ga.population)
         else:
             self.learn_neural_estimator(ga.population)
 
@@ -364,7 +364,9 @@ class GAModelRunner(AbstractModelRunnner):
     def generate_children(self, ga):
         mp = ga.mutation_p
         generated_children = []
-        while True:
+        just_created_children_dict = dict()
+        i = 0
+        while i < 4:
             if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
                 children, families = ga.generate_crossover(ga.new_size * 10)
                 children = ga.mutate(children, mp)
@@ -379,16 +381,24 @@ class GAModelRunner(AbstractModelRunnner):
 
             if self.params.ga_generate_only_unique_xy:
                 for c in children:
-                    if c not in self.accumulative_runner.data_dict:
+                    c_data = c.data
+                    # if c_data not in self.accumulative_runner.data_dict and c_data not in just_created_children_dict:
+                    if c_data not in just_created_children_dict:
                         generated_children += [c]
+                        just_created_children_dict[c_data] = c_data
+                    else:
+                        print(f"Duplicate child {c_data}")
+
             else:
                 generated_children += children
 
+            i += 1
             if len(generated_children) < ga.new_size:
                 mp *= 2
                 print(f"Mutation probability increased to {mp}, generated unique {len(generated_children)} children")
             else:
                 break
+
         children = generated_children[0:ga.new_size]
         return children
 
