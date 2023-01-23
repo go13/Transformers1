@@ -309,7 +309,12 @@ class GAModelRunner(AbstractModelRunnner):
 
         if self.params.use_neural_estimator:
             children, families = ga.generate_crossover(ga.new_size * 10)
-            predicted_list = self.accumulative_runner.predict_list([xy.data for xy in children])
+            data_list = [xy.data for xy in children]
+            estimations_list = self.accumulative_runner.predict_list(data_list)
+            estimated_children = list(zip(children, estimations_list))
+            # print(estimated_children)
+            sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
+            children = [x[0] for x in sorted_children][ga.new_size:]
         else:
             children, families = ga.crossover()
 
