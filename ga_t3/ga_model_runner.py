@@ -309,7 +309,8 @@ class GAModelRunner(AbstractModelRunnner):
 
         mp = ga.mutation_p
         generated_children = []
-        while len(generated_children) < ga.new_size:
+
+        while True:
             if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
                 children, families = ga.generate_crossover(ga.new_size * 10)
                 children = ga.mutate(children, mp)
@@ -329,7 +330,11 @@ class GAModelRunner(AbstractModelRunnner):
             else:
                 generated_children += children
 
-            mp *= 2
+            if len(generated_children) < ga.new_size:
+                mp *= 2
+                print(f"Mutation probability increased to {mp}, generated unique {len(generated_children)} children")
+            else:
+                break
 
         children = generated_children[0:ga.new_size]
 
