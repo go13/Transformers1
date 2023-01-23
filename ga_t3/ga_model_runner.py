@@ -311,6 +311,7 @@ class GAModelRunner(AbstractModelRunnner):
         tm = time.time()
         ga = self.ga
 
+        ga.sort_population()
         ga.print_population()
 
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
@@ -333,7 +334,6 @@ class GAModelRunner(AbstractModelRunnner):
         ga.update_bottom(children)
 
         ga.evaluate()
-        ga.sort_population()
 
         for c in ga.population:
             self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
