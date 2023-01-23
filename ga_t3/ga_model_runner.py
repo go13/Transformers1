@@ -334,6 +334,7 @@ class GAModelRunner(AbstractModelRunnner):
         ga.update_bottom(children)
 
         ga.evaluate()
+        ga.sort_population()
 
         for c in ga.population:
             self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
