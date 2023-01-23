@@ -314,7 +314,8 @@ class GAModelRunner(AbstractModelRunnner):
             estimated_children = list(zip(children, estimations_list))
             # print(estimated_children)
             sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
-            children = [x[0] for x in sorted_children][ga.new_size:]
+            selected_children = sorted_children[0:ga.new_size]
+            children = [x[0] for x in selected_children]
         else:
             children, families = ga.crossover()
 
