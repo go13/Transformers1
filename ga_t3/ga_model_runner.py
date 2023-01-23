@@ -160,7 +160,7 @@ class AccumulativeTrainer(object):
         self.data_dict = dict()
         self.loss_hist = []
 
-    def get_histogram(self):
+    def get_fitness_histogram(self):
         f_hist = dict()
         for x, y in zip(self.data_x, self.data_y):
             num = self.data_dict[x]
@@ -170,6 +170,14 @@ class AccumulativeTrainer(object):
             else:
                 f_hist[f] = num
         return f_hist
+
+    def get_xy_histogram(self):
+        xy_hist = dict()
+        i = 0
+        for x, y in self.data_dict.items():
+            xy_hist[i] = y
+            i += 1
+        return xy_hist
 
     def get_loss_history(self):
         return self.loss_hist
