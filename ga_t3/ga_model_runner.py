@@ -255,7 +255,6 @@ class GAModelRunner(AbstractModelRunnner):
         pp1 = [p.data for p in p1]
         return pp1
 
-
     @timeit("GAModelRunnner")
     def step(self, iteration_num, gpu_num):
 
@@ -297,9 +296,6 @@ class GAModelRunner(AbstractModelRunnner):
         self.learn_crossover(families)
 
         self.learn_neural_estimator()
-
-        # model_weights = self.crossover_transformer['transformer'].state_dict()
-        # model_weights = {k: v.cpu() for k, v in model_weights.items()}
 
         ga.iteration += 1
 
@@ -345,5 +341,5 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in self.ga.population:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
 
-            av_loss, total_samples = self.accumulative_runner.train(n=1)
+            av_loss, total_samples = self.accumulative_runner.train(n=10)
             print(f"Average loss={av_loss}, total_samples={total_samples}")
