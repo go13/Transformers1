@@ -150,6 +150,17 @@ class AccumulativeTrainer(object):
         self.data_y = []
         self.data_dict = dict()
 
+    def get_histogram(self):
+        hist = dict()
+        for x, y in zip(self.data_x, self.data_y):
+            num = self.data_dict[x]
+            f = int(y)
+            if f in hist:
+                hist[f] += num
+            else:
+                hist[f] = num
+        return hist
+
     def get_batch(self):
         ix = torch.randint(len(self.data_x), (self.config.batch_size,))
         x = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x[i])) for i in ix])
@@ -168,6 +179,12 @@ class AccumulativeTrainer(object):
         self.data_dict[x] = 1
 
         return 1
+
+    def predict(self, x):
+        encoded_x = self.config.token_codec.encode(x)
+        x = torch.tensor(encoded_x).to(self.config.my_device)
+        out = self.runner.forward(x)
+        return out
 
     def train(self, n=1):
         losses = 0
@@ -264,10 +281,13 @@ class GAModelRunner(AbstractModelRunnner):
 
         ga.print_population()
 
-        if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
-            children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
-        else:
-            children, families = ga.crossover()
+        # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
+        #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
+
+        if self.params.use_neural_estimator:
+            predicted = self.accumulative_runner.forward(0)
+
+        children, families = ga.crossover()
 
         for a, b, c in families:
             self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
