@@ -161,11 +161,15 @@ class AccumulativeTrainer(object):
 
     def add_sample(self, x, y):
         if x in self.data_dict:
-            return
+            self.data_dict[x] += 1
+            return self.data_dict[x]
 
         self.data_x += [x]
         self.data_y += [y]
-        self.data_dict[x] = x
+
+        self.data_dict[x] = 0
+
+        return 0
 
     def train(self, n=1):
         losses = 0
