@@ -146,7 +146,11 @@ class Sentimental(nn.Module):
         out_size = 1
 
         self.net = nn.Sequential(
-            FeedForward(inp_size, hidden_size, out_size, dropout),
+            nn.Linear(inp_size, hidden_size),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.Linear(hidden_size, out_size),
+            # FeedForward(inp_size, hidden_size, out_size, dropout),
         )
 
     def forward(self, x):
@@ -168,7 +172,7 @@ class SentimentalTransformerModel(nn.Module):
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
 
-        mse_loss = torch.nn.MSELoss(reduction='sum')
+        mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
         return output, loss
