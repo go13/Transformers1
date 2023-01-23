@@ -292,8 +292,8 @@ class GAModelRunner(AbstractModelRunnner):
         # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
         #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
 
-        if self.params.use_neural_estimator:
-            predicted = self.accumulative_runner.forward(0)
+        # if self.params.use_neural_estimator:
+        #     predicted = self.accumulative_runner.forward(0)
 
         children, families = ga.crossover()
 
