@@ -162,7 +162,7 @@ class AccumulativeTrainer(object):
                 f_hist[f] = num
         return f_hist
 
-    def get_loss_hist(self):
+    def get_loss_history(self):
         return self.loss_hist
 
     def get_batch(self):
@@ -367,5 +367,5 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in self.ga.population:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
 
-            av_loss, total_samples = self.accumulative_runner.train(n=10)
+            av_loss, total_samples = self.accumulative_runner.train(n=self.params.ga_neural_estimator_iterations_per_ga_iteration)
             print(f"Average loss={av_loss}, total_samples={total_samples}")
