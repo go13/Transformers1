@@ -168,9 +168,12 @@ class AccumulativeTrainer(object):
         self.data_dict[x] = x
 
     def train(self, n=1):
+        losses = 0
         for i in range(n):
             x, y = self.get_batch()
-            self.runner.learn(x, y)
+            o, loss = self.runner.learn(x, y)
+            losses += loss.item()
+        return losses / n
 
 
 class GAModelRunner(AbstractModelRunnner):
@@ -341,4 +344,5 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in self.ga.population:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
 
-            self.accumulative_runner.train()
+            av_loss = self.accumulative_runner.train()
+            print(f"Average loss is {av_loss}")
