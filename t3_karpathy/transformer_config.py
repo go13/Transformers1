@@ -1,3 +1,6 @@
+from t3_karpathy.token_codec import TokenCodec
+
+
 class TransformerConfig:
 
     def __init__(self, my_device='cuda'):
@@ -20,6 +23,7 @@ class TransformerConfig:
         self.eval_iters = 200
         self.vocab_size = 65
         self.eval_interval = 100
+        self.token_codec = TokenCodec()
 
         # self.bottleneck_dim = params.bottleneck_dim
         # self.n_heads = params.n_heads

@@ -64,7 +64,7 @@ class KarpathyRunner(AbstractRunner):
         return self.model.generate(context, max_new_tokens)
 
 
-class SentimentalRunner(object):
+class SentimentalRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
         super().__init__(config, SentimentalTransformerModel(config))
         pass

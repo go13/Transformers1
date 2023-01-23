@@ -6,7 +6,7 @@ from ga_t3.base_model_runner import AbstractModelRunnner
 from src.performance_utils import timeit
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.transformer_runner import KarpathyRunner, SentimentalRunner
+from t3_karpathy.transformer_runner import KarpathyRunner, SentimentalRunner, AbstractRunner
 
 
 def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device):
@@ -141,7 +141,37 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
     def is_inverse_fitness(self):
         return True
 
-# class AccumulativeTrainer(object):
+
+class AccumulativeTrainer(object):
+    def __init__(self, config: TransformerConfig, runner: AbstractRunner):
+        self.config = config
+        self.runner = runner
+        self.data_x = []
+        self.data_y = []
+        self.data_dict = dict()
+        self.get_train_batch = None
+        self.get_val_batch = None
+
+    def get_batch(self):
+        ix = torch.randint(len(self.data_x), (self.config.batch_size,))
+        x = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x[i])) for i in ix])
+        y = torch.stack([torch.tensor(self.data_y[i]) for i in ix])
+        x, y = x.to(self.config.my_device), y.to(self.config.my_device)
+        return x, y
+
+    def add_sample(self, x, y):
+        if x in self.data_dict:
+            return
+
+        self.data_x += [x]
+        self.data_y += [y]
+        self.data_dict[x] = x
+
+    def train(self, n=1):
+        for i in range(n):
+            x, y = self.get_batch()
+            self.runner.learn(x, y)
+
 
 class GAModelRunner(AbstractModelRunnner):
 
@@ -159,9 +189,9 @@ class GAModelRunner(AbstractModelRunnner):
         self.log_file = self.setup_logger(gpu_num, params)
 
         if self.params.use_neural_estimator:
-            self.gptnano_dataloader = GptNanoDataloader(self.config)
-            self.config.vocab_size = self.gptnano_dataloader.vocab_size
+            self.config.vocab_size = self.config.token_codec.vocab_size
             self.neural_estimator_trainer = SentimentalRunner(self.config)
+            self.accumulative_runner = AccumulativeTrainer(self.config, self.neural_estimator_trainer)
 
         self.training_set = set()
 
@@ -216,6 +246,7 @@ class GAModelRunner(AbstractModelRunnner):
     def xy_to_data(self, p1):
         pp1 = [p.data for p in p1]
         return pp1
+
 
     @timeit("GAModelRunnner")
     def step(self, iteration_num, gpu_num):
@@ -305,13 +336,9 @@ class GAModelRunner(AbstractModelRunnner):
         def get_rnd_n_from_tensor(x, n):
             indices = torch.randperm(n)
             return x[indices]
+
         if self.params.use_neural_estimator:
+            for xy in self.ga.population:
+                self.accumulative_runner.add_sample(xy.data, xy.f)
 
-            x = torch.tensor([ self.gptnano_dataloader.encode(xy.data) for xy in self.ga.population], device=self.config.my_device, dtype=torch.long)
-            y = torch.tensor([xy.f for xy in self.ga.population], device=self.config.my_device)
-
-            x = get_rnd_n_from_tensor(x, self.config.batch_size)
-            y = get_rnd_n_from_tensor(y, self.config.batch_size)
-
-            output, loss = self.neural_estimator_trainer.learn(x, y)
-            print(f"Neural estimator loss = {loss.item()}")
+            self.accumulative_runner.train()
