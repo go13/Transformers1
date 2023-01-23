@@ -141,8 +141,9 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
     def is_inverse_fitness(self):
         return True
 
+# class AccumulativeTrainer(object):
 
-class GAModelRunnner(AbstractModelRunnner):
+class GAModelRunner(AbstractModelRunnner):
 
     def __init__(self, gpu_num, model_num, params):
         self.gpu_num = gpu_num
@@ -313,4 +314,4 @@ class GAModelRunnner(AbstractModelRunnner):
             y = get_rnd_n_from_tensor(y, self.config.batch_size)
 
             output, loss = self.neural_estimator_trainer.learn(x, y)
-            print(f"Neural estimator loss = {loss}")
+            print(f"Neural estimator loss = {loss.item()}")

@@ -2,7 +2,7 @@ import argparse
 
 import torch.multiprocessing as mp
 
-from ga_model_runner import GAModelRunnner
+from ga_model_runner import GAModelRunner
 from ga_t3.base_model_runner import GpuRunnner
 
 
@@ -31,7 +31,7 @@ print(params)
 
 
 def model_runner_factory(gpu_num, model_num, params):
-    return GAModelRunnner(gpu_num, model_num, params)
+    return GAModelRunner(gpu_num, model_num, params)
 
 
 def run_gpu(gpu_num, params):
