@@ -382,8 +382,8 @@ class GAModelRunner(AbstractModelRunnner):
             if self.params.ga_generate_only_unique_xy:
                 for c in children:
                     c_data = c.data
-                    # if c_data not in self.accumulative_runner.data_dict and c_data not in just_created_children_dict:
-                    if c_data not in just_created_children_dict:
+                    if c_data not in self.accumulative_runner.data_dict and c_data not in just_created_children_dict:
+                    # if c_data not in just_created_children_dict:
                         generated_children += [c]
                         just_created_children_dict[c_data] = c_data
                     else:
