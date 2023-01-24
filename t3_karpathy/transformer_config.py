@@ -12,7 +12,7 @@ class TransformerConfig:
         self.n_embd = 64
         self.hidden_size = self.n_embd * 4
 
-        self.n_head = 16
+        self.n_head = 8
         self.n_layer = 4
         self.dropout = 0.1
         self.head_size = self.n_embd // self.n_head
