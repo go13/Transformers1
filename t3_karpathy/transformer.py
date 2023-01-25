@@ -258,7 +258,7 @@ class CrossoverTransformerModel(nn.Module):
         logits = logits[0]
         probs = F.softmax(logits, dim=-1)
 
-        idx = torch.multinomial(probs, num_samples=1).reshape(-1)
+        idx = torch.multinomial(probs, num_samples=1).reshape(1, -1)
 
         return idx
 
