@@ -74,7 +74,7 @@ class NeuralXY(XY):
         return "id={id}, f={f}, d={data}".format(
             id=self.id,
             f=self.f,
-            data=self.data,
+            data=self.data.replace("\n", "\\n"),
         )
 
 
@@ -324,7 +324,7 @@ class GAModelRunner(AbstractModelRunnner):
             return new_population, new_families
 
     def learn_crossover(self, families):
-        if self.params.use_neural_crossover: # and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
+        if self.params.use_neural_crossover and self.ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
             for x1, x2, y in families:
                 self.crossover_trainer.add_sample(x1.data, x2.data, y.data, y.f)
 

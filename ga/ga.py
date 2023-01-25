@@ -139,7 +139,7 @@ class XY(object):
         return "n={id}({p1}, {p2}), f={f}, d={data}".format(
             id=self.id,
             f=self.f,
-            data=self.data,
+            data=self.data.replace("\n", "\\n"),
             p1=self.p1,
             p2=self.p2
         )
