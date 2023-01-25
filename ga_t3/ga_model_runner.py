@@ -300,18 +300,12 @@ class GAModelRunner(AbstractModelRunnner):
 
     def learn_crossover(self, families):
         if self.params.use_neural_crossover: # and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
+            for x1, x2, y in families:
+                self.crossover_trainer.add_sample(x1, x2, y)
 
-            pass
-            # for a, b, c in families:
-            #     df = (c.f - max(a.f, b.f))
-            #     # if df < 0:
-            #     #     df = df * 0.001
-            #     # for _ in range(params.batch_size):
-            #     df = 1
-            #     self.training_set.add((a.data, b.data, c.data, df))
-            #
-            # for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
-            #     self.crossover_runner.learn_accumulate(a, b, c, df)
+            av_loss, total_sample = self.crossover_trainer.train()
+            print(f"Average loss={av_loss}, total_samples={total_samples}")
+
 
     def log(self, log_line):
         if self.log_file:
