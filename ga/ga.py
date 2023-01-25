@@ -4,8 +4,8 @@ import numpy as np
 from abc import ABC, abstractmethod
 from src.utils import str_diff, words2string
 
-default_data_dict = string.ascii_uppercase + string.digits
-mutation_p_const = 0.05
+default_vocab = string.ascii_uppercase + string.digits
+mutation_p_const = 0.1
 new_percentage = 0.7
 
 
@@ -13,8 +13,8 @@ def sanitize(s):
     return s.replace("\n", "\\n")
 
 
-def gen_rnd_chars(ln: int, data_dict=default_data_dict) -> str:
-    return words2string(random.choices(data_dict, k=ln))
+def gen_rnd_chars(ln: int, vocab=default_vocab) -> str:
+    return words2string(random.choices(vocab, k=ln))
 
 
 def replace_char_at_index(org_str, index, replacement):
@@ -26,10 +26,10 @@ def replace_char_at_index(org_str, index, replacement):
     return new_str
 
 
-def mutate_string(d: str, mutation_p: float, xy_data_size: int, data_dict) -> str:
+def mutate_string(d: str, mutation_p: float, xy_data_size: int, vocab) -> str:
     for i in range(0, xy_data_size):
         if random.random() < mutation_p:
-            v = gen_rnd_chars(1, data_dict)[0]
+            v = gen_rnd_chars(1, vocab)[0]
             d = replace_char_at_index(d, i, v)
     return d
 
@@ -128,8 +128,8 @@ class XY(object):
 
         return XY(new_data, self.id, xy2.id)
 
-    def mutate(self, mutation_p: float, xy_data_size: int, data_dict) -> None:
-        self.data = mutate_string(self.data, mutation_p, xy_data_size, data_dict)
+    def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
+        self.data = mutate_string(self.data, mutation_p, xy_data_size, vocab)
 
     def reuse(self, id: int, data: str, p1: int, p2: int) -> 'XY':
         self.data = data
@@ -162,9 +162,9 @@ class GA(object):
             mutation_p=mutation_p_const,
             xy_factory=XY.create_xy,
             verbose=True,
-            data_dict=default_data_dict
+            vocab=default_vocab
     ):
-        self.data_dict = data_dict
+        self.vocab = vocab
         self.iteration = 0
         self.inverse_fitness = evaluator.is_inverse_fitness()
         self.xy_factory = xy_factory
@@ -242,7 +242,7 @@ class GA(object):
         mp_ = mp if mp else self.mutation_p
 
         for p in pp:
-            p.mutate(mp_, self.xy_data_size, self.data_dict)
+            p.mutate(mp_, self.xy_data_size, self.vocab)
 
         return pp
 

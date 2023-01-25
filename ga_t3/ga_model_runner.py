@@ -58,8 +58,8 @@ class NeuralXY(XY):
 
         return NeuralXY(new_data, self.params)
 
-    def mutate(self, mutation_p: float, xy_data_size: int, data_dict) -> None:
-        super().mutate(mutation_p, xy_data_size, data_dict)
+    def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
+        super().mutate(mutation_p, xy_data_size, vocab)
 
     def get_transformer_weights(self):
         pass
@@ -125,6 +125,7 @@ class GAModelRunner(AbstractModelRunnner):
 
         # if self.params.use_neural_estimator:
         self.config.vocab_size = self.config.token_codec.vocab_size
+        self.vocab = self.config.token_codec.vocab
 
         if self.params.use_neural_estimator:
             self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
@@ -140,7 +141,7 @@ class GAModelRunner(AbstractModelRunnner):
             population_size=self.population_size,
             verbose=params.verbose,
             xy_factory=neural_xy_factory,
-            data_dict=self.config.token_codec.vocab
+            vocab=self.config.token_codec.vocab
         )
         self.ga.evaluate()
         self.ga.sort_population()
@@ -265,7 +266,7 @@ class GAModelRunner(AbstractModelRunnner):
             if self.params.ga_generate_only_unique_xy:
                 for c, f in list(zip(children, families)):
                     c_data = c.data
-                    if c_data not in self.accumulative_runner.data_dict and c_data not in just_created_children_dict:
+                    if c_data not in self.vocab and c_data not in just_created_children_dict:
                         generated_children += [c]
                         just_created_children_dict[c_data] = c_data
                         generated_families += [f]

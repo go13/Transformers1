@@ -16,14 +16,14 @@ parser.add_argument("--number_of_iterations", type=int, default=1000)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
 
 
-parser.add_argument("--use_neural_crossover", type=bool, default=True)
+parser.add_argument("--use_neural_crossover", type=bool, default=False)
 parser.add_argument("--neural_crossover_iteration_start", type=int, default=300)
 parser.add_argument("--neural_crossover_regular_crossover_prob", type=float, default=0)
-parser.add_argument("--neural_crossover_iterations_per_ga_iteration", type=int, default=10)
+parser.add_argument("--neural_crossover_iterations_per_ga_iteration", type=int, default=1)
 
 parser.add_argument("--use_evolve_transformer", type=bool, default=False)
 
-parser.add_argument("--use_neural_estimator", type=bool, default=True)
+parser.add_argument("--use_neural_estimator", type=bool, default=False)
 parser.add_argument("--neural_estimator_iteration_start", type=int, default=0)
 parser.add_argument("--ga_neural_estimator_iterations_per_ga_iteration", type=int, default=1)
 parser.add_argument("--ga_generate_only_unique_xy", type=bool, default=True)
