@@ -255,7 +255,7 @@ class GA(object):
             xy1 = get_random_xy(self.population)
             xy2 = get_random_xy(self.population)
 
-            child = xy1.crossover(xy2, '', self.xy_data_size)
+            child = xy1.crossover(xy2, self.xy_data_size)
 
             family = (xy1, xy2, child)
 
@@ -265,7 +265,6 @@ class GA(object):
         return new_population, new_families
 
     def update_bottom(self, new_population):
-        # new_population = new_population.copy()
         left = len(self.population) - len(new_population)
         for i in range(left):
             p = self.population[i]
