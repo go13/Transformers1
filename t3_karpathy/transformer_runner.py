@@ -82,11 +82,11 @@ class CrossoverRunner(object):
     def forward(self, x1, x2):
         return self.model(x1, x2)
 
-    def learn(self, x1, x2, y):
+    def learn(self, x1, x2, y, f):
         self.model.train()
         out, loss = self.model.forward_vs_target(x1, x2, y)
         self.optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        loss.backward() # mul by f
         self.optimizer.step()
         return out, loss
 

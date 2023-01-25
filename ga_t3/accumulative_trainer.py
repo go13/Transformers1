@@ -92,6 +92,7 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         self.data_x1 = []
         self.data_x2 = []
         self.data_y = []
+        self.data_child_f = []
         self.data_dict = dict()
     #
     # def get_fitness_histogram(self):
@@ -118,10 +119,11 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         x1 = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x1[i])) for i in ix])
         x2 = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x2[i])) for i in ix])
         y = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_y[i])) for i in ix])
-        x1, x2, y = x1.to(self.config.my_device), x2.to(self.config.my_device), y.to(self.config.my_device)
-        return x1, x2, y
+        f = torch.stack([torch.tensor(self.data_child_f[i]) for i in ix])
+        x1, x2, y, f = x1.to(self.config.my_device), x2.to(self.config.my_device), y.to(self.config.my_device), f.to(self.config.my_device)
+        return x1, x2, y, f
 
-    def add_sample(self, x1, x2, y):
+    def add_sample(self, x1, x2, y, child_f):
         key = (x1, x2)
         if key in self.data_dict:
             self.data_dict[key] += 1
@@ -130,6 +132,7 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         self.data_x1 += [x1]
         self.data_x2 += [x2]
         self.data_y += [y]
+        self.data_child_f += [child_f]
 
         self.data_dict[key] = 1
 
@@ -159,8 +162,8 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
     def train(self, n=1):
         losses = 0
         for i in range(n):
-            x1, x2, y = self.get_batch()
-            o, loss = self.runner.learn(x1, x2, y)
+            x1, x2, y, f = self.get_batch()
+            o, loss = self.runner.learn(x1, x2, y, f)
             l = loss.item()
             self.loss_hist += [l]
             losses += l

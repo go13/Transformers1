@@ -206,7 +206,7 @@ class CrossoverTransformerModel(nn.Module):
 
         mid_size = config.n_embd * config.block_size
 
-        self.mid = FeedForward(mid_size * 2, mid_size * 2, mid_size, config.dropout)
+        self.mid = FeedForward(mid_size * 2, mid_size * 1, mid_size, config.dropout)
 
         self.blocks3 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)
