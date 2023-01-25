@@ -146,7 +146,7 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         x2 = torch.tensor(lst2).to(self.config.my_device)
 
         out = self.runner.forward(x1, x2)
-
+        # todo
         return out.tolist()
 
     def predict(self, x1, x2):
@@ -156,8 +156,9 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         x2 = torch.tensor(encoded_x2).to(self.config.my_device)
         x1 = x1.reshape(1, x1.shape[0])
         x2 = x2.reshape(1, x2.shape[0])
-        out = self.runner.forward(x1, x2)
-        return out.item()
+        out = self.runner.generate(x1, x2).tolist()
+
+        return self.config.token_codec.decode(out)
 
     def train(self, n=1):
         losses = 0

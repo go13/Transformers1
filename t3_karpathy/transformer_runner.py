@@ -82,6 +82,9 @@ class CrossoverRunner(object):
     def forward(self, x1, x2):
         return self.model(x1, x2)
 
+    def generate(self, x1, x2):
+        return self.model.generate(x1, x2)
+
     def learn(self, x1, x2, y, f):
         self.model.train()
         out, loss = self.model.forward_vs_target(x1, x2, y)
@@ -107,9 +110,9 @@ class CrossoverRunner(object):
                 val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
                 print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}")
 
-            x1, x2, y = get_train_batch()
+            x1, x2, y, f = get_train_batch()
 
-            logits, loss = self.learn(x1, x2, y)
+            logits, loss = self.learn(x1, x2, y, f)
 
             self.current_iteration += 1
 
