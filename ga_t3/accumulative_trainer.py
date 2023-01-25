@@ -117,7 +117,7 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         ix = torch.randint(len(self.data_x1), (self.config.batch_size,))
         x1 = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x1[i])) for i in ix])
         x2 = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x2[i])) for i in ix])
-        y = torch.stack([torch.tensor(self.data_y[i]) for i in ix])
+        y = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_y[i])) for i in ix])
         x1, x2, y = x1.to(self.config.my_device), x2.to(self.config.my_device), y.to(self.config.my_device)
         return x1, x2, y
 
@@ -128,7 +128,7 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
             return self.data_dict[key]
 
         self.data_x1 += [x1]
-        self.data_x2 += [x1]
+        self.data_x2 += [x2]
         self.data_y += [y]
 
         self.data_dict[key] = 1

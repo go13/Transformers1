@@ -62,6 +62,7 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
 
@@ -202,9 +203,14 @@ class CrossoverTransformerModel(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks1 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.blocks2 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+
+        mid_size = config.n_embd * config.block_size
+
+        self.mid = FeedForward(mid_size * 2, mid_size * 2, mid_size, config.dropout)
+
         self.blocks3 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+        self.out = nn.Linear(config.n_embd, config.vocab_size)
 
     def forward_vs_target(self, idx1, idx2, targets):
         logits = self.forward(idx1, idx2)
@@ -233,9 +239,14 @@ class CrossoverTransformerModel(nn.Module):
         x2 = self.blocks2(x2)
 
         x = torch.cat((x1, x2), dim=1)
+        x = x.reshape(b1, -1)
+
+        x = self.mid(x)
+
+        x = x.reshape(b1, t1, -1)
 
         x = self.blocks3(x)
 
         x = self.ln_f(x)
-        logits = self.lm_head(x)
-        return logits
+        x = self.out(x)
+        return x

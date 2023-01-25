@@ -12,13 +12,13 @@ class TransformerPool(object):
             pass
 
     def acquire(self):
-        if self.params.use_neural_crossover:
+        if self.params.use_evolve_transformer:
             return self.trainers.pop()
         else:
             return None
 
     def release(self, trainer):
-        if self.params.use_neural_crossover:
+        if self.params.use_evolve_transformer:
             self.trainers += [trainer]
         else:
             pass

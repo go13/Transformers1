@@ -54,7 +54,7 @@ class NeuralXY(XY):
     def crossover_transformer(self, xy1, xy2):
         trainer = None
 
-        if self.params.use_neural_crossover:
+        if self.params.use_evolve_transformer:
             trainer = self.transformer_pool.acquire()
 
             xy1_weights = xy1.get_transformer_weights()
@@ -306,7 +306,7 @@ class GAModelRunner(AbstractModelRunnner):
             for x1, x2, y in families:
                 self.crossover_trainer.add_sample(x1.data, x2.data, y.data)
 
-            av_loss, total_sample = self.crossover_trainer.train()
+            av_loss, total_samples = self.crossover_trainer.train()
             print(f"Average loss={av_loss}, total_samples={total_samples}")
 
 
