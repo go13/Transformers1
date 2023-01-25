@@ -225,7 +225,7 @@ class GAModelRunner(AbstractModelRunnner):
             self.log(f"mutated,{iteration_num},{c.data}\n")
 
         if self.params.ga_generate_only_unique_xy:
-            self.learn_neural_estimator(children)
+            self.learn_neural_estimator(ga.population)
         else:
             self.learn_neural_estimator(ga.population)
 
