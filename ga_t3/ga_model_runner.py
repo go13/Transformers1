@@ -178,6 +178,8 @@ class GAModelRunner(AbstractModelRunnner):
         pp2 = self.xy_to_data(p2)
         children_data = trainer.act(pp1, pp2)
 
+        prediction = self.crossover_trainer.predict_list(pp1, pp2)
+
         for p1, p2, ch_data in zip(p1, p2, children_data):
             ch = XY('', ch_data)
             children += [ch]
@@ -274,7 +276,7 @@ class GAModelRunner(AbstractModelRunnner):
                 children = [x[0] for x in sorted_children_families]
                 families = [x[2] for x in sorted_children_families]
             else:
-                children, families = ga.crossover()
+                children, families = ga.generate_crossover(ga.new_size)
                 children = ga.mutate(children)
 
             if self.params.ga_generate_only_unique_xy:
