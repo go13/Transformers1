@@ -145,26 +145,24 @@ class CrossoverAccumulativeTrainer(AbstractAccumulativeTrainer):
         x1 = torch.tensor(lst1).to(self.config.my_device)
         x2 = torch.tensor(lst2).to(self.config.my_device)
 
-        # x1 = x1.reshape(x1.shape[0], x1.shape[0])
-        # x2 = x2.reshape(1, x2.shape[0])
-
         out = self.runner.generate(x1, x2)
         out = out.tolist()
 
         return [self.config.token_codec.decode(o) for o in out]
 
     def predict(self, x1, x2):
-        encoded_x1 = self.config.token_codec.encode(x1)
-        encoded_x2 = self.config.token_codec.encode(x2)
-        x1 = torch.tensor(encoded_x1).to(self.config.my_device)
-        x2 = torch.tensor(encoded_x2).to(self.config.my_device)
-        x1 = x1.reshape(1, x1.shape[0])
-        x2 = x2.reshape(1, x2.shape[0])
-        out = self.runner.generate(x1, x2)
-        out = out.reshape(-1)
-        out = out.tolist()
-
-        return self.config.token_codec.decode(out)
+        return self.predict_list([x1], [x2])[0]
+        # encoded_x1 = self.config.token_codec.encode(x1)
+        # encoded_x2 = self.config.token_codec.encode(x2)
+        # x1 = torch.tensor(encoded_x1).to(self.config.my_device)
+        # x2 = torch.tensor(encoded_x2).to(self.config.my_device)
+        # x1 = x1.reshape(1, x1.shape[0])
+        # x2 = x2.reshape(1, x2.shape[0])
+        # out = self.runner.generate(x1, x2)
+        # out = out.reshape(-1)
+        # out = out.tolist()
+        #
+        # return self.config.token_codec.decode(out)
 
     def train(self, n=1):
         losses = 0

@@ -249,16 +249,15 @@ class CrossoverTransformerModel(nn.Module):
 
         x = self.ln_f(x)
         x = self.out(x)
-        # x = x.reshape(b1, -1)
 
         return x
 
     def generate(self, x1, x2):
         logits = self.forward(x1, x2)
-        logits = logits[0]
+        b, t, c = logits.shape
         probs = F.softmax(logits, dim=-1)
-
-        idx = torch.multinomial(probs, num_samples=1).reshape(1, -1)
-
+        probs = probs.reshape(b * t, c)
+        idx = torch.multinomial(probs, num_samples=1)
+        idx = idx.reshape(b, t)
         return idx
 

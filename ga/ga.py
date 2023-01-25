@@ -102,34 +102,42 @@ class TargetStringEvaluator(AbstractEvaluator):
 
 class XY(object):
 
-    def __init__(self, name: str, data: str, p1: str = "a", p2: str = "e"):
+    number_of_instances: int = 0
+
+    @staticmethod
+    def increment_and_get_number_of_instances():
+        XY.number_of_instances += 1
+        return XY.number_of_instances
+
+    def __init__(self, data: str, p1: int = -1, p2: int = -1):
+        self.id: int = XY.increment_and_get_number_of_instances()
+        self.p1: int = p1
+        self.p2: int = p2
+
         self.data = data
-        self.name = name
-        self.p1 = p1
-        self.p2 = p2
         self.f = None
 
-    def crossover(self, xy2: 'XY', name: str, xy_data_size: int) -> 'XY':
+    def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         d1, d2 = (self.data, xy2.data) if random.random() > 0.5 else (xy2.data, self.data)
 
         new_data = crossover_string(d1, d2, xy_data_size)
 
-        return XY(name, new_data, self.name, xy2.name)
+        return XY(new_data, self.id, xy2.id)
 
     def mutate(self, mutation_p: float, xy_data_size: int) -> None:
         self.data = mutate_string(self.data, mutation_p, xy_data_size)
 
-    def reuse(self, name: str, data: str, p1: str, p2: str) -> 'XY':
+    def reuse(self, id: int, data: str, p1: int, p2: int) -> 'XY':
         self.data = data
-        self.name = name
+        self.id = id
         self.p1 = p1
         self.p2 = p2
         self.f = None
         return self
 
     def __str__(self):
-        return "n={name}({p1}, {p2}), f={f}, d={data}".format(
-            name=self.name,
+        return "n={id}({p1}, {p2}), f={f}, d={data}".format(
+            id=self.id,
             f=self.f,
             data=self.data,
             p1=self.p1,
@@ -137,9 +145,9 @@ class XY(object):
         )
 
     @staticmethod
-    def createXY(name, xy_data_size: int):
+    def createXY(xy_data_size: int):
         data = gen_rnd_chars(xy_data_size)
-        return XY(name, data)
+        return XY(data)
 
 
 class GA(object):
@@ -150,7 +158,6 @@ class GA(object):
             mutation_p=mutation_p_const,
             xy_factory=XY.createXY,
             verbose=True,
-            inverse_fitness=False
     ):
         self.iteration = 0
         self.inverse_fitness = evaluator.is_inverse_fitness()
@@ -168,7 +175,7 @@ class GA(object):
     def generate(self, population_size, xy_data_size):
         pp = []
         for i in range(population_size):
-            xy = self.xy_factory(i, self.xy_data_size)
+            xy = self.xy_factory(xy_data_size)
             pp.append(xy)
         return pp
 
