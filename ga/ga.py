@@ -9,6 +9,10 @@ mutation_p_const = 0.05
 new_percentage = 0.7
 
 
+def sanitize(s):
+    return s.replace("\n", "\\n")
+
+
 def gen_rnd_chars(ln: int, data_dict=default_data_dict) -> str:
     return words2string(random.choices(data_dict, k=ln))
 
@@ -139,7 +143,7 @@ class XY(object):
         return "n={id}({p1}, {p2}), f={f}, d={data}".format(
             id=self.id,
             f=self.f,
-            data=self.data.replace("\n", "\\n"),
+            data=sanitize(self.data),
             p1=self.p1,
             p2=self.p2
         )

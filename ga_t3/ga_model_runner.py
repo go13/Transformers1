@@ -1,7 +1,7 @@
 import time
 import random
 import torch
-from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy
+from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
 from ga_t3.accumulative_trainer import SentimentalAccumulativeTrainer, CrossoverAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
 from ga_t3.transformer_pool import TransformerPool
@@ -74,7 +74,7 @@ class NeuralXY(XY):
         return "id={id}, f={f}, d={data}".format(
             id=self.id,
             f=self.f,
-            data=self.data.replace("\n", "\\n"),
+            data=sanitize(self.data),
         )
 
 
@@ -221,7 +221,7 @@ class GAModelRunner(AbstractModelRunnner):
         ga.sort_population()
 
         for c in ga.population:
-            self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
+            self.log(f"evaluated,{iteration_num},{c.f},{sanitize(c.data)}\n")
 
         self.learn_crossover(families)
 
