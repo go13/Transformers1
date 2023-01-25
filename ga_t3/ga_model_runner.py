@@ -140,6 +140,7 @@ class GAModelRunner(AbstractModelRunnner):
             TargetStringEvaluator(),
             population_size=self.population_size,
             verbose=params.verbose,
+            mutation_p=params.ga_mutation_p,
             xy_factory=neural_xy_factory,
             vocab=self.config.token_codec.vocab
         )
