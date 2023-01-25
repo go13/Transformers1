@@ -260,6 +260,7 @@ class GAModelRunner(AbstractModelRunnner):
     def generate_children(self, ga):
         mp = ga.mutation_p
         generated_children = []
+        generated_families = []
         just_created_children_dict = dict()
         i = 0
         while i < 4:
@@ -276,17 +277,18 @@ class GAModelRunner(AbstractModelRunnner):
                 children = ga.mutate(children)
 
             if self.params.ga_generate_only_unique_xy:
-                for c in children:
+                for c, f in list(zip(children, families)):
                     c_data = c.data
                     if c_data not in self.accumulative_runner.data_dict and c_data not in just_created_children_dict:
-                    # if c_data not in just_created_children_dict:
                         generated_children += [c]
                         just_created_children_dict[c_data] = c_data
+                        generated_families += [f]
                     else:
                         print(f"Duplicate child {c_data}")
 
             else:
                 generated_children += children
+                generated_families += families
 
             i += 1
             if len(generated_children) < ga.new_size:
@@ -296,12 +298,13 @@ class GAModelRunner(AbstractModelRunnner):
                 break
 
         children = generated_children[0:ga.new_size]
+        families = generated_families[0:ga.new_size]
         return children, families
 
     def learn_crossover(self, families):
         if self.params.use_neural_crossover: # and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
             for x1, x2, y in families:
-                self.crossover_trainer.add_sample(x1, x2, y)
+                self.crossover_trainer.add_sample(x1.data, x2.data, y.data)
 
             av_loss, total_sample = self.crossover_trainer.train()
             print(f"Average loss={av_loss}, total_samples={total_samples}")
