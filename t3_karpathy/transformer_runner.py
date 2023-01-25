@@ -86,7 +86,7 @@ class CrossoverRunner(object):
         self.model.train()
         out, loss = self.model.forward_vs_target(x1, x2, y)
         self.optimizer.zero_grad(set_to_none=True)
-        loss.backward() # mul by f
+        loss.backward(gradient=f.sum())
         self.optimizer.step()
         return out, loss
 
