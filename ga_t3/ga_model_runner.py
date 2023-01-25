@@ -288,7 +288,7 @@ class GAModelRunner(AbstractModelRunnner):
         return children, families
 
     def generate_crossover(self, new_size):
-        if not self.params.use_neural_crossover or self.ga.iteration <= self.params.neural_crossover_iteration_threshold:
+        if not self.params.use_neural_crossover or self.ga.iteration <= self.params.neural_crossover_iteration_start:
             return self.ga.generate_crossover(new_size)
         else:
             if random.random() < self.params.neural_crossover_regular_crossover_prob:
