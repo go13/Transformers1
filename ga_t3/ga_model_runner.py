@@ -215,7 +215,7 @@ class GAModelRunner(AbstractModelRunnner):
         ga.sort_population()
         ga.print_population()
 
-        children, families = self.generate_children(ga)
+        children, families = self.process_children(ga)
 
         # for a, b, c in families:
         #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
@@ -259,7 +259,7 @@ class GAModelRunner(AbstractModelRunnner):
         # print(f"Total time taken = {end_time - start_time}")
         # print(f"Average time per iteration = {(end_time - start_time) / iterations}")
 
-    def generate_children(self, ga):
+    def process_children(self, ga):
         mp = ga.mutation_p
         generated_children = []
         generated_families = []
@@ -267,7 +267,7 @@ class GAModelRunner(AbstractModelRunnner):
         i = 0
         while i < 4:
             if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
-                children, families = ga.generate_crossover(ga.new_size * 10)
+                children, families = self.generate_crossover(ga.new_size * 10)
                 children = ga.mutate(children, mp)
                 data_list = [xy.data for xy in children]
                 estimations_list = self.accumulative_runner.predict_list(data_list)
@@ -276,7 +276,7 @@ class GAModelRunner(AbstractModelRunnner):
                 children = [x[0] for x in sorted_children_families]
                 families = [x[2] for x in sorted_children_families]
             else:
-                children, families = ga.generate_crossover(ga.new_size)
+                children, families = self.generate_crossover(ga.new_size)
                 children = ga.mutate(children)
 
             if self.params.ga_generate_only_unique_xy:
@@ -303,6 +303,12 @@ class GAModelRunner(AbstractModelRunnner):
         children = generated_children[0:ga.new_size]
         families = generated_families[0:ga.new_size]
         return children, families
+
+    def generate_crossover(self, num):
+        if not self.params.use_neural_crossover:
+            return self.ga.generate_crossover(num)
+        else:
+            pass
 
     def learn_crossover(self, families):
         if self.params.use_neural_crossover: # and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
