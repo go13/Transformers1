@@ -329,7 +329,8 @@ class GAModelRunner(AbstractModelRunnner):
     def learn_crossover(self, families):
         if self.params.use_neural_crossover and self.ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
             for x1, x2, y in families:
-                self.crossover_trainer.add_sample(x1.data, x2.data, y.data, y.f)
+                f = y.f - max(x1.f, x2.f) # y.f
+                self.crossover_trainer.add_sample(x1.data, x2.data, y.data, f)
 
             av_loss, total_samples = self.crossover_trainer.train()
             print(f"Crossover average loss={av_loss}, total_samples={total_samples}")
