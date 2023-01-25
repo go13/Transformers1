@@ -289,6 +289,9 @@ class GAModelRunner(AbstractModelRunnner):
         if not self.params.use_neural_crossover:
             return self.ga.generate_crossover(new_size)
         else:
+            if random.random() < self.params.neural_crossover_regular_crossover_prob:
+                return self.ga.generate_crossover(new_size)
+
             xy1_list = []
             xy2_list = []
 
