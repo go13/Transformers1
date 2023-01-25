@@ -16,9 +16,9 @@ parser.add_argument("--number_of_iterations", type=int, default=1000)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
 
 
-parser.add_argument("--use_neural_crossover", type=bool, default=False)
+parser.add_argument("--use_neural_crossover", type=bool, default=True)
 parser.add_argument("--neural_crossover_iteration_threshold", type=int, default=0)
-parser.add_argument("--neural_crossover_regular_crossover_prob", type=float, default=0.4)
+parser.add_argument("--neural_crossover_regular_crossover_prob", type=float, default=0)
 
 parser.add_argument("--use_evolve_transformer", type=bool, default=False)
 

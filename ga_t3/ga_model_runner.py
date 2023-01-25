@@ -1,5 +1,7 @@
 import time
 import random
+
+import numpy as np
 import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
 from ga_t3.accumulative_trainer import SentimentalAccumulativeTrainer, CrossoverAccumulativeTrainer
@@ -327,9 +329,15 @@ class GAModelRunner(AbstractModelRunnner):
             return new_population, new_families
 
     def learn_crossover(self, families):
+        def f_transform(z):
+            if z > 0:
+                return z
+            return 1 / (1 + np.exp(-z - 4))
+
         if self.params.use_neural_crossover and self.ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
             for x1, x2, y in families:
                 f = y.f - max(x1.f, x2.f) # y.f
+                f = f_transform(f)
                 self.crossover_trainer.add_sample(x1.data, x2.data, y.data, f)
 
             av_loss, total_samples = self.crossover_trainer.train()
