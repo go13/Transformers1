@@ -56,8 +56,8 @@ class NeuralXY(XY):
 
         return NeuralXY(new_data, self.params)
 
-    def mutate(self, mutation_p: float, xy_data_size: int) -> None:
-        super().mutate(mutation_p, xy_data_size)
+    def mutate(self, mutation_p: float, xy_data_size: int, data_dict) -> None:
+        super().mutate(mutation_p, xy_data_size, data_dict)
 
     def get_transformer_weights(self):
         pass
@@ -123,7 +123,9 @@ class GAModelRunner(AbstractModelRunnner):
 
         # if self.params.use_neural_estimator:
         self.config.vocab_size = self.config.token_codec.vocab_size
-        self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
+
+        if self.params.use_neural_estimator:
+            self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
 
         if self.params.use_neural_crossover:
             self.crossover_trainer = CrossoverAccumulativeTrainer(self.config)
@@ -135,7 +137,8 @@ class GAModelRunner(AbstractModelRunnner):
             TargetStringEvaluator(),
             population_size=self.population_size,
             verbose=params.verbose,
-            xy_factory=neural_xy_factory
+            xy_factory=neural_xy_factory,
+            data_dict=self.config.token_codec.vocab
         )
         self.ga.evaluate()
         self.ga.sort_population()

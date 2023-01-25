@@ -11,7 +11,8 @@ class TokenCodec(object):
             text = f.read()
 
         # here are all the unique characters that occur in this text
-        self.chars = sorted(list(set(text)) + list(string.ascii_letters + string.digits))
+        self.vocab = ''.join(set(text + string.ascii_letters + string.digits))
+        self.chars = sorted(list(self.vocab))
         self.vocab_size = len(self.chars)
         # create a mapping from characters to integers
         self.stoi = {ch: i for i, ch in enumerate(self.chars)}

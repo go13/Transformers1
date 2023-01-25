@@ -12,7 +12,7 @@ parser.add_argument("--number_of_gpus", type=int, default=1)
 parser.add_argument("--models_per_gpu", type=int, default=1)
 
 parser.add_argument("--ga_population_size", type=int, default=20)
-parser.add_argument("--number_of_iterations", type=int, default=500)
+parser.add_argument("--number_of_iterations", type=int, default=1000)
 
 parser.add_argument("--neural_crossover_iteration_threshold", type=int, default=200)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
