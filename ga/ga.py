@@ -281,9 +281,6 @@ class GA(object):
         for i in range(len(new_pp)):
             self.population[-i - 1] = new_pp[i]
 
-    def get_worst_pp(self, n):
-        return self.population[-n:]
-
     def print_population(self):
         if self.verbose or self.iteration % 100 == 0:
             print(f"iteration={self.iteration}")

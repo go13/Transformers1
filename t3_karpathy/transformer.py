@@ -136,7 +136,7 @@ class KarpathyTransformerModel(nn.Module):
         return idx
 
 
-class Sentimental(nn.Module):
+class SentimentalFeedForward(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
 
@@ -167,7 +167,7 @@ class SentimentalTransformerModel(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.out = Sentimental(config)
+        self.out = SentimentalFeedForward(config)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
@@ -190,3 +190,52 @@ class SentimentalTransformerModel(nn.Module):
         x = self.out(x)
         x = x.reshape(b)
         return x
+
+
+class CrossoverTransformerModel(nn.Module):
+
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+        # each token directly reads off the logits for the next token from a lookup table
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.blocks1 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.blocks2 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.blocks3 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+
+    def forward_vs_target(self, idx1, idx2, targets):
+        logits = self.forward(idx1, idx2)
+
+        b, t, c = logits.shape
+        logits_view = logits.view(b * t, c)
+        targets = targets.view(b * t)
+        loss = F.cross_entropy(logits_view, targets)
+
+        return logits_view, loss
+
+    def forward(self, idx1, idx2):
+        b1, t1 = idx1.shape
+        b2, t2 = idx2.shape
+
+        tok_emb1 = self.token_embedding_table(idx1)
+        pos_emb1 = self.position_embedding_table(torch.arange(t1, device=self.config.my_device))
+
+        tok_emb2 = self.token_embedding_table(idx2)
+        pos_emb2 = self.position_embedding_table(torch.arange(t2, device=self.config.my_device))
+
+        x1 = tok_emb1 + pos_emb1
+        x1 = self.blocks1(x1)
+
+        x2 = tok_emb2 + pos_emb2
+        x2 = self.blocks2(x2)
+
+        x = torch.cat((x1, x2), dim=1)
+
+        x = self.blocks3(x)
+
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+        return logits

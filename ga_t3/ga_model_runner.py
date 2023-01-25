@@ -2,13 +2,12 @@ import time
 import random
 import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator
-from ga_t3.accumulative_trainer import AccumulativeTrainer
+from ga_t3.accumulative_trainer import SentimentalAccumulativeTrainer, CrossoverAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
 from ga_t3.transformer_pool import TransformerPool
 from src.performance_utils import timeit
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.transformer_runner import SentimentalRunner
 
 
 def neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device):
@@ -145,10 +144,10 @@ class GAModelRunner(AbstractModelRunnner):
 
         # if self.params.use_neural_estimator:
         self.config.vocab_size = self.config.token_codec.vocab_size
-        self.neural_estimator_trainer = SentimentalRunner(self.config)
-        self.accumulative_runner = AccumulativeTrainer(self.config, self.neural_estimator_trainer)
+        self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
 
-        self.training_set = set()
+        if self.params.use_neural_crossover:
+            self.crossover_trainer = CrossoverAccumulativeTrainer(self.config)
 
         def neural_xy_factory(i, xy_data_size):
             return NeuralXY.createNeuralXY(i, xy_data_size, params, self.transformer_pool)
@@ -214,10 +213,7 @@ class GAModelRunner(AbstractModelRunnner):
         ga.sort_population()
         ga.print_population()
 
-        # if self.params.use_neural_crossover and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
-        #     children, families = self.neural_crossover(ga, self.params, self.crossover_trainer)
-
-        children = self.generate_children(ga)
+        children, families = self.generate_children(ga)
 
         # for a, b, c in families:
         #     self.log(f"crossover,{iteration_num},{a.data},{b.data},{c.data}\n")
@@ -227,6 +223,11 @@ class GAModelRunner(AbstractModelRunnner):
 
         for c in children:
             self.log(f"mutated,{iteration_num},{c.data}\n")
+
+        if self.params.ga_generate_only_unique_xy:
+            self.learn_neural_estimator(children)
+        else:
+            self.learn_neural_estimator(ga.population)
 
         for xy in ga.get_worst_pp(ga.new_size):
             xy.destroy()
@@ -239,12 +240,7 @@ class GAModelRunner(AbstractModelRunnner):
         for c in ga.population:
             self.log(f"evaluated,{iteration_num},{c.f},{c.data}\n")
 
-        # self.learn_crossover(families)
-
-        if self.params.ga_generate_only_unique_xy:
-            self.learn_neural_estimator(ga.population)
-        else:
-            self.learn_neural_estimator(ga.population)
+        self.learn_crossover(families)
 
         ga.iteration += 1
 
@@ -300,20 +296,22 @@ class GAModelRunner(AbstractModelRunnner):
                 break
 
         children = generated_children[0:ga.new_size]
-        return children
+        return children, families
 
     def learn_crossover(self, families):
-        if self.params.use_neural_crossover:
-            for a, b, c in families:
-                df = (c.f - max(a.f, b.f))
-                # if df < 0:
-                #     df = df * 0.001
-                # for _ in range(params.batch_size):
-                df = 1
-                self.training_set.add((a.data, b.data, c.data, df))
+        if self.params.use_neural_crossover: # and ga.iteration > self.params.neural_crossover_iteration_threshold:  # random.random() > 0.5 and
 
-            for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
-                self.crossover_trainer.learn_accumulate(a, b, c, df)
+            pass
+            # for a, b, c in families:
+            #     df = (c.f - max(a.f, b.f))
+            #     # if df < 0:
+            #     #     df = df * 0.001
+            #     # for _ in range(params.batch_size):
+            #     df = 1
+            #     self.training_set.add((a.data, b.data, c.data, df))
+            #
+            # for (a, b, c, df) in random.sample(self.training_set, min(self.params.batch_size * 1, len(self.training_set))):
+            #     self.crossover_runner.learn_accumulate(a, b, c, df)
 
     def log(self, log_line):
         if self.log_file:
