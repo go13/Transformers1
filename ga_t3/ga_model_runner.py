@@ -269,9 +269,10 @@ class GAModelRunner(AbstractModelRunnner):
                 children = ga.mutate(children, mp)
                 data_list = [xy.data for xy in children]
                 estimations_list = self.accumulative_runner.predict_list(data_list)
-                estimated_children = list(zip(children, estimations_list))
-                sorted_children = sorted(estimated_children, key=lambda x: x[1], reverse=True)
-                children = [x[0] for x in sorted_children]
+                estimated_children_families = list(zip(children, estimations_list, families))
+                sorted_children_families = sorted(estimated_children_families, key=lambda x: x[1], reverse=True)
+                children = [x[0] for x in sorted_children_families]
+                families = [x[2] for x in sorted_children_families]
             else:
                 children, families = ga.crossover()
                 children = ga.mutate(children)

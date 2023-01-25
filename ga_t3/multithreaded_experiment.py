@@ -21,7 +21,7 @@ parser.add_argument("--use_neural_crossover", type=bool, default=True)
 parser.add_argument("--use_evolve_transformer", type=bool, default=False)
 
 parser.add_argument("--use_neural_estimator", type=bool, default=True)
-parser.add_argument("--neural_estimator_iteration_start", type=int, default=100)
+parser.add_argument("--neural_estimator_iteration_start", type=int, default=0)
 parser.add_argument("--ga_neural_estimator_iterations_per_ga_iteration", type=int, default=1)
 parser.add_argument("--ga_generate_only_unique_xy", type=bool, default=True)
 
