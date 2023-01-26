@@ -2,9 +2,9 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from t3_karpathy.transformer import Block
+from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.transformer_runner import AbstractRunner
+from t3_karpathy.karpathy_transformer import AbstractRunner
 
 
 class AutoencoderTransformerModel(nn.Module):

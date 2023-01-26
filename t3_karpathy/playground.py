@@ -3,7 +3,7 @@ import torch
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
 from t3_karpathy.transformer_config import TransformerConfig
 
-from t3_karpathy.transformer_runner import KarpathyRunner
+from t3_karpathy.karpathy_transformer import KarpathyRunner
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
