@@ -4,7 +4,8 @@ import random
 import numpy as np
 import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
-from ga_t3.accumulative_trainer import SentimentalAccumulativeTrainer, CrossoverAccumulativeTrainer
+from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
+from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
 from ga_t3.transformer_pool import TransformerPool
 from src.performance_utils import timeit
@@ -338,7 +339,7 @@ class GAModelRunner(AbstractModelRunnner):
 
         if self.params.use_neural_crossover:
             for x1, x2, y in families:
-                f = y.f - max(x1.f, x2.f)
+                f = y.f# - max(x1.f, x2.f)
                 if f <= 0:
                     continue
 

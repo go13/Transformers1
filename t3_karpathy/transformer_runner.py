@@ -1,7 +1,7 @@
 import torch
 from collections import OrderedDict
 
-from t3_karpathy.transformer import KarpathyTransformerModel, SentimentalTransformerModel, CrossoverTransformerModel
+from t3_karpathy.transformer import KarpathyTransformerModel, CrossoverTransformerModel
 from t3_karpathy.transformer_config import TransformerConfig
 
 
@@ -62,12 +62,6 @@ class KarpathyRunner(AbstractRunner):
 
     def generate(self, context, max_new_tokens):
         return self.model.generate(context, max_new_tokens)
-
-
-class SentimentalRunner(AbstractRunner):
-    def __init__(self, config: TransformerConfig):
-        super().__init__(config, SentimentalTransformerModel(config))
-        pass
 
 
 class CrossoverRunner(object):

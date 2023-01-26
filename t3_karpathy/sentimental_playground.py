@@ -1,7 +1,7 @@
 import torch
 
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.transformer_runner import SentimentalRunner
+from t3_karpathy.sentimental_transformer import SentimentalRunner
 
 torch.manual_seed(1337)
 
