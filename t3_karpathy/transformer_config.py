@@ -21,9 +21,9 @@ class TransformerConfig:
         self.eval_interval = 100
         self.learning_rate = 1e-3
         self.eval_iters = 200
-        self.vocab_size = 65
         self.eval_interval = 100
         self.token_codec = TokenCodec()
+        self.vocab_size = self.token_codec.vocab_size
 
         # self.bottleneck_dim = params.bottleneck_dim
         # self.n_heads = params.n_heads
