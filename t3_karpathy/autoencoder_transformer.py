@@ -37,43 +37,40 @@ class AutoencoderTransformerModel(nn.Module):
 
         return logits_view, loss
 
-    def forward(self, idx):
+    def half_fwd_in(self, idx):
         b, t = idx.shape
-
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(idx)  # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(t, device=self.config.my_device))  # (T,C)
         x = tok_emb + pos_emb
-
         x = self.blocks1(x)
-
         x = self.ln_mid(x)
         x = self.mid(x)
-
-        x = self.blocks2(x)
-
-        x = self.ln_out(x)
-        x = self.out(x)
-
         return x
 
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # crop idx to the last block_size tokens
-            idx_cond = idx[:, -self.config.block_size:]
-            # get the predictions
-            logits = self.forward(idx_cond)
-            # focus only on the last time step
-            logits = logits[:, -1, :]  # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1)  # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-        return idx
+    def half_fwd_out(self, x):
+        x = self.blocks2(x)
+        x = self.ln_out(x)
+        x = self.out(x)
+        return x
 
+    def forward(self, idx):
+        x = self.half_fwd_in(idx)
+
+        x = self.half_fwd_out(x)
+        return x
+
+    def generate(self, idx1, idx2):
+        x1 = self.half_fwd_in(idx1)
+        x2 = self.half_fwd_in(idx2)
+        # create random mask of 0 and 1 for x1 and inverse mask for x2 of x1.shape
+        mask = torch.randint(2, x1.shape, device=self.config.my_device)
+        mask_inv = 1 - mask
+        # combine x1 and x2 with mask
+        x = x1 * mask + x2 * mask_inv
+
+        x = self.half_fwd_out(x)
+        return x
 
 class AutoencoderRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
