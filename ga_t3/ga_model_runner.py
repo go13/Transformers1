@@ -209,7 +209,6 @@ class GAModelRunner(AbstractModelRunnner):
         ga = self.ga
 
         ga.sort_population()
-        ga.print_population()
 
         children, families = self.process_children(ga)
 
@@ -234,6 +233,8 @@ class GAModelRunner(AbstractModelRunnner):
 
         ga.evaluate()
         ga.sort_population()
+        ga.print_population()
+        ga.normalize_f()
 
         for c in ga.population:
             self.log(f"evaluated,{iteration_num},{c.f},{sanitize(c.data)}\n")

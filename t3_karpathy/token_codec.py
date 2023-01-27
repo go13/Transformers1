@@ -9,10 +9,10 @@ class TokenCodec(object):
         # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
         with open('F:\\workspace\\ai\\Transformers1\\input.txt', 'r', encoding='utf-8') as f:
             text = f.read()
-        text = ""
+        # text = ""
         # here are all the unique characters that occur in this text
-        # self.vocab = ''.join(set(text + string.ascii_letters + string.digits))
-        self.vocab = ''.join(set((string.ascii_letters + string.digits).upper()))
+        self.vocab = ''.join(set(text + string.ascii_letters + string.digits))
+        #self.vocab = ''.join(set((string.ascii_letters + string.digits).upper()))
         self.chars = sorted(list(self.vocab))
         self.vocab_size = len(self.chars)
         # create a mapping from characters to integers

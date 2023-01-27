@@ -222,6 +222,14 @@ class GA(object):
 
         self.inverse_f()
 
+    def normalize_f(self):
+        mn = self.population[0].f
+        for xy in self.population:
+            mn = min(xy.f, mn)
+
+        for xy in self.population:
+            xy.f -= mn
+
     def inverse_f(self):
         if self.inverse_fitness:
             for xy in self.population:
