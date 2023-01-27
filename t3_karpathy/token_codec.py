@@ -1,13 +1,41 @@
 import string
+import os
+import requests
 
 import torch
+
+
+def download(url: str, dest_folder: str):
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)  # create folder if it does not exist
+
+    filename = url.split('/')[-1].replace(" ", "_")  # be careful with file names
+    file_path = os.path.join(dest_folder, filename)
+
+    r = requests.get(url, stream=True)
+    if r.ok:
+        print("saving to", os.path.abspath(file_path))
+        with open(file_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024 * 8):
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
+                    os.fsync(f.fileno())
+    else:  # HTTP status code 4XX/5XX
+        print("Download failed: status code {}\n{}".format(r.status_code, r.text))
 
 
 class TokenCodec(object):
 
     def __init__(self):
+        input_path = "input.txt"
+
+        src_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+
+        download(src_url, dest_folder=".")
+
         # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-        with open('F:\\workspace\\ai\\Transformers1\\input.txt', 'r', encoding='utf-8') as f:
+        with open(input_path, 'r', encoding='utf-8') as f:
             text = f.read()
         # text = ""
         # here are all the unique characters that occur in this text
