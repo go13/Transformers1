@@ -218,8 +218,8 @@ class GAModelRunner(AbstractModelRunnner):
         # for xy in ga.population:
         #     print(crossover_trainer.modules['transformer'].state_dict())
 
-        for c in children:
-            self.log(f"mutated,{iteration_num},{c.data}\n")
+        # for c in children:
+        #     self.log(f"mutated,{iteration_num},{c.data}\n")
 
         if self.params.ga_generate_only_unique_xy:
             self.learn_neural_estimator(ga.population)
@@ -233,11 +233,11 @@ class GAModelRunner(AbstractModelRunnner):
 
         ga.evaluate()
         ga.sort_population()
-        ga.print_population()
-        ga.normalize_f()
+        ga.print_population(f"gpu={gpu_num}, model={self.model_num}")
+        # ga.normalize_f()
 
-        for c in ga.population:
-            self.log(f"evaluated,{iteration_num},{c.f},{sanitize(c.data)}\n")
+        # for c in ga.population:
+        #     self.log(f"evaluated,{iteration_num},{c.f},{sanitize(c.data)}\n")
 
         self.learn_crossover(families)
         self.learn_neural_autoencoder(ga.population)
@@ -248,7 +248,7 @@ class GAModelRunner(AbstractModelRunnner):
 
         print(f"Time of iteration is {tm_new - tm}, it={ga.iteration}, gpu={gpu_num}")
 
-        self.log(f"iteration_time,{iteration_num},{tm_new - tm}\n")
+        # self.log(f"iteration_time,{iteration_num},{tm_new - tm}\n")
 
         tm = tm_new
 

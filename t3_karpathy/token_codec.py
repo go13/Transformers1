@@ -12,6 +12,10 @@ def download(url: str, dest_folder: str):
     filename = url.split('/')[-1].replace(" ", "_")  # be careful with file names
     file_path = os.path.join(dest_folder, filename)
 
+    if os.path.exists(dest_folder):
+        print("File already downloaded")
+        return
+
     r = requests.get(url, stream=True)
     if r.ok:
         print("saving to", os.path.abspath(file_path))

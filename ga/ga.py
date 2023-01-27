@@ -301,11 +301,11 @@ class GA(object):
         for i in range(len(new_pp)):
             self.population[-i - 1] = new_pp[i]
 
-    def print_population(self):
+    def print_population(self, prefix = ''):
         if self.verbose or self.iteration % 100 == 0:
-            print(f"iteration={self.iteration}")
+            print(f"{prefix} iteration={self.iteration}")
             for xy in self.population:
-                print(f"xy: {xy}")
+                print(f"{prefix} xy: {xy}")
 
     def get_random_n_xy(self, pp, n):
         pp = pp.copy()
