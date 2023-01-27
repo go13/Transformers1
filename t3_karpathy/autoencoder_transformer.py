@@ -72,8 +72,15 @@ class AutoencoderTransformerModel(nn.Module):
         # combine x1 and x2 with mask
         x = x1 * mask + x2 * mask_inv
 
-        x = self.half_fwd_out(x)
-        return x#.tolist()
+        logits = self.half_fwd_out(x)
+
+        b, t, c = logits.shape
+        probs = F.softmax(logits, dim=-1)
+        probs = probs.reshape(b * t, c)
+        idx = torch.multinomial(probs, num_samples=1)
+        idx = idx.reshape(b, t)
+
+        return idx
 
 
 class AutoencoderRunner(AbstractRunner):

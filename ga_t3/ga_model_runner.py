@@ -296,9 +296,9 @@ class GAModelRunner(AbstractModelRunnner):
         return children, families
 
     def generate_crossover(self, new_size):
-        if not self.params.use_neural_crossover or self.ga.iteration <= self.params.neural_crossover_iteration_start:
-            return self.ga.generate_crossover(new_size)
-        else:
+        if (self.params.use_neural_crossover or self.params.use_neural_autoencoder) and \
+                (self.ga.iteration > self.params.neural_crossover_iteration_start or self.ga.iteration > self.params.use_neural_autoencoder_iteration_start):
+
             if random.random() < self.params.neural_crossover_regular_crossover_prob:
                 return self.ga.generate_crossover(new_size)
 
@@ -320,7 +320,11 @@ class GAModelRunner(AbstractModelRunnner):
                 xy1_data_list += [xy1.data]
                 xy2_data_list += [xy2.data]
 
-            predicted_list = self.crossover_trainer.predict_list(xy1_data_list, xy2_data_list)
+            if self.params.use_neural_crossover:
+                predicted_list = self.crossover_trainer.predict_list(xy1_data_list, xy2_data_list)
+
+            if self.params.use_neural_autoencoder:
+                predicted_list = self.autoencoder.predict_list(xy1_data_list, xy2_data_list)
 
             for i in range(new_size):
                 new_data = predicted_list[i]
@@ -335,6 +339,8 @@ class GAModelRunner(AbstractModelRunnner):
                 new_families += [family]
 
             return new_population, new_families
+        else:
+            return self.ga.generate_crossover(new_size)
 
     def learn_crossover(self, families):
         def f_transform(z):
