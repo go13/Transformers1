@@ -284,7 +284,8 @@ class GAModelRunner(AbstractModelRunnner):
                         just_created_children_dict[c_data] = c_data
                         generated_families += [f]
                     else:
-                        print(f"Duplicate child {c_data}")
+                        # print(f"Duplicate child {c_data}")
+                        pass
 
             else:
                 generated_children += children
@@ -371,7 +372,7 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in population:
                 self.autoencoder.add_sample(xy.data, xy.data)
 
-            av_loss, total_samples= self.autoencoder.train(1)
+            av_loss, total_samples= self.autoencoder.train(self.params.ga_neural_autoencoder_iterations_per_ga_iteration)
             print(f"Autoencoder average loss={av_loss}, total_samples={total_samples}")
 
     def learn_neural_estimator(self, new_samples):

@@ -14,10 +14,11 @@ parser.add_argument("--models_per_gpu", type=int, default=1)
 parser.add_argument("--ga_population_size", type=int, default=20)
 parser.add_argument("--number_of_iterations", type=int, default=1000)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
-parser.add_argument("--ga_mutation_p", type=float, default=0.1)
+parser.add_argument("--ga_mutation_p", type=float, default=0.01)
 
 parser.add_argument("--use_neural_autoencoder", type=bool, default=True)
 parser.add_argument("--use_neural_autoencoder_iteration_start", type=int, default=100)
+parser.add_argument("--ga_neural_autoencoder_iterations_per_ga_iteration", type=int, default=10)
 
 parser.add_argument("--use_neural_crossover", type=bool, default=False)
 parser.add_argument("--neural_crossover_iteration_start", type=int, default=0)
