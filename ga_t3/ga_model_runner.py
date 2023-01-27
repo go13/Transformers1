@@ -131,12 +131,18 @@ class GAModelRunner(AbstractModelRunnner):
 
         if self.params.use_neural_estimator:
             self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
+        else:
+            self.accumulative_runner = None
 
         if self.params.use_neural_crossover:
             self.crossover_trainer = CrossoverAccumulativeTrainer(self.config)
+        else:
+            self.crossover_trainer = None
 
         if self.params.use_neural_autoencoder:
             self.autoencoder = AutoencoderAccumulativeTrainer(self.config)
+        else:
+            self.autoencoder = None
 
         def neural_xy_factory(xy_data_size):
             return NeuralXY.generate_new_neural_xy(xy_data_size, params)
