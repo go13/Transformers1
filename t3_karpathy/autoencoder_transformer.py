@@ -61,8 +61,11 @@ class AutoencoderTransformerModel(nn.Module):
         return x
 
     def generate(self, idx1, idx2):
-        x1 = self.half_fwd_in(idx1)
-        x2 = self.half_fwd_in(idx2)
+        x1 = self.config.token_codec.encode(idx1)
+        x2 = self.config.token_codec.encode(idx2)
+
+        x1 = self.half_fwd_in(x1)
+        x2 = self.half_fwd_in(x2)
         # create random mask of 0 and 1 for x1 and inverse mask for x2 of x1.shape
         mask = torch.randint(2, x1.shape, device=self.config.my_device)
         mask_inv = 1 - mask
@@ -70,7 +73,8 @@ class AutoencoderTransformerModel(nn.Module):
         x = x1 * mask + x2 * mask_inv
 
         x = self.half_fwd_out(x)
-        return x
+        return x.tolist()
+
 
 class AutoencoderRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
