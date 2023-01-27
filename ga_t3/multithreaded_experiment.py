@@ -8,7 +8,7 @@ from ga_t3.base_model_runner import GpuRunnner
 parser = argparse.ArgumentParser(description="Language transfer")
 
 # main parameters
-parser.add_argument("--number_of_gpus", type=int, default=2)
+parser.add_argument("--number_of_gpus", type=int, default=1)
 parser.add_argument("--models_per_gpu", type=int, default=8)
 
 parser.add_argument("--ga_population_size", type=int, default=20)
@@ -36,7 +36,7 @@ parser.add_argument("--log_ga_into_file", type=bool, default=False)
 parser.add_argument("--verbose", type=bool, default=True)
 
 parser.add_argument("--exchange_best_between_gpus", type=bool, default=True)
-parser.add_argument("--exchange_best_every_n_iterations", type=int, default=5)
+parser.add_argument("--exchange_best_every_n_iterations", type=int, default=1)
 parser.add_argument("--select_best_of_group", type=int, default=5)
 parser.add_argument("--distribute_best", type=int, default=5)
 
