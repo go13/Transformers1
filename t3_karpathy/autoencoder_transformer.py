@@ -18,7 +18,7 @@ class AutoencoderTransformerModel(nn.Module):
         self.blocks1 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
-        self.mid = nn.Linear(config.n_embd, config.vocab_size)
+        self.mid = nn.Linear(config.n_embd, config.n_embd)
 
         self.blocks2 = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
 
@@ -82,3 +82,62 @@ class AutoencoderRunner(AbstractRunner):
 
     def generate(self, context, max_new_tokens):
         return self.model.generate(context, max_new_tokens)
+
+
+class AutoencoderAccumulativeTrainer(AbstractRunner):
+
+    def __init__(self, config: TransformerConfig):
+        super().__init__(config, AutoencoderTransformerModel(config))
+        self.runner: AutoencoderRunner = AutoencoderRunner(config)
+        self.data_x = []
+        self.data_y = []
+        self.data_dict = dict()
+
+    def get_batch(self):
+        ix = torch.randint(len(self.data_x), (self.config.batch_size,))
+
+        x = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x[i])) for i in ix])
+        y = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_y[i])) for i in ix])
+
+        x, y = x.to(self.config.my_device), y.to(self.config.my_device)
+
+        return x, y
+
+    def add_sample(self, x, y):
+        key = x
+        if key in self.data_dict:
+            self.data_dict[key] += 1
+            return self.data_dict[key]
+
+        self.data_x += [x]
+        self.data_y += [y]
+
+        self.data_dict[key] = 1
+
+        return 1
+
+    def predict_list(self, lst1, lst2):
+        lst1 = [self.config.token_codec.encode(x) for x in lst1]
+        lst2 = [self.config.token_codec.encode(x) for x in lst2]
+
+        x1 = torch.tensor(lst1).to(self.config.my_device)
+        x2 = torch.tensor(lst2).to(self.config.my_device)
+
+        out = self.runner.generate(x1, x2)
+        out = out.tolist()
+
+        return [self.config.token_codec.decode(o) for o in out]
+
+    def predict(self, x1, x2):
+        return self.predict_list([x1], [x2])[0]
+
+    def train(self, n=1):
+        losses = 0
+        for i in range(n):
+            x, y = self.get_batch()
+            o, loss = self.runner.learn(x, y)
+            l = loss.item()
+            losses += l
+        av_loss = losses / n
+
+        return av_loss, len(self.data_x)

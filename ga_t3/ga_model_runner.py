@@ -4,6 +4,7 @@ import random
 import numpy as np
 import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
+from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
 from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
@@ -134,6 +135,9 @@ class GAModelRunner(AbstractModelRunnner):
         if self.params.use_neural_crossover:
             self.crossover_trainer = CrossoverAccumulativeTrainer(self.config)
 
+        if self.params.use_neural_autoencoder:
+            self.autoencoder = AutoencoderAccumulativeTrainer(self.config)
+
         def neural_xy_factory(xy_data_size):
             return NeuralXY.generate_new_neural_xy(xy_data_size, params)
 
@@ -229,6 +233,7 @@ class GAModelRunner(AbstractModelRunnner):
             self.log(f"evaluated,{iteration_num},{c.f},{sanitize(c.data)}\n")
 
         self.learn_crossover(families)
+        self.learn_neural_autoencoder(ga.population)
 
         ga.iteration += 1
 
@@ -348,6 +353,14 @@ class GAModelRunner(AbstractModelRunnner):
 
             av_loss, total_samples = self.crossover_trainer.train(n = self.params.neural_crossover_iterations_per_ga_iteration)
             print(f"Crossover average loss={av_loss}, total_samples={total_samples}")
+
+    def learn_neural_autoencoder(self, population):
+        if self.params.use_neural_autoencoder:
+            for xy in population:
+                self.autoencoder.add_sample(xy.data, xy.data)
+
+            av_loss, total_samples= self.autoencoder.train(1)
+            print(f"Autoencoder average loss={av_loss}, total_samples={total_samples}")
 
     def learn_neural_estimator(self, new_samples):
         if self.params.use_neural_estimator:
