@@ -33,10 +33,10 @@ class TokenCodec(object):
 
     def __init__(self):
         input_path = "input.txt"
-
+        dest_folder = "../."
         src_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
 
-        download(src_url, dest_folder=".")
+        download(dest_folder + src_url, dest_folder=dest_folder)
 
         # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
         with open(input_path, 'r', encoding='utf-8') as f:
