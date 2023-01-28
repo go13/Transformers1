@@ -1,3 +1,6 @@
+from t3_karpathy.karpathy_transformer import KarpathyRunner
+
+
 class TransformerPool(object):
 
     def __init__(self, config, params, model_num):
@@ -6,19 +9,19 @@ class TransformerPool(object):
         self.params = params
         self.trainers = []
         for i in range(model_num * 2):
-            # trainer = KarpathyRunner(config)
-            # self.trainers += [trainer]
-            # print(f"Transformer created {i}")
+            trainer = KarpathyRunner(config)
+            self.trainers += [trainer]
+            print(f"Transformer created {i}")
             pass
 
     def acquire(self):
-        if self.params.use_evolve_transformer:
+        if self.params.use_transformer_transformer:
             return self.trainers.pop()
         else:
             return None
 
     def release(self, trainer):
-        if self.params.use_evolve_transformer:
+        if self.params.use_transformer_transformer:
             self.trainers += [trainer]
         else:
             pass

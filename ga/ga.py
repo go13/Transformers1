@@ -104,6 +104,23 @@ class TargetStringEvaluator(AbstractEvaluator):
         return False
 
 
+class TransformerEvaluator(AbstractEvaluator):
+    def __init__(self):
+        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
+        self.xy_data_size_const = len(self.target)
+
+    def func(self, xy) -> float:
+        data = xy.data
+        diff = random.random() * 0.001
+        diff += (self.xy_data_size_const - str_diff(self.target, data))
+        return diff
+
+    def get_xy_len(self) -> int:
+        return self.xy_data_size_const
+
+    def is_inverse_fitness(self):
+        return False
+
 class XY(object):
 
     number_of_instances: int = 0
@@ -113,7 +130,7 @@ class XY(object):
         XY.number_of_instances += 1
         return XY.number_of_instances
 
-    def __init__(self, data: str, p1: int = -1, p2: int = -1):
+    def __init__(self, data, p1: int = -1, p2: int = -1):
         self.id: int = XY.increment_and_get_number_of_instances()
         self.p1: int = p1
         self.p2: int = p2
@@ -131,7 +148,7 @@ class XY(object):
     def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
         self.data = mutate_string(self.data, mutation_p, xy_data_size, vocab)
 
-    def reuse(self, id: int, data: str, p1: int, p2: int) -> 'XY':
+    def reuse(self, id: int, data, p1: int, p2: int) -> 'XY':
         self.data = data
         self.id = id
         self.p1 = p1

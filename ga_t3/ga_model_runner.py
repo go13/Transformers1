@@ -48,23 +48,37 @@ def transformer_neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device)
     return new_weights
 
 
+def neural_crossover(t1, t2):
+    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(), t1.params.my_device)
+
+
+def neural_mutate(t1, mp):
+    return t1
+
+
 class NeuralXY(XY):
-    def __init__(self, data: str, params):
+    def __init__(self, data, params):
         super().__init__(data)
         self.params = params
 
     def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
-        new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
+        if self.params.use_transformer_transformer:
+            new_data = neural_crossover(xy1.data, xy2.data)
+        else:
+            new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
 
         return NeuralXY(new_data, self.params)
 
     def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
-        super().mutate(mutation_p, xy_data_size, vocab)
+        if self.params.use_transformer_transformer:
+            neural_mutate(self.data, mutation_p)
+        else:
+            super().mutate(mutation_p, xy_data_size, vocab)
 
     def get_transformer_weights(self):
-        pass
+        return self.data.get_weights()
 
     def destroy(self):
         pass
@@ -145,7 +159,10 @@ class GAModelRunner(AbstractModelRunnner):
             self.autoencoder = None
 
         def neural_xy_factory(xy_data_size):
-            return NeuralXY.generate_new_neural_xy(xy_data_size, params)
+            if self.params.use_transformer_transformer:
+                return NeuralXY(self.transformer_pool.acquire(), self.params)
+            else:
+                return NeuralXY.generate_new_neural_xy(xy_data_size, params)
 
         self.ga = GA(
             TargetStringEvaluator(),
@@ -226,8 +243,9 @@ class GAModelRunner(AbstractModelRunnner):
         else:
             self.learn_neural_estimator(ga.population)
 
-        for xy in ga.get_worst_pp(ga.new_size):
-            xy.destroy()
+        if self.params.use_transformer_transformer:
+            for xy in ga.get_worst_pp(ga.new_size):
+                self.transformer_pool.release(xy.data)
 
         ga.update_bottom(children)
 
