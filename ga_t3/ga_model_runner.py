@@ -3,7 +3,7 @@ import random
 
 import numpy as np
 import torch
-from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
+from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize, KarpathyTransformerEvaluator
 from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
 from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
@@ -48,8 +48,8 @@ def transformer_neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device)
     return new_weights
 
 
-def neural_crossover(t1, t2):
-    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(), t1.params.my_device)
+def neural_crossover(t1, t2, params):
+    return transformer_neural_crossover_and_mutate(t1.get_weights(), t2.get_weights(), params.my_device)
 
 
 def neural_mutate(t1, mp):
@@ -57,19 +57,22 @@ def neural_mutate(t1, mp):
 
 
 class NeuralXY(XY):
-    def __init__(self, data, params):
+    def __init__(self, data, transformer_pool, params):
         super().__init__(data)
         self.params = params
+        self.transformer_pool = transformer_pool
 
     def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
         if self.params.use_transformer_transformer:
-            new_data = neural_crossover(xy1.data, xy2.data)
+            new_data = neural_crossover(xy1.data, xy2.data, self.params)
+            new_t = self.transformer_pool.acquire()
+            new_t.set_weights(new_data)
+            return NeuralXY(new_t, self.transformer_pool, self.params)
         else:
             new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
-
-        return NeuralXY(new_data, self.params)
+            return NeuralXY(new_data, None, self.params)
 
     def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
         if self.params.use_transformer_transformer:
@@ -81,7 +84,7 @@ class NeuralXY(XY):
         return self.data.get_weights()
 
     def destroy(self):
-        pass
+        self.transformer_pool.release(self.data)
 
     @staticmethod
     def generate_new_neural_xy(xy_data_size: int, params):
@@ -92,7 +95,7 @@ class NeuralXY(XY):
         return "id={id}, f={f}, d={data}".format(
             id=self.id,
             f=self.f,
-            data=sanitize(self.data),
+            data="",
         )
 
 
@@ -160,12 +163,12 @@ class GAModelRunner(AbstractModelRunnner):
 
         def neural_xy_factory(xy_data_size):
             if self.params.use_transformer_transformer:
-                return NeuralXY(self.transformer_pool.acquire(), self.params)
+                return NeuralXY(self.transformer_pool.acquire(), self.transformer_pool, self.params)
             else:
                 return NeuralXY.generate_new_neural_xy(xy_data_size, params)
 
         self.ga = GA(
-            TargetStringEvaluator(),
+            KarpathyTransformerEvaluator(),
             population_size=self.population_size,
             verbose=params.verbose,
             mutation_p=params.ga_mutation_p,
@@ -245,7 +248,7 @@ class GAModelRunner(AbstractModelRunnner):
 
         if self.params.use_transformer_transformer:
             for xy in ga.get_worst_pp(ga.new_size):
-                self.transformer_pool.release(xy.data)
+                xy.destroy()
 
         ga.update_bottom(children)
 

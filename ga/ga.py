@@ -3,6 +3,8 @@ import string
 import numpy as np
 from abc import ABC, abstractmethod
 from src.utils import str_diff, words2string
+from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
+from t3_karpathy.transformer_config import TransformerConfig
 
 default_vocab = string.ascii_uppercase + string.digits
 mutation_p_const = 0.1
@@ -10,6 +12,8 @@ new_percentage = 0.7
 
 
 def sanitize(s):
+    if type(s) is str:
+        return ""
     return s.replace("\n", "\\n")
 
 
@@ -104,22 +108,22 @@ class TargetStringEvaluator(AbstractEvaluator):
         return False
 
 
-class TransformerEvaluator(AbstractEvaluator):
+class KarpathyTransformerEvaluator(AbstractEvaluator):
     def __init__(self):
-        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
-        self.xy_data_size_const = len(self.target)
+        # self.xy_data_size_const = len(self.target)
+        self.config = TransformerConfig()
+        self.dataloader = GptNanoDataloader(self.config)
 
     def func(self, xy) -> float:
-        data = xy.data
-        diff = random.random() * 0.001
-        diff += (self.xy_data_size_const - str_diff(self.target, data))
-        return diff
+        t = xy.data
+        val = t.evaluate(self.dataloader.get_train_batch, 100).item()
+        return val
 
     def get_xy_len(self) -> int:
-        return self.xy_data_size_const
+        return 0
 
     def is_inverse_fitness(self):
-        return False
+        return True
 
 class XY(object):
 
