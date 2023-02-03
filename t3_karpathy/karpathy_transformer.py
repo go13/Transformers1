@@ -69,30 +69,31 @@ class FeedForward(nn.Module):
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, block_size: int, inp_size: int, hidden_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
 
-        block_size = config.block_size
-
-        inp_size = config.n_embd
-        hidden_size = 4 * config.n_embd
-        dropout = config.dropout
-
-        n_embd = config.n_embd
-        head_size = config.head_size
-        n_head = config.n_head
-
-        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
         self.sa = MultiHeadAttention(block_size, n_embd, head_size, n_head, dropout)
 
-        self.ln2 = nn.LayerNorm(config.n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
         self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
         x = x + self.ffwd(self.ln2(x))
         return x
+
+    @staticmethod
+    def create_block(config: TransformerConfig):
+        block_size = config.block_size
+        inp_size = config.n_embd
+        hidden_size = config.hidden_size
+        dropout = config.dropout
+        n_embd = config.n_embd
+        head_size = config.head_size
+        n_head = config.n_head
+        return Block(block_size, inp_size, hidden_size, n_embd, head_size, n_head, dropout)
 
 
 class KarpathyTransformerModel(nn.Module):
@@ -103,7 +104,7 @@ class KarpathyTransformerModel(nn.Module):
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.blocks = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
 
