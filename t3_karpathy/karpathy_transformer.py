@@ -76,10 +76,11 @@ class Block(nn.Module):
         hidden_size = 4 * config.n_embd
         dropout = config.dropout
 
-        self.sa = MultiHeadAttention(config)
-        self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
         self.ln1 = nn.LayerNorm(config.n_embd)
+        self.sa = MultiHeadAttention(config)
+
         self.ln2 = nn.LayerNorm(config.n_embd)
+        self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
