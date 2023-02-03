@@ -69,15 +69,14 @@ class FeedForward(nn.Module):
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
 
-    def __init__(self, block_size: int, inp_size: int, hidden_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
-        # n_embd: embedding dimension, n_head: the number of heads we'd like
+    def __init__(self, dropout: float, block_size: int, inp_size: int, hidden_size: int, out_size: int, n_embd: int, n_head: int, head_size: int):
         super().__init__()
 
         self.ln1 = nn.LayerNorm(n_embd)
         self.sa = MultiHeadAttention(block_size, n_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(n_embd)
-        self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
+        self.ffwd = FeedForward(inp_size, hidden_size, out_size, dropout)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
@@ -88,12 +87,13 @@ class Block(nn.Module):
     def create_block(config: TransformerConfig):
         block_size = config.block_size
         inp_size = config.n_embd
+        out_size = config.n_embd
         hidden_size = config.hidden_size
         dropout = config.dropout
         n_embd = config.n_embd
         head_size = config.head_size
         n_head = config.n_head
-        return Block(block_size, inp_size, hidden_size, n_embd, head_size, n_head, dropout)
+        return Block(dropout, block_size, inp_size, hidden_size, out_size, n_embd, n_head, head_size)
 
 
 class KarpathyTransformerModel(nn.Module):
