@@ -7,14 +7,13 @@ from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
 
 
-class AutoencoderTransformerModel(nn.Module):
+class CompressingTransformerModel(nn.Module):
 
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
 
         block_size = config.block_size
-        inp_size = config.n_embd
         hidden_size = config.hidden_size
         out_size = config.n_embd
         dropout = config.dropout
@@ -22,14 +21,17 @@ class AutoencoderTransformerModel(nn.Module):
         head_size = config.head_size
         n_head = config.n_head
 
+        block_sizes = [ block_size for i in range(config.n_layer) ]
+        # block_sizes = [ block_size // 2 ** i for i in range(config.n_layer) ]
+
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks1 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for _ in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block(dropout, block_sizes[i], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
         self.mid = nn.Linear(config.n_embd, config.n_embd)
 
-        self.blocks2 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for _ in range(config.n_layer)])
+        self.blocks2 = nn.Sequential(*[Block(dropout, block_sizes[config.n_layer - i - 1], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
 
         self.ln_out = nn.LayerNorm(config.n_embd)
         self.out = nn.Linear(config.n_embd, config.vocab_size)
@@ -92,20 +94,20 @@ class AutoencoderTransformerModel(nn.Module):
         return idx
 
 
-class AutoencoderRunner(AbstractRunner):
+class CompressingRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, AutoencoderTransformerModel(config))
+        super().__init__(config, CompressingTransformerModel(config))
         pass
 
     def generate(self, context, max_new_tokens):
         return self.model.generate(context, max_new_tokens)
 
 
-class AutoencoderAccumulativeTrainer(AbstractRunner):
+class CompressingAccumulativeTrainer(AbstractRunner):
 
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, AutoencoderTransformerModel(config))
-        self.runner: AutoencoderRunner = AutoencoderRunner(config)
+        super().__init__(config, CompressingTransformerModel(config))
+        self.runner: CompressingRunner = CompressingRunner(config)
         self.data_x = []
         self.data_y = []
         self.data_dict = dict()
