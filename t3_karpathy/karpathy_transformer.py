@@ -10,14 +10,14 @@ from t3_karpathy.transformer_config import TransformerConfig
 class AttentionHead(nn.Module):
     """ one head of self-attention """
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, n_embd: int, head_size: int, block_size: int, dropout: float):
         super().__init__()
-        self.key = nn.Linear(config.n_embd, config.head_size, bias=False)
-        self.query = nn.Linear(config.n_embd, config.head_size, bias=False)
-        self.value = nn.Linear(config.n_embd, config.head_size, bias=False)
-        self.register_buffer('tril', torch.tril(torch.ones(config.block_size, config.block_size)))
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
-        self.dropout = nn.Dropout(config.dropout)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         b, t, c = x.shape
@@ -37,11 +37,12 @@ class AttentionHead(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, block_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
         super().__init__()
-        self.heads = nn.ModuleList([AttentionHead(config) for _ in range(config.n_head)])
-        self.proj = nn.Linear(config.n_embd, config.n_embd)
-        self.dropout = nn.Dropout(config.dropout)
+
+        self.heads = nn.ModuleList([AttentionHead(n_embd, head_size, block_size, dropout) for _ in range(n_head)])
+        self.proj = nn.Linear(n_embd, n_embd)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
@@ -72,12 +73,18 @@ class Block(nn.Module):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
 
+        block_size = config.block_size
+
         inp_size = config.n_embd
         hidden_size = 4 * config.n_embd
         dropout = config.dropout
 
+        n_embd = config.n_embd
+        head_size = config.head_size
+        n_head = config.n_head
+
         self.ln1 = nn.LayerNorm(config.n_embd)
-        self.sa = MultiHeadAttention(config)
+        self.sa = MultiHeadAttention(block_size, n_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(config.n_embd)
         self.ffwd = FeedForward(inp_size, hidden_size, inp_size, dropout)
