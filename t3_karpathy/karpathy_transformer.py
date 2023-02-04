@@ -51,8 +51,6 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    """ a simple linear layer followed by a non-linearity """
-
     def __init__(self, inp_size, hidden_size, out_size, dropout):
         super().__init__()
         self.net = nn.Sequential(
@@ -67,8 +65,6 @@ class FeedForward(nn.Module):
 
 
 class Block(nn.Module):
-    """ Transformer block: communication followed by computation """
-
     def __init__(self, dropout: float, block_size: int, hidden_size: int, out_size: int, n_embd: int, n_head: int, head_size: int):
         super().__init__()
 
@@ -86,17 +82,6 @@ class Block(nn.Module):
     @staticmethod
     def create(config: TransformerConfig):
         block_size = config.block_size
-        out_size = config.n_embd
-        hidden_size = config.hidden_size
-        dropout = config.dropout
-        n_embd = config.n_embd
-        head_size = config.head_size
-        n_head = config.n_head
-        return Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size)
-
-
-    @staticmethod
-    def create_with_block_size(config: TransformerConfig, block_size: int):
         out_size = config.n_embd
         hidden_size = config.hidden_size
         dropout = config.dropout

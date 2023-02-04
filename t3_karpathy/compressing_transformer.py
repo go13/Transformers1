@@ -3,9 +3,45 @@ from torch import nn as nn
 from torch.nn import functional as F
 
 from ga_t3.accumulative_trainer import StringAccumulativeTrainer
-from t3_karpathy.karpathy_transformer import Block
+from t3_karpathy.karpathy_transformer import MultiHeadAttention, FeedForward
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
+
+
+class Block(nn.Module):
+    """ Transformer block: communication followed by computation """
+
+    def __init__(self, dropout: float, block_size: int, hidden_size: int, out_size: int, n_embd: int, n_head: int, head_size: int):
+        super().__init__()
+
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.sa = MultiHeadAttention(block_size, n_embd, head_size, n_head, dropout)
+
+        self.ln2 = nn.LayerNorm(block_size)
+        self.ffwd = FeedForward(block_size, block_size * 2, out_size, dropout)
+
+    def forward(self, x):
+        b, t, c = x.shape
+        x = x + self.sa(self.ln1(x))
+
+        # transpose x (b, t, c) to (b, c, t)
+        x = x.transpose(1, 2)
+
+        x = self.ffwd(self.ln2(x))
+
+        x = x.transpose(1, 2)
+
+        return x
+
+    @staticmethod
+    def create_with_block_size(config: TransformerConfig, input_size: int, output_size: int):
+        out_size = output_size
+        hidden_size = config.hidden_size
+        dropout = config.dropout
+        n_embd = config.n_embd
+        head_size = config.head_size
+        n_head = config.n_head
+        return Block(dropout, input_size, hidden_size, out_size, n_embd, n_head, head_size)
 
 
 class CompressingTransformerModel(nn.Module):
@@ -22,16 +58,16 @@ class CompressingTransformerModel(nn.Module):
                 res = 1
             return res
 
-        block_sizes = [get_block_size(i) for i in range(config.n_layer)]
+        block_sizes = [get_block_size(i) for i in range(config.n_layer + 1)]
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks1 = nn.Sequential(*[Block.create_with_block_size(config, block_sizes[i]) for i in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block.create_with_block_size(config, block_sizes[i], block_sizes[i + 1]) for i in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
         self.mid = nn.Linear(config.n_embd, config.n_embd)
 
-        self.blocks2 = nn.Sequential(*[Block.create_with_block_size(config, block_sizes[config.n_layer - i - 1]) for i in range(config.n_layer)])
+        self.blocks2 = nn.Sequential(*[Block.create_with_block_size(config, block_sizes[config.n_layer - i], block_sizes[config.n_layer - i - 1]) for i in range(config.n_layer)])
 
         self.ln_out = nn.LayerNorm(config.n_embd)
         self.out = nn.Linear(config.n_embd, config.vocab_size)
