@@ -72,9 +72,7 @@ class CompressingTransformerModel(nn.Module):
         return x
 
     def generate(self, idx1):
-        x = self.half_fwd_in(idx1)
-
-        logits = self.half_fwd_out(x)
+        logits = self.forward(idx1)
 
         b, t, c = logits.shape
         probs = F.softmax(logits, dim=-1)
