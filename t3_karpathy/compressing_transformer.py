@@ -90,8 +90,8 @@ class CompressingRunner(AbstractRunner):
         super().__init__(config, CompressingTransformerModel(config))
         pass
 
-    def generate(self, context, max_new_tokens):
-        return self.model.generate(context, max_new_tokens)
+    def generate(self, context):
+        return self.model.generate(context)
 
 
 class CompressingAccumulativeTrainer(AbstractRunner):
