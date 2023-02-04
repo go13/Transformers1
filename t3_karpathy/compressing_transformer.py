@@ -60,7 +60,7 @@ class CompressingBlock(nn.Module):
         n_head = config.n_head
         head_size = out_embd // n_head
 
-        self.block = Block(dropout, inp_size, inp_embd * 2, inp_embd, out_embd, n_head, inp_embd // n_head)
+        self.block = Block(dropout, inp_size, inp_embd * 4, inp_embd, out_embd, n_head, inp_embd // n_head)
 
         self.reduced_position_embedding_table = nn.Embedding(out_size, out_embd)
 
@@ -68,7 +68,7 @@ class CompressingBlock(nn.Module):
         self.sa1 = CompressingMultiHeadAttention(inp_size, out_size, out_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(out_embd)
-        self.ffwd = FeedForward(out_embd, out_embd * 2, out_embd, dropout)
+        self.ffwd = FeedForward(out_embd, out_embd * 4, out_embd, dropout)
 
     def forward(self, x):
         b, t, c = x.shape
@@ -117,7 +117,7 @@ class CompressingTransformerModel(nn.Module):
             emb_sizes[i + 1],
         ) for i in range(config.n_layer)])
 
-        mid_embd = emb_sizes[config.n_layer - 1]
+        mid_embd = emb_sizes[config.n_layer]
         self.ln_mid = nn.LayerNorm(mid_embd)
         self.mid = nn.Linear(mid_embd, mid_embd)
 

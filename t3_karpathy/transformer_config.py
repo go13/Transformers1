@@ -9,11 +9,11 @@ class TransformerConfig:
         # karpathy parameters
         self.batch_size = 16 # how many independent sequences will we process in parallel?
         self.block_size = 32 # what is the maximum context length for predictions?
-        self.n_embd = 32
+        self.n_embd = 64
         self.hidden_size = self.n_embd * 4
 
         self.n_head = 4
-        self.n_layer = 4
+        self.n_layer = 2
         self.dropout = 0.1
         self.head_size = self.n_embd // self.n_head
 
