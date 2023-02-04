@@ -12,7 +12,7 @@ def download(url: str, dest_folder: str):
     filename = url.split('/')[-1].replace(" ", "_")  # be careful with file names
     file_path = os.path.join(dest_folder, filename)
 
-    if os.path.exists(dest_folder):
+    if os.path.exists(dest_folder + filename):
         print("File already downloaded")
         return
 
@@ -36,7 +36,7 @@ class TokenCodec(object):
         dest_folder = "../"
         src_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
 
-        download(dest_folder + src_url, dest_folder=dest_folder)
+        download(src_url, dest_folder=dest_folder)
 
         # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
         with open(dest_folder + input_path, 'r', encoding='utf-8') as f:
