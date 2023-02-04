@@ -196,6 +196,9 @@ class AbstractRunner(object):
     def set_weights(self, new_state_dict):
         self.model.load_state_dict(OrderedDict(new_state_dict))
 
+    def generate(self, *args):
+        raise NotImplementedError()
+
 
 class KarpathyRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):

@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from ga_t3.accumulative_trainer import StringAccumulativeTrainer
 from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -94,11 +94,10 @@ class CompressingRunner(AbstractRunner):
         return self.model.generate(context)
 
 
-class CompressingAccumulativeTrainer(AbstractAccumulativeTrainer):
+class CompressingAccumulativeTrainer(StringAccumulativeTrainer):
 
     def __init__(self, config: TransformerConfig):
-        super().__init__(config)
-        self.runner: CompressingRunner = CompressingRunner(config)
+        super().__init__(config, CompressingRunner(config))
         self.data_x = []
         self.data_y = []
         self.data_dict = dict()
@@ -138,6 +137,9 @@ class CompressingAccumulativeTrainer(AbstractAccumulativeTrainer):
 
     def predict(self, x1):
         return self.predict_list([x1])[0]
+
+    def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+        self.runner.train_iterate(n_iter, get_train_batch, get_val_batch)
 
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices in the current context
