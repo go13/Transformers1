@@ -27,8 +27,7 @@ class CompressingTransformerModel(nn.Module):
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        #self.blocks1 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
-        self.blocks1 = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
         self.mid = nn.Linear(config.n_embd, config.vocab_size)
@@ -140,23 +139,6 @@ class CompressingAccumulativeTrainer(StringAccumulativeTrainer):
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
         self.runner.train_iterate(n_iter, get_train_batch, get_val_batch)
-
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # crop idx to the last block_size tokens
-            idx_cond = idx[:, -self.config.block_size:]
-            # get the predictions
-            logits = self.runner.forward(idx_cond)
-            # focus only on the last time step
-            logits = logits[:, -1, :]  # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1)  # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-        return idx
 
     def train(self, n=1):
         losses = 0
