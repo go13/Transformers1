@@ -9,7 +9,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 torch.manual_seed(1337)
 
-config = TransformerConfig(batch_size=16, block_size=32, n_embed=64, n_head=4, n_layer=4)
+config = TransformerConfig(batch_size=128, block_size=32, n_embed=64, n_head=4, n_layer=4)
 runner = KarpathyRunner(config)
 dataloader = GptNanoDataloader(config)
 
