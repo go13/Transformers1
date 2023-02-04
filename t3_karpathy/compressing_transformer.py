@@ -16,8 +16,13 @@ class CompressingTransformerModel(nn.Module):
 
         block_size = config.block_size
 
-        block_sizes = [ block_size for i in range(config.n_layer) ]
-        # block_sizes = [ block_size // 2 ** i for i in range(config.n_layer) ]
+        def get_block_size(i):
+            res = block_size // (2 ** i)
+            if res < 1:
+                res = 1
+            return res
+
+        block_sizes = [get_block_size(i) for i in range(config.n_layer)]
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
