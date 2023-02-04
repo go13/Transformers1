@@ -71,17 +71,8 @@ class CompressingTransformerModel(nn.Module):
         x = self.half_fwd_out(x)
         return x
 
-    def generate(self, idx1, idx2):
-        # x1 = self.config.token_codec.encode(idx1)
-        # x2 = self.config.token_codec.encode(idx2)
-
-        x1 = self.half_fwd_in(idx1)
-        x2 = self.half_fwd_in(idx2)
-        # create random mask of 0 and 1 for x1 and inverse mask for x2 of x1.shape
-        mask = torch.randint(2, x1.shape, device=self.config.my_device)
-        mask_inv = 1 - mask
-        # combine x1 and x2 with mask
-        x = x1 * mask + x2 * mask_inv
+    def generate(self, idx1):
+        x = self.half_fwd_in(idx1)
 
         logits = self.half_fwd_out(x)
 
@@ -135,20 +126,18 @@ class CompressingAccumulativeTrainer(AbstractRunner):
 
         return 1
 
-    def predict_list(self, lst1, lst2):
+    def predict_list(self, lst1):
         lst1 = [self.config.token_codec.encode(x) for x in lst1]
-        lst2 = [self.config.token_codec.encode(x) for x in lst2]
 
         x1 = torch.tensor(lst1).to(self.config.my_device)
-        x2 = torch.tensor(lst2).to(self.config.my_device)
 
-        out = self.runner.generate(x1, x2)
+        out = self.runner.generate(x1)
         out = out.tolist()
 
         return [self.config.token_codec.decode(o) for o in out]
 
-    def predict(self, x1, x2):
-        return self.predict_list([x1], [x2])[0]
+    def predict(self, x1):
+        return self.predict_list([x1])[0]
 
     def train(self, n=1):
         losses = 0
