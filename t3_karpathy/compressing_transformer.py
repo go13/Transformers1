@@ -59,9 +59,8 @@ class CompressingBlock(nn.Module):
         dropout = config.dropout
         n_head = config.n_head
         head_size = out_embd // n_head
-        bs = config.batch_size
 
-        self.register_buffer('reduced_pos_emb_ids', torch.arange(out_size, device=self.config.my_device).repeat(bs, 1))
+        self.register_buffer('reduced_pos_emb_ids', torch.arange(out_size, device=self.config.my_device))
 
         print(f"in_size={inp_size}, in_embd={inp_embd}, out_size={out_size}, out_embd={out_embd}")
 
@@ -80,7 +79,7 @@ class CompressingBlock(nn.Module):
 
         x = x + self.block(x)
 
-        reduced_pos_emb = self.reduced_position_embedding_table(self.reduced_pos_emb_ids)  # (B,T,C)
+        reduced_pos_emb = self.reduced_position_embedding_table(self.reduced_pos_emb_ids.repeat(b, 1))  # (B,T,C)
 
         x = self.sa1(self.ln1(x), reduced_pos_emb)
 
