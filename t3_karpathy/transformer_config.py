@@ -3,17 +3,17 @@ from t3_karpathy.token_codec import TokenCodec
 
 class TransformerConfig:
 
-    def __init__(self, my_device='cuda'):
+    def __init__(self, my_device='cuda', batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4):
         self.my_device = my_device
 
         # karpathy parameters
-        self.batch_size = 32 # how many independent sequences will we process in parallel?
-        self.block_size = 32 # what is the maximum context length for predictions?
-        self.n_embd = 128
+        self.batch_size = batch_size
+        self.block_size = block_size
+        self.n_embd = n_embed
         self.hidden_size = self.n_embd * 4
 
-        self.n_head = 4
-        self.n_layer = 4
+        self.n_head = n_head
+        self.n_layer = n_layer
         self.dropout = 0.1
         self.head_size = self.n_embd // self.n_head
 
