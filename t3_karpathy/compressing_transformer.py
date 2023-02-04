@@ -27,17 +27,17 @@ class CompressingTransformerModel(nn.Module):
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks1 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block(dropout, block_sizes[i], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
-        self.mid = nn.Linear(config.n_embd, config.vocab_size)
+        self.mid = nn.Linear(config.n_embd, config.n_embd)
 
-        # self.blocks2 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
-        #
-        # self.ln_out = nn.LayerNorm(config.n_embd)
-        # self.out = nn.Linear(config.n_embd, config.vocab_size)
+        self.blocks2 = nn.Sequential(*[Block(dropout, block_sizes[config.n_layer - i - 1], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
 
-        # self.out.weight = self.token_embedding_table.weight
+        self.ln_out = nn.LayerNorm(config.n_embd)
+        self.out = nn.Linear(config.n_embd, config.vocab_size)
+
+        self.out.weight = self.token_embedding_table.weight
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)
@@ -69,7 +69,7 @@ class CompressingTransformerModel(nn.Module):
     def forward(self, idx):
         x = self.half_fwd_in(idx)
 
-        # x = self.half_fwd_out(x)
+        x = self.half_fwd_out(x)
         return x
 
     def generate(self, idx1):
