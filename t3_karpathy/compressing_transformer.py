@@ -9,7 +9,7 @@ from t3_karpathy.karpathy_transformer import AbstractRunner
 
 
 class CompressingAttentionHead(nn.Module):
-    def __init__(self, inp_size: int, out_size: int, inp_embd:int, out_embd: int, head_size: int, dropout: float):
+    def __init__(self, inp_size: int, out_size: int, inp_embd: int, out_embd: int, head_size: int, dropout: float):
         super().__init__()
         self.key = nn.Linear(out_embd, head_size, bias=False)
         self.query = nn.Linear(inp_embd, head_size, bias=False)
@@ -59,6 +59,11 @@ class CompressingBlock(nn.Module):
         dropout = config.dropout
         n_head = config.n_head
         head_size = out_embd // n_head
+        bs = config.batch_size
+
+        self.register_buffer('reduced_pos_emb_ids', torch.arange(out_size, device=self.config.my_device).repeat(bs, 1))
+
+        print(f"in_size={inp_size}, in_embd={inp_embd}, out_size={out_size}, out_embd={out_embd}")
 
         self.block = Block(dropout, inp_size, inp_embd * 4, inp_embd, out_embd, n_head, inp_embd // n_head)
 
@@ -75,8 +80,7 @@ class CompressingBlock(nn.Module):
 
         x = x + self.block(x)
 
-        tr = self.reduced_position_embedding_table.num_embeddings
-        reduced_pos_emb = self.reduced_position_embedding_table(torch.arange(tr, device=self.config.my_device).repeat(b, 1))  # (B,T,C)
+        reduced_pos_emb = self.reduced_position_embedding_table(self.reduced_pos_emb_ids)  # (B,T,C)
 
         x = self.sa1(self.ln1(x), reduced_pos_emb)
 
