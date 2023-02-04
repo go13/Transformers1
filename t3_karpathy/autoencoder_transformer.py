@@ -16,12 +16,12 @@ class AutoencoderTransformerModel(nn.Module):
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks1 = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
         self.mid = nn.Linear(config.n_embd, config.n_embd)
 
-        self.blocks2 = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
+        self.blocks2 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
         self.ln_out = nn.LayerNorm(config.n_embd)
         self.out = nn.Linear(config.n_embd, config.vocab_size)

@@ -84,8 +84,19 @@ class Block(nn.Module):
         return x
 
     @staticmethod
-    def create_block(config: TransformerConfig):
+    def create(config: TransformerConfig):
         block_size = config.block_size
+        out_size = config.n_embd
+        hidden_size = config.hidden_size
+        dropout = config.dropout
+        n_embd = config.n_embd
+        head_size = config.head_size
+        n_head = config.n_head
+        return Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size)
+
+
+    @staticmethod
+    def create_with_block_size(config: TransformerConfig, block_size: int):
         out_size = config.n_embd
         hidden_size = config.hidden_size
         dropout = config.dropout
@@ -103,7 +114,7 @@ class KarpathyTransformerModel(nn.Module):
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
+        self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
 
