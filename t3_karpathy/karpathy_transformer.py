@@ -37,10 +37,10 @@ class AttentionHead(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, block_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
+    def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
         super().__init__()
 
-        self.heads = nn.ModuleList([AttentionHead(block_size, n_embd, head_size, dropout) for _ in range(n_head)])
+        self.heads = nn.ModuleList([AttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
@@ -51,12 +51,12 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, inp_size, hidden_size, out_size, dropout):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(inp_size, hidden_size),
+            nn.Linear(inp_n_embd, hidden_n_embd),
             nn.ReLU(),
-            nn.Linear(hidden_size, out_size),
+            nn.Linear(hidden_n_embd, out_n_embd),
             nn.Dropout(dropout),
         )
 
@@ -65,14 +65,14 @@ class FeedForward(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, dropout: float, block_size: int, hidden_size: int, out_size: int, n_embd: int, n_head: int, head_size: int):
+    def __init__(self, dropout: float, block_size: int, hidden_emb: int, inp_embd: int, out_emb: int, n_head: int, head_size: int):
         super().__init__()
 
-        self.ln1 = nn.LayerNorm(n_embd)
-        self.sa = MultiHeadAttention(block_size, n_embd, head_size, n_head, dropout)
+        self.ln1 = nn.LayerNorm(inp_embd)
+        self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
 
-        self.ln2 = nn.LayerNorm(n_embd)
-        self.ffwd = FeedForward(n_embd, hidden_size, out_size, dropout)
+        self.ln2 = nn.LayerNorm(inp_embd)
+        self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
@@ -88,7 +88,7 @@ class Block(nn.Module):
         n_embd = config.n_embd
         head_size = config.head_size
         n_head = config.n_head
-        return Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size)
+        return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
 
 
 class KarpathyTransformerModel(nn.Module):
