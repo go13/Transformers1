@@ -9,11 +9,11 @@ from t3_karpathy.karpathy_transformer import AbstractRunner
 
 
 class CompressingAttentionHead(nn.Module):
-    def __init__(self, inp_size: int, out_size: int, n_embd: int, head_size: int, dropout: float):
+    def __init__(self, inp_size: int, out_size: int, inp_embd:int, out_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.key = nn.Linear(n_embd, head_size, bias=False)
-        self.query = nn.Linear(n_embd, head_size, bias=False)
-        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.key = nn.Linear(out_embd, head_size, bias=False)
+        self.query = nn.Linear(inp_embd, head_size, bias=False)
+        self.value = nn.Linear(inp_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(inp_size, out_size)))
 
         self.dropout = nn.Dropout(dropout)
@@ -36,11 +36,11 @@ class CompressingAttentionHead(nn.Module):
 
 
 class CompressingMultiHeadAttention(nn.Module):
-    def __init__(self, inp_size: int, out_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
+    def __init__(self, inp_size: int, out_size: int, inp_embd: int, out_embd: int, head_size: int, n_head: int, dropout: float):
         super().__init__()
 
-        self.heads = nn.ModuleList([CompressingAttentionHead(inp_size, out_size, n_embd, head_size, dropout) for _ in range(n_head)])
-        self.proj = nn.Linear(n_embd, n_embd)
+        self.heads = nn.ModuleList([CompressingAttentionHead(inp_size, out_size, inp_embd, out_embd, head_size, dropout) for _ in range(n_head)])
+        self.proj = nn.Linear(out_embd, out_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, reduced_embeddings):
@@ -62,10 +62,10 @@ class CompressingBlock(nn.Module):
 
         self.block = Block(dropout, inp_size, inp_embd * 4, inp_embd, out_embd, n_head, inp_embd // n_head)
 
-        self.reduced_position_embedding_table = nn.Embedding(out_size, out_embd)
+        self.reduced_position_embedding_table = nn.Embedding(out_size, inp_embd)
 
         self.ln1 = nn.LayerNorm(out_embd)
-        self.sa1 = CompressingMultiHeadAttention(inp_size, out_size, out_embd, head_size, n_head, dropout)
+        self.sa1 = CompressingMultiHeadAttention(inp_size, out_size, inp_embd, out_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(out_embd)
         self.ffwd = FeedForward(out_embd, out_embd * 4, out_embd, dropout)
