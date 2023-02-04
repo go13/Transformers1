@@ -16,4 +16,4 @@ dataloader = GptNanoDataloader(config)
 runner.train_iterate(5000, dataloader.get_train_batch, dataloader.get_val_batch)
 
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(dataloader.decode(runner.generate(context, max_new_tokens=2000)[0].tolist()))
+print(dataloader.token_codec.decode(runner.generate(context, max_new_tokens=2000)[0].tolist()))
