@@ -2,6 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
+from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -92,10 +93,10 @@ class AutoencoderRunner(AbstractRunner):
         return self.model.generate(context, max_new_tokens)
 
 
-class AutoencoderAccumulativeTrainer(AbstractRunner):
+class AutoencoderAccumulativeTrainer(AbstractAccumulativeTrainer):
 
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, AutoencoderTransformerModel(config))
+        super().__init__(config)
         self.runner: AutoencoderRunner = AutoencoderRunner(config)
         self.data_x = []
         self.data_y = []

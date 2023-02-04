@@ -2,6 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
+from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -26,17 +27,18 @@ class CompressingTransformerModel(nn.Module):
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks1 = nn.Sequential(*[Block(dropout, block_sizes[i], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
+        #self.blocks1 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
+        self.blocks1 = nn.Sequential(*[Block.create_block(config) for _ in range(config.n_layer)])
 
         self.ln_mid = nn.LayerNorm(config.n_embd)
-        self.mid = nn.Linear(config.n_embd, config.n_embd)
+        self.mid = nn.Linear(config.n_embd, config.vocab_size)
 
-        self.blocks2 = nn.Sequential(*[Block(dropout, block_sizes[config.n_layer - i - 1], hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
+        # self.blocks2 = nn.Sequential(*[Block(dropout, block_size, hidden_size, out_size, n_embd, n_head, head_size) for i in range(config.n_layer)])
+        #
+        # self.ln_out = nn.LayerNorm(config.n_embd)
+        # self.out = nn.Linear(config.n_embd, config.vocab_size)
 
-        self.ln_out = nn.LayerNorm(config.n_embd)
-        self.out = nn.Linear(config.n_embd, config.vocab_size)
-
-        self.out.weight = self.token_embedding_table.weight
+        # self.out.weight = self.token_embedding_table.weight
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)
@@ -68,7 +70,7 @@ class CompressingTransformerModel(nn.Module):
     def forward(self, idx):
         x = self.half_fwd_in(idx)
 
-        x = self.half_fwd_out(x)
+        # x = self.half_fwd_out(x)
         return x
 
     def generate(self, idx1):
@@ -92,10 +94,10 @@ class CompressingRunner(AbstractRunner):
         return self.model.generate(context)
 
 
-class CompressingAccumulativeTrainer(AbstractRunner):
+class CompressingAccumulativeTrainer(AbstractAccumulativeTrainer):
 
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, CompressingTransformerModel(config))
+        super().__init__(config)
         self.runner: CompressingRunner = CompressingRunner(config)
         self.data_x = []
         self.data_y = []
