@@ -6,6 +6,19 @@ from torch.nn import functional as F
 
 from t3_karpathy.transformer_config import TransformerConfig
 
+class FeedForward(nn.Module):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(inp_n_embd, hidden_n_embd),
+            nn.ReLU(),
+            nn.Linear(hidden_n_embd, out_n_embd),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
 
 class AttentionHead(nn.Module):
     """ one head of self-attention """
@@ -48,20 +61,6 @@ class MultiHeadAttention(nn.Module):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
-
-
-class FeedForward(nn.Module):
-    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, hidden_n_embd),
-            nn.ReLU(),
-            nn.Linear(hidden_n_embd, out_n_embd),
-            nn.Dropout(dropout),
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 class Block(nn.Module):

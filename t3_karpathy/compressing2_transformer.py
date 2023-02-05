@@ -247,7 +247,7 @@ class CompressingAccumulativeTrainer(StringAccumulativeTrainer):
         return av_loss, len(self.data_x)
 
 
-config = TransformerConfig(batch_size=128, block_size=32, n_embed=64, n_head=4, n_layer=4)
+config = TransformerConfig(batch_size=128, block_size=32, n_embed=64, n_head=2, n_layer=2)
 dataloader = GptNanoDataloader(config)
 
 trainer1=CompressingAccumulativeTrainer(config)
