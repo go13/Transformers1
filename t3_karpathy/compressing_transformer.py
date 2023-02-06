@@ -14,6 +14,10 @@ class CompressingAttentionHead(nn.Module):
         self.key = nn.Linear(out_embd, head_size, bias=False)
         self.query = nn.Linear(inp_embd, head_size, bias=False)
         self.value = nn.Linear(inp_embd, head_size, bias=False)
+        # self.key = FeedForward(out_embd, out_embd * 4, head_size, dropout)
+        # self.query = FeedForward(inp_embd, inp_embd * 4, head_size, dropout)
+        # self.value = FeedForward(inp_embd, inp_embd * 4, head_size, dropout)
+        #
         self.register_buffer('tril', torch.tril(torch.ones(inp_size, out_size)))
 
         self.dropout = nn.Dropout(dropout)

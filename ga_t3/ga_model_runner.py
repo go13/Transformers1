@@ -135,7 +135,8 @@ class GAModelRunner(AbstractModelRunnner):
         self.config.block_size = 45
 
         self.population_size = params.ga_population_size
-        self.transformer_pool = TransformerPool(self.config, params, self.population_size)
+        if self.params.use_transformer_transformer:
+            self.transformer_pool = TransformerPool(self.config, params, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
