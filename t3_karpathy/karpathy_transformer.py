@@ -51,6 +51,39 @@ class AttentionHead(nn.Module):
         return out
 
 
+class NNAttentionHead(nn.Module):
+    """ one head of self-attention """
+
+    def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
+        super().__init__()
+        self.att2 = FeedForward(n_embd * 2, n_embd, 1, 0)
+
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        b, t, c = x.shape
+
+        k = x.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        q = x.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+
+        a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
+
+        a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+
+        wei = a2.squeeze(dim=-1) * c ** -0.5
+        # compute attention scores ("affinities")
+        wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
+        wei = F.softmax(wei, dim=-1)  # (B, T, T)
+        wei = self.dropout(wei)
+        # perform the weighted aggregation of the values
+        v = self.value(x)  # (B,T,C)
+        out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
+        return out
+
+
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
@@ -60,7 +93,7 @@ class MultiHeadAttention(nn.Module):
         self.position_embedding_table = nn.Embedding(inp_size, n_embd)
         # self.register_buffer('pos_embedding_arrange', torch.arange(inp_size, device=my_device))
 
-        self.heads = nn.ModuleList([AttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
+        self.heads = nn.ModuleList([NNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
