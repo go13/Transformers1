@@ -57,6 +57,7 @@ class NNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
+        # self.val2 = FeedForward(n_embd * 2, n_embd, head_size, dropout)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -82,6 +83,7 @@ class NNAttentionHead(nn.Module):
         wei = self.dropout(wei)
         # perform the weighted aggregation of the values
         v = self.value(x)  # (B,T,C)
+        # v = self.val2(x1)  # (B,T,C)
         out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
 
@@ -146,7 +148,7 @@ class PositionalEmbedding(nn.Module):
         super().__init__()
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd * 4, config.n_embd, config.dropout)
+        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
         self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
 
     def forward(self, x):
