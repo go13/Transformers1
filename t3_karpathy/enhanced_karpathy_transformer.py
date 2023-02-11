@@ -57,7 +57,6 @@ class NNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
-        # self.position_embedding_table = nn.Embedding(block_size, n_embd)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -66,8 +65,6 @@ class NNAttentionHead(nn.Module):
 
     def forward(self, x, pos_emb):
         b, t, c = x.shape
-        # pos_embedding_arrange = torch.arange(t, device='cuda')
-        # pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
 
         x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
@@ -95,8 +92,6 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
         super().__init__()
         self.my_device = my_device
-        self.position_embedding_table = nn.Embedding(inp_size, n_embd)
-        # self.register_buffer('pos_embedding_arrange', torch.arange(inp_size, device=my_device))
 
         self.heads = nn.ModuleList([NNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
@@ -146,16 +141,30 @@ class Block(nn.Module):
         return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
 
 
+class PositionalEmbedding(nn.Module):
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd * 4, config.n_embd, config.dropout)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+
+    def forward(self, x):
+        b, t, c = x.shape
+        pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
+        pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
+        pos_emb = self.position_embedding_ff(pos_emb)
+        pos_emb = self.position_embedding_ff_ln(pos_emb)
+        return pos_emb
+
+
 class KarpathyTransformerModel(nn.Module):
 
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd * 2, config.n_embd, config.dropout)
-        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+        self.position_embedding = PositionalEmbedding(config)
 
         self.blocks = BlockSequence(config)
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
@@ -177,11 +186,7 @@ class KarpathyTransformerModel(nn.Module):
 
         x = tok_emb # + pos_emb  # (B,T,C)
 
-        b, t, c = x.shape
-        pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
-        pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
-        pos_emb = self.position_embedding_ff(pos_emb)
-        pos_emb = self.position_embedding_ff_ln(pos_emb)
+        pos_emb = self.position_embedding(x)
 
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
