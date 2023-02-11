@@ -56,16 +56,19 @@ class MultiHeadAttention(nn.Module):
 
     def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
         super().__init__()
+        self.my_device = my_device
         self.position_embedding_table = nn.Embedding(inp_size, n_embd)
-        self.register_buffer('pos_embedding_arrange', torch.arange(inp_size, device=my_device))
+        # self.register_buffer('pos_embedding_arrange', torch.arange(inp_size, device=my_device))
 
         self.heads = nn.ModuleList([AttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        pos_emb = self.position_embedding_table(self.pos_embedding_arrange)  # (T,C)
-        x = x + pos_emb  # (B,T,C)
+        b, t, c = x.shape
+        pos_embedding_arrange = torch.arange(t, device=self.my_device)
+        pos_emb = self.position_embedding_table(pos_embedding_arrange)  # (T,C)
+        x = x + pos_emb  # (B,T,C) # todo: fix exception when input size is not equal to block size
 
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
