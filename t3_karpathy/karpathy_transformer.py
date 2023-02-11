@@ -6,6 +6,7 @@ from torch.nn import functional as F
 
 from t3_karpathy.transformer_config import TransformerConfig
 
+
 class FeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
@@ -28,6 +29,9 @@ class AttentionHead(nn.Module):
         self.key = nn.Linear(n_embd, head_size, bias=False)
         self.query = nn.Linear(n_embd, head_size, bias=False)
         self.value = nn.Linear(n_embd, head_size, bias=False)
+        # self.key = FeedForward(n_embd, n_embd * 8, head_size, dropout)
+        # self.query = FeedForward(n_embd, n_embd * 8, head_size, dropout)
+        # self.value = FeedForward(n_embd, n_embd * 8, head_size, dropout)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
@@ -50,14 +54,19 @@ class AttentionHead(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float):
+    def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
         super().__init__()
+        self.position_embedding_table = nn.Embedding(inp_size, n_embd)
+        self.register_buffer('pos_embedding_arrange', torch.arange(inp_size, device=my_device))
 
         self.heads = nn.ModuleList([AttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
+        # pos_emb = self.position_embedding_table(self.pos_embedding_arrange)  # (T,C)
+        # x = x + pos_emb  # (B,T,C)
+
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
@@ -97,7 +106,7 @@ class KarpathyTransformerModel(nn.Module):
         self.config = config
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
@@ -117,8 +126,8 @@ class KarpathyTransformerModel(nn.Module):
 
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(idx)  # (B,T,C)
-        pos_emb = self.position_embedding_table(torch.arange(t, device=self.config.my_device))  # (T,C)
-        x = tok_emb + pos_emb  # (B,T,C)
+
+        x = tok_emb # + pos_emb  # (B,T,C)
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
