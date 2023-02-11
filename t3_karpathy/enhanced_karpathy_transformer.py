@@ -23,8 +23,8 @@ class FeedForward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(inp_n_embd, hidden_n_embd),
-            nn.Sigmoid(),
-            # nn.ReLU(),
+            # nn.Sigmoid(),
+            nn.ReLU(),
             nn.Linear(hidden_n_embd, out_n_embd),
             nn.Dropout(dropout),
         )
@@ -150,9 +150,9 @@ class KarpathyTransformerModel(nn.Module):
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
 
         self.pe1 = PositionalEmbedding(config)
-        self.pe2 = PositionalEmbedding(config)
-        self.pe3 = PositionalEmbedding(config)
-        self.pe4 = PositionalEmbedding(config)
+        # self.pe2 = PositionalEmbedding(config)
+        # self.pe3 = PositionalEmbedding(config)
+        # self.pe4 = PositionalEmbedding(config)
 
         self.blocks = BlockSequence(config)
         # self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
@@ -175,14 +175,14 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
 
         pos_emb1 = self.pe1(x)
-        pos_emb2 = self.pe2(x)
-        pos_emb3 = self.pe3(x)
-        pos_emb4 = self.pe4(x)
+        # pos_emb2 = self.pe2(x)
+        # pos_emb3 = self.pe3(x)
+        # pos_emb4 = self.pe4(x)
 
         x, pos_emb = self.blocks(x, pos_emb1)  # (B,T,C)
-        x, pos_emb = self.blocks(x, pos_emb2)  # (B,T,C)
-        x, pos_emb = self.blocks(x, pos_emb3)  # (B,T,C)
-        x, pos_emb = self.blocks(x, pos_emb4)  # (B,T,C)
+        # x, pos_emb = self.blocks(x, pos_emb2)  # (B,T,C)
+        # x, pos_emb = self.blocks(x, pos_emb3)  # (B,T,C)
+        # x, pos_emb = self.blocks(x, pos_emb4)  # (B,T,C)
 
         # x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
