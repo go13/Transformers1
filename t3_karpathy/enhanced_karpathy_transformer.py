@@ -7,12 +7,24 @@ from torch.nn import functional as F
 from t3_karpathy.transformer_config import TransformerConfig
 
 
+class PlainFeedForward(nn.Module):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(inp_n_embd, out_n_embd, bias=False),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 class FeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(inp_n_embd, hidden_n_embd),
-            nn.ReLU(),
+            nn.Sigmoid(),
+            # nn.ReLU(),
             nn.Linear(hidden_n_embd, out_n_embd),
             nn.Dropout(dropout),
         )
@@ -21,43 +33,12 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
-class AttentionHead(nn.Module):
-    """ one head of self-attention """
-
-    def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
-        super().__init__()
-        self.key = nn.Linear(n_embd, head_size, bias=False)
-        self.query = nn.Linear(n_embd, head_size, bias=False)
-        self.value = nn.Linear(n_embd, head_size, bias=False)
-        # self.key = FeedForward(n_embd, n_embd * 2, head_size, dropout)
-        # self.query = FeedForward(n_embd, n_embd * 2, head_size, dropout)
-        # self.value = FeedForward(n_embd, n_embd * 2, head_size, dropout)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x):
-        b, t, c = x.shape
-        k = self.key(x)  # (B,T,C)
-        q = self.query(x)  # (B,T,C)
-        # compute attention scores ("affinities")
-        wei = q @ k.transpose(-2, -1) * c ** -0.5  # (B, T, C) @ (B, C, T) -> (B, T, T)
-        wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
-        wei = F.softmax(wei, dim=-1)  # (B, T, T)
-        wei = self.dropout(wei)
-        # perform the weighted aggregation of the values
-        v = self.value(x)  # (B,T,C)
-        out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
-        return out
-
-
 class NNAttentionHead(nn.Module):
     """ one head of self-attention """
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
-        # self.val2 = FeedForward(n_embd * 2, n_embd, head_size, dropout)
+        self.att2 = FeedForward(n_embd * 4, 4 * n_embd, 1, 0)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -83,7 +64,6 @@ class NNAttentionHead(nn.Module):
         wei = self.dropout(wei)
         # perform the weighted aggregation of the values
         v = self.value(x)  # (B,T,C)
-        # v = self.val2(x1)  # (B,T,C)
         out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
 
@@ -125,10 +105,12 @@ class Block(nn.Module):
 
         self.ln2 = nn.LayerNorm(inp_embd)
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
+        self.ln3 = nn.LayerNorm(inp_embd)
 
     def forward(self, x, pos_emb):
         x = x + self.sa(self.ln1(x), pos_emb)
         x = x + self.ffwd(self.ln2(x))
+        x = self.ln3(x)
         return x, pos_emb
 
     @staticmethod
@@ -166,10 +148,14 @@ class KarpathyTransformerModel(nn.Module):
         super().__init__()
         self.config = config
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding = PositionalEmbedding(config)
+
+        self.pe1 = PositionalEmbedding(config)
+        self.pe2 = PositionalEmbedding(config)
+        self.pe3 = PositionalEmbedding(config)
+        self.pe4 = PositionalEmbedding(config)
 
         self.blocks = BlockSequence(config)
-        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
+        # self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
 
     def forward_vs_target(self, idx, targets):
@@ -188,10 +174,17 @@ class KarpathyTransformerModel(nn.Module):
 
         x = tok_emb # + pos_emb  # (B,T,C)
 
-        pos_emb = self.position_embedding(x)
+        pos_emb1 = self.pe1(x)
+        pos_emb2 = self.pe2(x)
+        pos_emb3 = self.pe3(x)
+        pos_emb4 = self.pe4(x)
 
-        x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
-        x = self.ln_f(x)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb1)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb2)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb3)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb4)  # (B,T,C)
+
+        # x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
         return logits
 
