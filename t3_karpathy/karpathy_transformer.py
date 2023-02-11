@@ -56,7 +56,8 @@ class NNAttentionHead(nn.Module):
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.att2 = FeedForward(n_embd * 2, n_embd, 1, 0)
+        self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -65,9 +66,13 @@ class NNAttentionHead(nn.Module):
 
     def forward(self, x):
         b, t, c = x.shape
+        pos_embedding_arrange = torch.arange(t, device='cuda')
+        pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
 
-        k = x.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
-        q = x.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+        x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
+
+        k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        q = x1.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
 
         a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
 
@@ -98,10 +103,10 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        b, t, c = x.shape
-        pos_embedding_arrange = torch.arange(t, device=self.my_device)
-        pos_emb = self.position_embedding_table(pos_embedding_arrange)  # (T,C)
-        x = x + pos_emb  # (B,T,C) # todo: fix exception when input size is not equal to block size
+        # b, t, c = x.shape
+        # pos_embedding_arrange = torch.arange(t, device=self.my_device)
+        # pos_emb = self.position_embedding_table(pos_embedding_arrange)  # (T,C)
+        # x = x + pos_emb  # (B,T,C) # todo: fix exception when input size is not equal to block size
 
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
