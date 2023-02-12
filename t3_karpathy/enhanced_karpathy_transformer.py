@@ -39,7 +39,10 @@ class SlimNNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         # self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
-        self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
+        # self.pos_em_ff = nn.Linear(n_embd, n_embd)
+        # self.att = FeedForward(n_embd * 4, n_embd, 1, dropout)
+        self.att = nn.Linear(n_embd * 4, 1, bias=False)
+        # self.att2 = nn.Linear(n_embd, 1, bias=False)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -53,13 +56,15 @@ class SlimNNAttentionHead(nn.Module):
         # x1 = pos_emb + x
         x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
-        k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
-        q = x1.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+        x1 = x1.unsqueeze(1).repeat(1, t, 1, 1)
+
+        k = x1  # (B,T,C) -> (B,T,T,C)
+        q = x1.transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
 
         a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
         # a2 = k + q
 
-        a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+        a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
 
         wei = a2.squeeze(dim=-1) * c ** -0.5
         # compute attention scores ("affinities")
@@ -118,7 +123,7 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.my_device = my_device
 
-        self.heads = nn.ModuleList([NNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
+        self.heads = nn.ModuleList([SlimNNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
@@ -176,8 +181,7 @@ class PositionalEmbedding(nn.Module):
         self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
         # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
 
-    def forward(self, x):
-        b, t, c = x.shape
+    def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
         pos_emb = self.position_embedding_ff(pos_emb)
@@ -216,8 +220,9 @@ class KarpathyTransformerModel(nn.Module):
         tok_emb = self.token_embedding_table(idx)  # (B,T,C)
 
         x = tok_emb # + pos_emb  # (B,T,C)
+        b, t, c = x.shape
 
-        pos_emb1 = self.pe1(x)
+        pos_emb1 = self.pe1(b, t)
         # pos_emb2 = self.pe2(x)
         # pos_emb3 = self.pe3(x)
         # pos_emb4 = self.pe4(x)
