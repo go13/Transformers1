@@ -7,6 +7,7 @@ from torch.nn import functional as F
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 
+
 class PlainFeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
@@ -70,12 +71,15 @@ class SlimNNAttentionHead(nn.Module):
         out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
 
+
 class NNAttentionHead(nn.Module):
     """ one head of self-attention """
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.att2 = FeedForward(n_embd * 4, 4 * n_embd, 1, 0)
+        # self.pos_em_ff = nn.Linear(n_embd, n_embd, bias=False)
+        self.att2 = FeedForward(n_embd * 2, n_embd, 1, dropout)
+        # self.att2 = nn.Linear(n_embd * 4, 1, bias=False)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -85,7 +89,9 @@ class NNAttentionHead(nn.Module):
     def forward(self, x, pos_emb):
         b, t, c = x.shape
 
-        x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
+        # pos_emb = self.pos_em_ff(pos_emb)
+        x1 = pos_emb + x
+        # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
         k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
         q = x1.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
@@ -142,12 +148,12 @@ class Block(nn.Module):
 
         self.ln2 = nn.LayerNorm(inp_embd)
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
-        self.ln3 = nn.LayerNorm(inp_embd)
+        # self.ln3 = nn.LayerNorm(inp_embd)
 
     def forward(self, x, pos_emb):
         x = x + self.sa(self.ln1(x), pos_emb)
         x = x + self.ffwd(self.ln2(x))
-        x = self.ln3(x)
+        # x = self.ln3(x)
         return x, pos_emb
 
     @staticmethod
@@ -192,7 +198,7 @@ class KarpathyTransformerModel(nn.Module):
         # self.pe4 = PositionalEmbedding(config)
 
         self.blocks = BlockSequence(config)
-        # self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
+        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
 
     def forward_vs_target(self, idx, targets):
@@ -221,7 +227,7 @@ class KarpathyTransformerModel(nn.Module):
         # x, pos_emb = self.blocks(x, pos_emb3)  # (B,T,C)
         # x, pos_emb = self.blocks(x, pos_emb4)  # (B,T,C)
 
-        # x = self.ln_f(x)  # (B,T,C)
+        x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
         return logits
 
