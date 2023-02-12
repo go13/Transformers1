@@ -40,8 +40,10 @@ class SlimNNAttentionHead(nn.Module):
         super().__init__()
         # self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
         # self.pos_em_ff = nn.Linear(n_embd, n_embd)
-        # self.att = FeedForward(n_embd * 4, n_embd, 1, dropout)
-        self.att = nn.Linear(n_embd * 4, 1, bias=False)
+        # self.st_em_ff = FeedForward(n_embd * 2, 2 * n_embd, n_embd, dropout)
+        self.st_pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
+        self.att = FeedForward(n_embd * 4, n_embd, 1, dropout)
+        # self.att = nn.Linear(n_embd * 6, 1, bias=False)
         # self.att2 = nn.Linear(n_embd, 1, bias=False)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
@@ -49,12 +51,14 @@ class SlimNNAttentionHead(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, pos_emb):
+    def forward(self, x, st_pos_emb):
+        # st_emb (B, T, C)
         b, t, c = x.shape
 
+        st_pos_emb = self.st_pos_em_ff(st_pos_emb)
         # pos_emb = self.pos_em_ff(pos_emb)
         # x1 = pos_emb + x
-        x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
+        x1 = torch.cat([st_pos_emb, x], dim=-1) # (B,T,C * 2)
 
         x1 = x1.unsqueeze(1).repeat(1, t, 1, 1)
 
@@ -127,39 +131,29 @@ class MultiHeadAttention(nn.Module):
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, pos_emb):
-        out = torch.cat([h(x, pos_emb) for h in self.heads], dim=-1)
+    def forward(self, x, st_pos_emb):
+        out = torch.cat([h(x, st_pos_emb) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
-
-
-class BlockSequence(nn.Module):
-    def __init__(self, config: TransformerConfig):
-        super().__init__()
-        self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
-
-    def forward(self, x, pos_emb):
-        for block in self.blocks:
-            x, pos_emb = block(x, pos_emb)
-        return x, pos_emb
 
 
 class Block(nn.Module):
     def __init__(self, dropout: float, block_size: int, hidden_emb: int, inp_embd: int, out_emb: int, n_head: int, head_size: int):
         super().__init__()
 
+        self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
+
         self.ln1 = nn.LayerNorm(inp_embd)
         self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(inp_embd)
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
-        # self.ln3 = nn.LayerNorm(inp_embd)
 
-    def forward(self, x, pos_emb):
-        x = x + self.sa(self.ln1(x), pos_emb)
+    def forward(self, x, st_pos_emb):
+        st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
+        x = x + self.sa(self.ln1(x), st_pos_emb)
         x = x + self.ffwd(self.ln2(x))
-        # x = self.ln3(x)
-        return x, pos_emb
+        return x, st_pos_emb
 
     @staticmethod
     def create(config: TransformerConfig):
@@ -189,6 +183,17 @@ class PositionalEmbedding(nn.Module):
         return pos_emb
 
 
+class BlockSequence(nn.Module):
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.blocks = nn.Sequential(*[Block.create(config) for _ in range(1)])
+
+    def forward(self, x, st_pos_emb):
+        for block in self.blocks:
+            x, st_pos_emb = block(x, st_pos_emb)
+        return x, st_pos_emb
+
+
 class KarpathyTransformerModel(nn.Module):
 
     def __init__(self, config: TransformerConfig):
@@ -197,9 +202,8 @@ class KarpathyTransformerModel(nn.Module):
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
 
         self.pe1 = PositionalEmbedding(config)
-        # self.pe2 = PositionalEmbedding(config)
-        # self.pe3 = PositionalEmbedding(config)
-        # self.pe4 = PositionalEmbedding(config)
+        self.se1 = PositionalEmbedding(config)
+        self.st_em_ff = FeedForward(config.n_embd * 2, config.n_embd, config.n_embd, config.dropout)
 
         self.blocks = BlockSequence(config)
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
@@ -222,15 +226,16 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        pos_emb1 = self.pe1(b, t)
-        # pos_emb2 = self.pe2(x)
-        # pos_emb3 = self.pe3(x)
-        # pos_emb4 = self.pe4(x)
+        pos_emb = self.pe1(b, t)
+        step_emb = self.se1(b, self.config.n_layer)
 
-        x, pos_emb = self.blocks(x, pos_emb1)  # (B,T,C)
-        # x, pos_emb = self.blocks(x, pos_emb2)  # (B,T,C)
-        # x, pos_emb = self.blocks(x, pos_emb3)  # (B,T,C)
-        # x, pos_emb = self.blocks(x, pos_emb4)  # (B,T,C)
+        for i in range(self.config.n_layer):
+            st_emb = step_emb[:, i, :].unsqueeze(1).repeat(1, t, 1)   # (B,T,C)
+
+            st_pos_emb = torch.cat([pos_emb, st_emb], dim=-1)  # (B,T,C * 2)
+            st_pos_emb = self.st_em_ff(st_pos_emb)
+
+            x, st_pos_emb = self.blocks(x, st_pos_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
