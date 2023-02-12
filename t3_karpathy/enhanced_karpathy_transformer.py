@@ -38,8 +38,8 @@ class SlimNNAttentionHead(nn.Module):
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
-        self.att2 = FeedForward(n_embd , n_embd, 1, 0)
+        # self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
+        self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
@@ -49,15 +49,15 @@ class SlimNNAttentionHead(nn.Module):
     def forward(self, x, pos_emb):
         b, t, c = x.shape
 
-        pos_emb = self.pos_em_ff(pos_emb)
-        x1 = pos_emb + x
-        # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
+        # pos_emb = self.pos_em_ff(pos_emb)
+        # x1 = pos_emb + x
+        x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
         k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
-        q = pos_emb.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+        q = x1.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
 
-        # a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
-        a2 = k + q
+        a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
+        # a2 = k + q
 
         a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
 
@@ -174,14 +174,14 @@ class PositionalEmbedding(nn.Module):
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
-        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+        # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
 
     def forward(self, x):
         b, t, c = x.shape
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
         pos_emb = self.position_embedding_ff(pos_emb)
-        pos_emb = self.position_embedding_ff_ln(pos_emb)
+        # pos_emb = self.position_embedding_ff_ln(pos_emb)
         return pos_emb
 
 
