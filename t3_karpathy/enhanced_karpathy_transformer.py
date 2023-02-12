@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from t3_karpathy.transformer_config import TransformerConfig
-
+# todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 
 class PlainFeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
@@ -23,7 +23,6 @@ class FeedForward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(inp_n_embd, hidden_n_embd),
-            # nn.Sigmoid(),
             nn.ReLU(),
             nn.Linear(hidden_n_embd, out_n_embd),
             nn.Dropout(dropout),
@@ -32,6 +31,44 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
+class SlimNNAttentionHead(nn.Module):
+    """ one head of self-attention """
+
+    def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
+        super().__init__()
+        self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
+        self.att2 = FeedForward(n_embd , n_embd, 1, 0)
+
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, pos_emb):
+        b, t, c = x.shape
+
+        pos_emb = self.pos_em_ff(pos_emb)
+        x1 = pos_emb + x
+        # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
+
+        k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        q = pos_emb.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+
+        # a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
+        a2 = k + q
+
+        a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+
+        wei = a2.squeeze(dim=-1) * c ** -0.5
+        # compute attention scores ("affinities")
+        wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
+        wei = F.softmax(wei, dim=-1)  # (B, T, T)
+        wei = self.dropout(wei)
+        # perform the weighted aggregation of the values
+        v = self.value(x)  # (B,T,C)
+        out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
+        return out
 
 class NNAttentionHead(nn.Module):
     """ one head of self-attention """
