@@ -103,11 +103,6 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        # b, t, c = x.shape
-        # pos_embedding_arrange = torch.arange(t, device=self.my_device)
-        # pos_emb = self.position_embedding_table(pos_embedding_arrange)  # (T,C)
-        # x = x + pos_emb  # (B,T,C) # todo: fix exception when input size is not equal to block size
-
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
