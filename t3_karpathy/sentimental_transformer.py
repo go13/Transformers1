@@ -2,6 +2,7 @@ import torch
 from torch import nn as nn
 
 from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding
 
 from t3_karpathy.karpathy_transformer import Block, AbstractRunner
 from t3_karpathy.transformer_config import TransformerConfig
@@ -33,10 +34,14 @@ class SentimentalTransformerModel(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        # each token directly reads off the logits for the next token from a lookup table
+
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
+        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        #
+        self.pos_emb1 = PositionalEmbedding(config)
+
+        self.blocks = BlockSequence(config)
+        # self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.out = SentimentalFeedForward(config)
 
@@ -49,19 +54,35 @@ class SentimentalTransformerModel(nn.Module):
         return output, loss
 
     def forward(self, idx):
-        b, t = idx.shape
-
         # idx and targets are both (B,T) tensor of integers
-        tok_emb = self.token_embedding_table(idx)  # (B,T,C)
-        pos_emb = self.position_embedding_table(torch.arange(t, device=self.config.my_device))  # (T,C)
-        x = tok_emb + pos_emb  # (B,T,C)
-        x = self.blocks(x)  # (B,T,C)
+        x = self.token_embedding_table(idx)  # (B,T,C)
+        b, t, c = x.shape
+
+        pos_emb = self.pos_emb1(b, t)
+
+        x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
         x = self.out(x)
         x = x.reshape(b)
         return x
 
+
+    # def forward(self, idx):
+    #     # idx and targets are both (B,T) tensor of integers
+    #     x = self.token_embedding_table(idx)  # (B,T,C)
+    #     b, t, c = x.shape
+    #
+    #     pos_emb = self.pos_emb1(b, t)
+    #
+    #     x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+    #
+    #     x = self.ln_f(x)  # (B,T,C)
+    #     x = x.reshape(b, -1)
+    #     x = self.out(x)
+    #     x = x.reshape(b)
+    #     return x
 
 class SentimentalRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):

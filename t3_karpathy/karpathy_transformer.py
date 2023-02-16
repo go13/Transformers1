@@ -56,7 +56,7 @@ class NNAttentionHead(nn.Module):
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
-        self.att2 = FeedForward(n_embd * 4, n_embd, 1, 0)
+        self.att = FeedForward(n_embd * 4, n_embd, 1, 0)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
@@ -76,7 +76,7 @@ class NNAttentionHead(nn.Module):
 
         a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
 
-        a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+        a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
 
         wei = a2.squeeze(dim=-1) * c ** -0.5
         # compute attention scores ("affinities")

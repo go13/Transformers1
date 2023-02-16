@@ -8,7 +8,8 @@ from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
 
-class PlainFeedForward(nn.Module):
+
+class LinearFeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
@@ -201,9 +202,7 @@ class KarpathyTransformerModel(nn.Module):
         self.config = config
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
 
-        self.pe1 = PositionalEmbedding(config)
-        # self.se1 = PositionalEmbedding(config)
-        # self.st_em_ff = FeedForward(config.n_embd * 2, config.n_embd, config.n_embd, config.dropout)
+        self.pos_emb1 = PositionalEmbedding(config)
 
         self.blocks = BlockSequence(config)
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
@@ -226,14 +225,7 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        pos_emb = self.pe1(b, t)
-        # step_emb = self.se1(b, self.config.n_layer)
-
-        # for i in range(self.config.n_layer):
-        # st_emb = step_emb[:, i, :].unsqueeze(1).repeat(1, t, 1)   # (B,T,C)
-
-        # st_pos_emb = torch.cat([pos_emb, st_emb], dim=-1)  # (B,T,C * 2)
-        # st_pos_emb = self.st_em_ff(st_pos_emb)
+        pos_emb = self.pos_emb1(b, t)
 
         x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
@@ -312,7 +304,7 @@ class AbstractRunner(object):
         raise NotImplementedError()
 
 
-class KarpathyRunner(AbstractRunner):
+class EnhancedKarpathyRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
         super().__init__(config, KarpathyTransformerModel(config))
         pass
