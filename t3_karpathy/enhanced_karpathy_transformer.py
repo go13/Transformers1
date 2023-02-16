@@ -142,7 +142,7 @@ class Block(nn.Module):
     def __init__(self, dropout: float, block_size: int, hidden_emb: int, inp_embd: int, out_emb: int, n_head: int, head_size: int):
         super().__init__()
 
-        self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
+        # self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
 
         self.ln1 = nn.LayerNorm(inp_embd)
         self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
@@ -151,7 +151,7 @@ class Block(nn.Module):
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
 
     def forward(self, x, st_pos_emb):
-        st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
+        # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
         x = x + self.sa(self.ln1(x), st_pos_emb)
         x = x + self.ffwd(self.ln2(x))
         return x, st_pos_emb
@@ -174,13 +174,13 @@ class PositionalEmbedding(nn.Module):
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
-        # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
 
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
         pos_emb = self.position_embedding_ff(pos_emb)
-        # pos_emb = self.position_embedding_ff_ln(pos_emb)
+        pos_emb = self.position_embedding_ff_ln(pos_emb)
         return pos_emb
 
 
