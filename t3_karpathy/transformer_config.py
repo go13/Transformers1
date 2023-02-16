@@ -3,7 +3,7 @@ from t3_karpathy.token_codec import TokenCodec
 
 class TransformerConfig:
 
-    def __init__(self, my_device='cuda', batch_size=16, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-3):
+    def __init__(self, my_device='cuda', batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-4):
         self.my_device = my_device
 
         # karpathy parameters
