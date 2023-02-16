@@ -48,6 +48,7 @@ class SlimNNAttentionHead(nn.Module):
         # self.att2 = nn.Linear(n_embd, 1, bias=False)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
+        # self.value = FeedForward(n_embd, n_embd, head_size, dropout)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
@@ -58,7 +59,7 @@ class SlimNNAttentionHead(nn.Module):
 
         # st_pos_emb = self.st_pos_em_ff(st_pos_emb)
         # pos_emb = self.pos_em_ff(pos_emb)
-        # x1 = pos_emb + x
+        # x1 = st_pos_emb + x
         x1 = torch.cat([st_pos_emb, x], dim=-1) # (B,T,C * 2)
 
         x1 = x1.unsqueeze(1).repeat(1, t, 1, 1)
