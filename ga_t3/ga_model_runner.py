@@ -107,7 +107,7 @@ class TargetStringTransformerEvaluator(AbstractEvaluator):
         # diff = random.random() * 0.001
         # diff += (self.xy_data_size_const - str_diff(self.target, data))
 
-        for i in range(5):
+        for i in range(1000):
             x, y = self.dataloader.get_train_batch()
             logits, loss = xy.trainer.learn(x, y)
 
@@ -399,6 +399,8 @@ class GAModelRunner(AbstractModelRunnner):
         if self.params.use_neural_estimator:
             for xy in new_samples:
                 self.accumulative_runner.add_sample(xy.data, xy.f)
+
+            self.accumulative_runner.train_recent(1)
 
             av_loss, total_samples = self.accumulative_runner.train(n=self.params.ga_neural_estimator_iterations_per_ga_iteration)
             print(f"Estimator average loss={av_loss}, total_samples={total_samples}")

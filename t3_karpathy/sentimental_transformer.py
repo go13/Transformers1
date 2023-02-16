@@ -98,6 +98,9 @@ class SentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
         self.data_y = []
         self.data_dict = dict()
 
+        self.last_data_x = []
+        self.last_data_y = []
+
     def get_fitness_histogram(self):
         f_hist = dict()
         for x, y in zip(self.data_x, self.data_y):
@@ -117,14 +120,17 @@ class SentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
             i += 1
         return xy_hist
 
-    def get_batch(self):
-        ix = torch.randint(len(self.data_x), (self.config.batch_size,))
-        x = torch.stack([torch.tensor(self.config.token_codec.encode(self.data_x[i])) for i in ix])
-        y = torch.stack([torch.tensor(self.data_y[i]) for i in ix])
+    def get_batch(self, data_x, data_y):
+        ix = torch.randint(len(data_x), (self.config.batch_size,))
+        x = torch.stack([torch.tensor(self.config.token_codec.encode(data_x[i])) for i in ix])
+        y = torch.stack([torch.tensor(data_y[i]) for i in ix])
         x, y = x.to(self.config.my_device), y.to(self.config.my_device)
         return x, y
 
     def add_sample(self, x, y):
+        self.last_data_x += [x]
+        self.last_data_y += [y]
+
         if x in self.data_dict:
             self.data_dict[x] += 1
             return self.data_dict[x]
@@ -152,7 +158,7 @@ class SentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
     def train(self, n=1):
         losses = 0
         for i in range(n):
-            x, y = self.get_batch()
+            x, y = self.get_batch(self.data_x, self.data_y)
             o, loss = self.runner.learn(x, y)
             l = loss.item()
             self.loss_hist += [l]
@@ -160,3 +166,11 @@ class SentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
         av_loss = losses / n
 
         return av_loss, len(self.data_x)
+
+    def train_recent(self, n=1):
+        for i in range(n):
+            x, y = self.get_batch(self.last_data_x, self.last_data_y)
+            o, loss = self.runner.learn(x, y)
+
+        self.last_data_x = []
+        self.last_data_y = []
