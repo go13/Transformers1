@@ -14,7 +14,7 @@ class TimeseriesFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        inp_size = config.n_embd
+        inp_size = config.n_embd * config.block_size
         hidden_size = config.hidden_size
         dropout = config.dropout
         out_size = 1
@@ -111,8 +111,10 @@ class TimeseriesTransformerModel(nn.Module):
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
+        x = x.reshape(b, -1)
         x = self.out(x)
-        x = x.squeeze(-1)
+
+        # x = x.squeeze(-1)
         return x
 
 
@@ -170,7 +172,7 @@ class TimeseriesDataloader(object):
         data = self.train_data if split == 'train' else self.val_data
         ix = torch.randint(len(data) - self.config.block_size, (self.config.batch_size,))
         x = torch.stack([data[i:i + self.config.block_size] for i in ix])
-        y = torch.stack([data[i + 1:i + self.config.block_size + 1] for i in ix])
+        y = torch.stack([data[i + self.config.block_size:i + self.config.block_size + 1] for i in ix])
         x, y = x.to(self.config.my_device), y.to(self.config.my_device)
         return x, y
 
