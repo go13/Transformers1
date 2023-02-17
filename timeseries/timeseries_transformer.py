@@ -15,7 +15,7 @@ class TimeseriesFeedForward(nn.Module):
         super().__init__()
 
         inp_size = config.n_embd
-        hidden_size = config.n_embd
+        hidden_size = config.hidden_size
         dropout = config.dropout
         out_size = 1
 
@@ -46,6 +46,7 @@ class TimeseriesTransformerModel(nn.Module):
             kernel_size=kernel_size,
             # bias=True,
         )
+        # self.pool1 = nn.MaxPool2d(kernel_size)
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
         kernel_size = 8
@@ -57,6 +58,7 @@ class TimeseriesTransformerModel(nn.Module):
             # bias=True,
         )
         self.padding2 = nn.ConstantPad1d((0, right_pad), 0)
+        # self.pool2 = nn.MaxPool2d(kernel_size)
 
         kernel_size = 32
         right_pad = kernel_size - 1
@@ -67,6 +69,7 @@ class TimeseriesTransformerModel(nn.Module):
             # bias=True,
         )
         self.padding3 = nn.ConstantPad1d((0, right_pad), 0)
+        # self.pool3 = nn.MaxPool2d(kernel_size)
 
         self.blocks = BlockSequence(config)
 
@@ -90,13 +93,16 @@ class TimeseriesTransformerModel(nn.Module):
         x = inp.unsqueeze(1)
 
         x = self.conv1d1(x)
+        # x = self.pool1(x)
         x = self.padding1(x)
-
-        x = self.conv1d2(x)
-        x = self.padding2(x)
-
-        x = self.conv1d3(x)
-        x = self.padding3(x)
+        #
+        # x = self.conv1d2(x)
+        # # x = self.pool2(x)
+        # x = self.padding2(x)
+        #
+        # x = self.conv1d3(x)
+        # # x = self.pool3(x)
+        # x = self.padding3(x)
 
         x = x.transpose(-1, -2)
 
