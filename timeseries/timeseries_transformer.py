@@ -22,7 +22,7 @@ class TimeseriesFeedForward(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(inp_size, hidden_size),
             nn.Dropout(dropout),
-            nn.Sigmoid(),
+            nn.ReLU(),
             nn.Linear(hidden_size, out_size),
         )
 
@@ -38,16 +38,38 @@ class TimeseriesTransformerModel(nn.Module):
 
         self.pos_emb1 = PositionalEmbedding(config)
 
-        kernel_size = 8
+        kernel_size = 4
         right_pad = kernel_size - 1
         self.conv1d1 = nn.Conv1d(
             in_channels=1,
             out_channels=config.n_embd,
             kernel_size=kernel_size,
+            # bias=True,
         )
-        self.padding_right = nn.ConstantPad1d((0, right_pad), 0)
+        self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
+
+        kernel_size = 8
+        right_pad = kernel_size - 1
+        self.conv1d2 = nn.Conv1d(
+            in_channels=config.n_embd,
+            out_channels=config.n_embd,
+            kernel_size=kernel_size,
+            # bias=True,
+        )
+        self.padding2 = nn.ConstantPad1d((0, right_pad), 0)
+
+        kernel_size = 32
+        right_pad = kernel_size - 1
+        self.conv1d3 = nn.Conv1d(
+            in_channels=config.n_embd,
+            out_channels=config.n_embd,
+            kernel_size=kernel_size,
+            # bias=True,
+        )
+        self.padding3 = nn.ConstantPad1d((0, right_pad), 0)
 
         self.blocks = BlockSequence(config)
+
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.out = TimeseriesFeedForward(config)
 
@@ -59,19 +81,26 @@ class TimeseriesTransformerModel(nn.Module):
 
         return output, loss
 
-    def forward(self, x):
+    def forward(self, inp):
         # idx and targets are both (B,T) tensor of integers
-        b, t = x.shape
+        b, t = inp.shape
 
         pos_emb = self.pos_emb1(b, t)
 
-        x = x.unsqueeze(1)
+        x = inp.unsqueeze(1)
 
         x = self.conv1d1(x)
+        x = self.padding1(x)
 
-        x = self.padding_right(x)
+        x = self.conv1d2(x)
+        x = self.padding2(x)
+
+        x = self.conv1d3(x)
+        x = self.padding3(x)
 
         x = x.transpose(-1, -2)
+
+        # inp
 
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
@@ -185,9 +214,9 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         return av_loss
 
 
-config = BaseTransformerConfig(batch_size=16, block_size=32, n_embed=64, n_head=4, n_layer=4)
+config = BaseTransformerConfig(batch_size=32, block_size=128, n_embed=32, n_head=4, n_layer=4)
 trainer1 = TimeseriesPandasTrainer(config)
 
-for st in range(1000):
+for st in range(10000):
     av_loss = trainer1.train(1)
     print(f"st={st}, av_loss={av_loss}")
