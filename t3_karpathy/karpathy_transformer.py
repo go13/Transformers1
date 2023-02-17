@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from t3_karpathy.commons import BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
 
 
@@ -188,7 +189,7 @@ class KarpathyTransformerModel(nn.Module):
 
 
 class AbstractRunner(object):
-    def __init__(self, config: TransformerConfig, model):
+    def __init__(self, config: BaseTransformerConfig, model):
         self.model = model.to(config.my_device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
         self.config = config

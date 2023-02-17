@@ -98,7 +98,7 @@ class NeuralXY(XY):
 
 class TargetStringTransformerEvaluator(AbstractEvaluator):
     def __init__(self, config):
-        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
+        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG" * 20
         self.xy_data_size_const = len(self.target)
         self.dataloader = GptNanoDataloader(config)
 

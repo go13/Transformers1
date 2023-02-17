@@ -2,11 +2,11 @@ import torch
 from torch.nn import functional as F
 
 from t3_karpathy.karpathy_transformer import AbstractRunner
-from t3_karpathy.transformer_config import TransformerConfig
+from t3_karpathy.commons import BaseTransformerConfig
 
 
 class AbstractAccumulativeTrainer(object):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: BaseTransformerConfig):
         self.config = config
         self.loss_hist = []
 
@@ -15,7 +15,7 @@ class AbstractAccumulativeTrainer(object):
 
 
 class StringAccumulativeTrainer(AbstractAccumulativeTrainer):
-    def __init__(self, config: TransformerConfig, runner: AbstractRunner):
+    def __init__(self, config: BaseTransformerConfig, runner: AbstractRunner):
         super().__init__(config)
         self.runner = runner
 

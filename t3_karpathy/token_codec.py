@@ -4,6 +4,8 @@ import requests
 
 import torch
 
+from t3_karpathy.commons import AbstractCodec
+
 
 def download(url: str, dest_folder: str):
     if not os.path.exists(dest_folder):
@@ -29,7 +31,7 @@ def download(url: str, dest_folder: str):
         print("Download failed: status code {}\n{}".format(r.status_code, r.text))
 
 
-class TokenCodec(object):
+class TokenCodec(AbstractCodec):
 
     def __init__(self):
         input_path = "input.txt"

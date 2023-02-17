@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from t3_karpathy.commons import BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
@@ -158,7 +159,7 @@ class Block(nn.Module):
         return x, st_pos_emb
 
     @staticmethod
-    def create(config: TransformerConfig):
+    def create(config: BaseTransformerConfig):
         block_size = config.block_size
         out_size = config.n_embd
         hidden_size = config.hidden_size
@@ -170,7 +171,7 @@ class Block(nn.Module):
 
 
 class PositionalEmbedding(nn.Module):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: BaseTransformerConfig):
         super().__init__()
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
@@ -186,7 +187,7 @@ class PositionalEmbedding(nn.Module):
 
 
 class BlockSequence(nn.Module):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: BaseTransformerConfig):
         super().__init__()
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
