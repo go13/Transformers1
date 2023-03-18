@@ -3,6 +3,7 @@ import pandas as pd
 from torch import nn as nn
 
 from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from src.performance_utils import timeit
 from t3_karpathy.commons import AbstractCodec
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding
 
@@ -225,6 +226,12 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
 config = BaseTransformerConfig(batch_size=32, block_size=128, n_embed=32, n_head=4, n_layer=4)
 trainer1 = TimeseriesPandasTrainer(config)
 
-for st in range(10000):
+
+@timeit("Step")
+def step():
     av_loss = trainer1.train(1)
     print(f"st={st}, av_loss={av_loss}")
+
+
+for st in range(10000):
+    step()
