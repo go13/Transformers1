@@ -102,17 +102,23 @@ class NNAttentionHead(nn.Module):
         b, t, c = x.shape
 
         # pos_emb = self.pos_em_ff(pos_emb)
-        x1 = pos_emb + x
+        # x1 = pos_emb + x
+        x1 = x
         # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
-        k = x1.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
-        q = x1.unsqueeze(1).repeat(1, t, 1, 1).transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
+        x_tmp = x1.unsqueeze(1).repeat(1, t, 1, 1) # (B,T,C) -> (B,T,T,C)
 
-        a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
+        k = x_tmp
+        q = x_tmp.transpose(1, 2)
+
+        # a2 = torch.cat([k, q, pos_emb], dim=-1) # (B,T,T,C)
+        # a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
+        a2 = torch.cat([k, q], dim=-1) + pos_emb  # (B,T,T,C)
 
         a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
 
         wei = a2.squeeze(dim=-1) * c ** -0.5
+
         # compute attention scores ("affinities")
         wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
         wei = F.softmax(wei, dim=-1)  # (B, T, T)
@@ -130,7 +136,7 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.my_device = my_device
 
-        self.heads = nn.ModuleList([SlimNNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
+        self.heads = nn.ModuleList([NNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
@@ -228,6 +234,13 @@ class KarpathyTransformerModel(nn.Module):
         b, t, c = x.shape
 
         pos_emb = self.pos_emb1(b, t)
+
+        pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+
+        k = pos_emb
+        q = pos_emb.transpose(1, 2)
+
+        pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
 
         x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 

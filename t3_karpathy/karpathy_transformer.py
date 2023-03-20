@@ -49,6 +49,7 @@ class AttentionHead(nn.Module):
         # perform the weighted aggregation of the values
         v = self.value(x)  # (B,T,C)
         out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
+        # do we not need to normalize longer rows in the triangle diagonal?
         return out
 
 
