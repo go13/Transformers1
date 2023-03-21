@@ -42,7 +42,7 @@ class NNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         # self.pos_em_ff = nn.Linear(n_embd, n_embd, bias=False)
-        self.att = LinearFeedForward(n_embd * 2, n_embd, 1, dropout)
+        self.att = FeedForward(n_embd * 2, n_embd, 1, dropout)
         # self.att = LinearFeedForward(n_embd * 3, n_embd, 1, dropout)
         # self.att2 = nn.Linear(n_embd * 4, 1, bias=False)
 
