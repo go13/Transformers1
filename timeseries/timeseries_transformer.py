@@ -49,12 +49,11 @@ class TimeseriesTransformerModel(nn.Module):
             in_channels=1,
             out_channels=n_kernels,
             kernel_size=kernel_size,
-            # bias=True,
+            bias=True,
         )
-        # self.pool1 = nn.MaxPool2d(kernel_size)
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        self.input_ffwd = FeedForward(n_kernels, config.n_embd * 4, config.n_embd, config.dropout)
+        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embd, config.dropout)
 
         self.blocks = BlockSequence(config)
 
