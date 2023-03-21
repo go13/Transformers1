@@ -106,7 +106,7 @@ class Block(nn.Module):
 
         # self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
 
-        self.ln1 = nn.LayerNorm(inp_embd)
+        # self.ln1 = nn.LayerNorm(inp_embd)
         self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(inp_embd)
@@ -114,7 +114,8 @@ class Block(nn.Module):
 
     def forward(self, x, st_pos_emb):
         # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
-        x = x + self.sa(self.ln1(x), st_pos_emb)
+        x = x + self.sa(x, st_pos_emb)
+        # x = x + self.sa(self.ln1(x), st_pos_emb)
         x = x + self.ffwd(self.ln2(x))
         return x, st_pos_emb
 

@@ -1,3 +1,5 @@
+import time
+
 import torch
 import pandas as pd
 from torch import nn as nn
@@ -5,7 +7,7 @@ from torch import nn as nn
 from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from src.performance_utils import timeit
 from t3_karpathy.commons import AbstractCodec
-from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding
+from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding, FeedForward
 
 from t3_karpathy.karpathy_transformer import AbstractRunner
 from t3_karpathy.transformer_config import BaseTransformerConfig
@@ -21,9 +23,9 @@ class TimeseriesFeedForward(nn.Module):
         out_size = 1
 
         self.net = nn.Sequential(
-            nn.Linear(inp_size, hidden_size),
+            nn.Linear(inp_size, hidden_size, bias=False),
             nn.Dropout(dropout),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_size, out_size),
         )
 
@@ -38,39 +40,21 @@ class TimeseriesTransformerModel(nn.Module):
         self.config = config
 
         self.pos_emb1 = PositionalEmbedding(config)
+        self.pos_emb_dist = DistancePositionalEmbedding(config)
 
         kernel_size = 4
         right_pad = kernel_size - 1
+        n_kernels = config.n_embd * 4
         self.conv1d1 = nn.Conv1d(
             in_channels=1,
-            out_channels=config.n_embd,
+            out_channels=n_kernels,
             kernel_size=kernel_size,
             # bias=True,
         )
         # self.pool1 = nn.MaxPool2d(kernel_size)
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        kernel_size = 8
-        right_pad = kernel_size - 1
-        self.conv1d2 = nn.Conv1d(
-            in_channels=config.n_embd,
-            out_channels=config.n_embd,
-            kernel_size=kernel_size,
-            # bias=True,
-        )
-        self.padding2 = nn.ConstantPad1d((0, right_pad), 0)
-        # self.pool2 = nn.MaxPool2d(kernel_size)
-
-        kernel_size = 32
-        right_pad = kernel_size - 1
-        self.conv1d3 = nn.Conv1d(
-            in_channels=config.n_embd,
-            out_channels=config.n_embd,
-            kernel_size=kernel_size,
-            # bias=True,
-        )
-        self.padding3 = nn.ConstantPad1d((0, right_pad), 0)
-        # self.pool3 = nn.MaxPool2d(kernel_size)
+        self.input_ffwd = FeedForward(n_kernels, config.n_embd * 4, config.n_embd, config.dropout)
 
         self.blocks = BlockSequence(config)
 
@@ -89,25 +73,17 @@ class TimeseriesTransformerModel(nn.Module):
         # idx and targets are both (B,T) tensor of integers
         b, t = inp.shape
 
-        pos_emb = self.pos_emb1(b, t)
+        pos_emb = self.pos_emb_dist(b)
 
         x = inp.unsqueeze(1)
 
         x = self.conv1d1(x)
-        # x = self.pool1(x)
+
         x = self.padding1(x)
-        #
-        # x = self.conv1d2(x)
-        # # x = self.pool2(x)
-        # x = self.padding2(x)
-        #
-        # x = self.conv1d3(x)
-        # # x = self.pool3(x)
-        # x = self.padding3(x)
 
         x = x.transpose(-1, -2)
 
-        # inp
+        x = self.input_ffwd(x)
 
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
@@ -117,22 +93,6 @@ class TimeseriesTransformerModel(nn.Module):
 
         # x = x.squeeze(-1)
         return x
-
-
-    # def forward(self, idx):
-    #     # idx and targets are both (B,T) tensor of integers
-    #     x = self.token_embedding_table(idx)  # (B,T,C)
-    #     b, t, c = x.shape
-    #
-    #     pos_emb = self.pos_emb1(b, t)
-    #
-    #     x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
-    #
-    #     x = self.ln_f(x)  # (B,T,C)
-    #     x = x.reshape(b, -1)
-    #     x = self.out(x)
-    #     x = x.reshape(b)
-    #     return x
 
 
 class TimeseriesRunner(AbstractRunner):
@@ -227,10 +187,13 @@ config = BaseTransformerConfig(batch_size=32, block_size=128, n_embed=32, n_head
 trainer1 = TimeseriesPandasTrainer(config)
 
 
-@timeit("Step")
 def step():
+    start_time = time.time()
     av_loss = trainer1.train(1)
-    print(f"st={st}, av_loss={av_loss}")
+    end_time = time.time()
+    time_taken = end_time - start_time
+
+    print(f"st={st}, av_loss={av_loss}, time_taken={time_taken}")
 
 
 for st in range(10000):
