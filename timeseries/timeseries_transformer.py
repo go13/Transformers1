@@ -42,7 +42,7 @@ class TimeseriesTransformerModel(nn.Module):
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
 
-        kernel_size = 4
+        kernel_size = 8
         right_pad = kernel_size - 1
         n_kernels = config.n_embd * 4
         self.conv1d1 = nn.Conv1d(
@@ -182,7 +182,7 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         return av_loss
 
 
-config = BaseTransformerConfig(batch_size=32, block_size=128, n_embed=32, n_head=4, n_layer=4)
+config = BaseTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4)
 trainer1 = TimeseriesPandasTrainer(config)
 
 
