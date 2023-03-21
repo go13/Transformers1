@@ -23,6 +23,11 @@ class BaseTransformerConfig:
         self.eval_iters = 200
         self.eval_interval = 100
 
+        self.norm_eps: float = 1e-5   # llma
+        self.max_seq_len: int = 2048  # llma
+        self.multiple_of: int = 256   # llma
+
+
 
 class SentimentalFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig):

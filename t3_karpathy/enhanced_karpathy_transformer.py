@@ -1,3 +1,4 @@
+import time
 from collections import OrderedDict
 
 import torch
@@ -35,62 +36,14 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
-class SlimNNAttentionHead(nn.Module):
-    """ one head of self-attention """
-
-    def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
-        super().__init__()
-        # self.pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
-        # self.pos_em_ff = nn.Linear(n_embd, n_embd)
-        # self.st_em_ff = FeedForward(n_embd * 2, 2 * n_embd, n_embd, dropout)
-        # self.st_pos_em_ff = FeedForward(n_embd, n_embd, n_embd, dropout)
-        self.att = FeedForward(n_embd * 4, 4 * n_embd, 1, dropout)
-        # self.att = nn.Linear(n_embd * 6, 1, bias=False)
-        # self.att2 = nn.Linear(n_embd, 1, bias=False)
-
-        # self.value = nn.Linear(n_embd, head_size, bias=False)
-        self.value = FeedForward(n_embd, 4 * n_embd, head_size, dropout)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x, st_pos_emb):
-        # st_emb (B, T, C)
-        b, t, c = x.shape
-
-        # st_pos_emb = self.st_pos_em_ff(st_pos_emb)
-        # pos_emb = self.pos_em_ff(pos_emb)
-        # x1 = st_pos_emb + x
-        x1 = torch.cat([st_pos_emb, x], dim=-1) # (B,T,C * 2)
-
-        x1 = x1.unsqueeze(1).repeat(1, t, 1, 1)
-
-        k = x1  # (B,T,C) -> (B,T,T,C)
-        q = x1.transpose(1, 2)  # (B,T,C) -> (B,T,T,C)
-
-        a2 = torch.cat([k, q], dim=-1) # (B,T,T,C)
-        # a2 = k + q
-
-        a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
-
-        wei = a2.squeeze(dim=-1) * c ** -0.5
-        # compute attention scores ("affinities")
-        wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
-        wei = F.softmax(wei, dim=-1)  # (B, T, T)
-        wei = self.dropout(wei)
-        # perform the weighted aggregation of the values
-        v = self.value(x)  # (B,T,C)
-        out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
-        return out
-
-
 class NNAttentionHead(nn.Module):
     """ one head of self-attention """
 
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         # self.pos_em_ff = nn.Linear(n_embd, n_embd, bias=False)
-        self.att2 = FeedForward(n_embd * 2, n_embd, 1, dropout)
+        self.att = LinearFeedForward(n_embd * 2, n_embd, 1, dropout)
+        # self.att = LinearFeedForward(n_embd * 3, n_embd, 1, dropout)
         # self.att2 = nn.Linear(n_embd * 4, 1, bias=False)
 
         self.value = nn.Linear(n_embd, head_size, bias=False)
@@ -112,10 +65,10 @@ class NNAttentionHead(nn.Module):
         q = x_tmp.transpose(1, 2)
 
         # a2 = torch.cat([k, q, pos_emb], dim=-1) # (B,T,T,C)
-        # a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
-        a2 = torch.cat([k, q], dim=-1) + pos_emb  # (B,T,T,C)
+        a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
+        # a2 = torch.cat([k, q, pos_emb], dim=-1)   # (B,T,T,C)
 
-        a2 = self.att2(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+        a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
 
         wei = a2.squeeze(dim=-1) * c ** -0.5
 
@@ -176,6 +129,12 @@ class Block(nn.Module):
         return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
 
 
+def distance_triangle(n, my_device):
+    arange_matrix = torch.arange(n, device=my_device).view(-1, 1) - torch.arange(n, device=my_device).view(1, -1)
+    lower_triangular = torch.tril(arange_matrix)
+    return lower_triangular
+
+
 class PositionalEmbedding(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
@@ -187,6 +146,30 @@ class PositionalEmbedding(nn.Module):
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
+        pos_emb = self.position_embedding_ff(pos_emb)
+        pos_emb = self.position_embedding_ff_ln(pos_emb)
+
+        pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        k = pos_emb
+        q = pos_emb.transpose(1, 2)
+        pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
+
+        return k + q
+        # return pos_emb
+
+
+class DistancePositionalEmbedding(nn.Module):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__()
+        self.config = config
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd * 2, config.dropout)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd * 2)
+
+    def forward(self, b):
+        pos_embedding_arrange = distance_triangle(self.config.block_size, self.config.my_device)
+        pos_emb = self.position_embedding_table(pos_embedding_arrange)
+        pos_emb = pos_emb.repeat(b, 1, 1, 1)  # (B, T, T, C)
         pos_emb = self.position_embedding_ff(pos_emb)
         pos_emb = self.position_embedding_ff_ln(pos_emb)
         return pos_emb
@@ -211,6 +194,9 @@ class KarpathyTransformerModel(nn.Module):
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
 
         self.pos_emb1 = PositionalEmbedding(config)
+        self.pos_emb_dist = DistancePositionalEmbedding(config)
+        self.pos_ffwd = FeedForward(config.n_embd * 3, config.n_embd, config.n_embd * 2, config.dropout)
+        self.pos_ln = nn.LayerNorm(config.n_embd * 2)
 
         self.blocks = BlockSequence(config)
         self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
@@ -233,16 +219,19 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        pos_emb = self.pos_emb1(b, t)
+        pos_emb_dist = self.pos_emb_dist(b)
 
-        pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        # pos_emb = self.pos_emb1(b, t)
 
-        k = pos_emb
-        q = pos_emb.transpose(1, 2)
+        # pos_emb = torch.cat([pos_emb_dist, pos_emb], dim=-1)
+        #
+        # pos_emb = self.pos_ffwd(pos_emb)
+        #
+        # pos_emb = self.pos_ln(pos_emb)
+        # pos_emb = pos_emb_dist + pos_emb
 
-        pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
-
-        x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+        # x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+        x, st_pos_emb = self.blocks(x, pos_emb_dist)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
@@ -297,11 +286,14 @@ class AbstractRunner(object):
         return losses.mean()
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+        t = time.time()
         for _ in range(n_iter):
             if self.current_iteration % self.config.eval_interval == 0:
+                t_taken = time.time() - t
                 train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
                 val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
-                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}")
+                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / self.config.eval_interval}")
+                t = time.time()
 
             x, y = get_train_batch()
 

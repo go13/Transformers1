@@ -49,7 +49,7 @@ def transformer_neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device)
 
 
 def neural_crossover(t1, t2):
-    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(), t1.params.my_device)
+    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(), t1.config.my_device)
 
 
 def neural_mutate(t1, mp):

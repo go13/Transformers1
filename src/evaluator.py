@@ -96,7 +96,7 @@ class Evaluator(object):
         """
         self.trainer = trainer
         self.modules = trainer.modules
-        self.params = trainer.params
+        self.params = trainer.config
         self.env = trainer.env
         Evaluator.ENV = trainer.env
 
