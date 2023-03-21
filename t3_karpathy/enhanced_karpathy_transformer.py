@@ -164,7 +164,7 @@ class DistancePositionalEmbedding(nn.Module):
         super().__init__()
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd * 2, config.dropout)
+        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd * 2, config.n_embd * 2, config.dropout)
         self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd * 2)
 
     def forward(self, b):
