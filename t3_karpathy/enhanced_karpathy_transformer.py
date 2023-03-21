@@ -26,8 +26,9 @@ class FeedForward(nn.Module):
     def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, hidden_n_embd),
-            nn.ReLU(),
+            nn.Linear(inp_n_embd, hidden_n_embd, bias=False),
+            # nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_n_embd, out_n_embd),
             nn.Dropout(dropout),
         )
@@ -258,7 +259,9 @@ class KarpathyTransformerModel(nn.Module):
 class AbstractRunner(object):
     def __init__(self, config: TransformerConfig, model):
         self.model = model.to(config.my_device)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
+        self.parameters = self.model.parameters()
+        # self.model = torch.compile(model) # torch.compile(model, mode="max-autotune")
+        self.optimizer = torch.optim.AdamW(self.parameters, lr=config.learning_rate)
         self.config = config
         self.current_iteration = 0
 
