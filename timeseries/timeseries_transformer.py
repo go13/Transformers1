@@ -14,13 +14,12 @@ from t3_karpathy.transformer_config import BaseTransformerConfig
 
 
 class TimeseriesFeedForward(nn.Module):
-    def __init__(self, config: BaseTransformerConfig):
+    def __init__(self, config: BaseTransformerConfig, out_size=1):
         super().__init__()
 
         inp_size = config.n_embd * config.block_size
         hidden_size = config.hidden_size
         dropout = config.dropout
-        out_size = 1
 
         self.net = nn.Sequential(
             nn.Linear(inp_size, hidden_size, bias=False),
@@ -35,18 +34,18 @@ class TimeseriesFeedForward(nn.Module):
 
 class TimeseriesTransformerModel(nn.Module):
 
-    def __init__(self, config: BaseTransformerConfig):
+    def __init__(self, config: BaseTransformerConfig, channels=1):
         super().__init__()
         self.config = config
 
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
 
-        kernel_size = 8
+        kernel_size = 4
         right_pad = kernel_size - 1
         n_kernels = config.n_embd * 4
         self.conv1d1 = nn.Conv1d(
-            in_channels=1,
+            in_channels=channels,
             out_channels=n_kernels,
             kernel_size=kernel_size,
             bias=True,
@@ -58,11 +57,12 @@ class TimeseriesTransformerModel(nn.Module):
         self.blocks = BlockSequence(config)
 
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.out = TimeseriesFeedForward(config)
+        self.out = TimeseriesFeedForward(config, 1)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
 
+        targets = targets[:, :, 0]
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -70,11 +70,11 @@ class TimeseriesTransformerModel(nn.Module):
 
     def forward(self, inp):
         # idx and targets are both (B,T) tensor of integers
-        b, t = inp.shape
+        b, t, c = inp.shape
 
         pos_emb = self.pos_emb_dist(b)
 
-        x = inp.unsqueeze(1)
+        x = inp.transpose(-1, -2)
 
         x = self.conv1d1(x)
 
@@ -96,7 +96,7 @@ class TimeseriesTransformerModel(nn.Module):
 
 class TimeseriesRunner(AbstractRunner):
     def __init__(self, config: BaseTransformerConfig):
-        super().__init__(config, TimeseriesTransformerModel(config))
+        super().__init__(config, TimeseriesTransformerModel(config, channels=2))
         pass
 
 
@@ -119,9 +119,15 @@ class TimeseriesDataloader(object):
         self.codec = TimeseriesCodec()
 
         df = pd.read_csv('F:\\workspace\\ai\\Transformers1\\timeseries\\US-Stock-Dataset\\Data\\Stocks\\TSLA.csv')
+
         df_close = df['Close'].values
 
-        self.data = torch.tensor(df_close, dtype=torch.float) # todo
+        df_close = df_close
+
+        df_close_diff = df['Close'].diff().values
+
+        self.data = torch.stack([torch.tensor(df_close, dtype=torch.float), torch.tensor(df_close_diff, dtype=torch.float)], dim=1)[1:]
+
         n = int(0.9 * len(self.data))  # first 90% will be train, rest val
         self.train_data = self.data[:n]
         self.val_data = self.data[n:]
@@ -182,7 +188,7 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         return av_loss
 
 
-config = BaseTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4)
+config = BaseTransformerConfig(batch_size=128, block_size=128, n_embed=16, n_head=4, n_layer=4, learning_rate=1e-3)
 trainer1 = TimeseriesPandasTrainer(config)
 
 
