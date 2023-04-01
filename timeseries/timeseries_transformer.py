@@ -17,9 +17,10 @@ from timeseries.csv_reader import read_and_merge_csv_files
 
 class TimeseriesTransformerConfig(BaseTransformerConfig):
 
-    def __init__(self, my_device='cuda', batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, learning_rate=1e-3, channels=12):
+    def __init__(self, my_device='cuda', batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
         super().__init__(my_device, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
+        self.kernel_size = kernel_size
 
 
 class TimeseriesFeedForward(nn.Module):
@@ -50,7 +51,7 @@ class TimeseriesTransformerModel(nn.Module):
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
 
-        kernel_size = 4
+        kernel_size = config.kernel_size
         right_pad = kernel_size - 1
         n_kernels = config.n_embd * 4
         self.conv1d1 = nn.Conv1d(
@@ -225,7 +226,7 @@ stocks_to_load = [
 ]
 
 dataloader = TimeseriesDataloader(stocks_to_load)
-config = TimeseriesTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, learning_rate=1e-3, channels=dataloader.get_number_of_channels())
+config = TimeseriesTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=8, channels=dataloader.get_number_of_channels(), learning_rate=1e-3)
 trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
 
 
