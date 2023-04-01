@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 
+
 def read_and_merge_csv_files(directory_path, filenames, start_date='2010-01-01', end_date='2020-12-31'):
     print(f"Reading and merging CSV files: {filenames}")
     # Initialize an empty DataFrame
