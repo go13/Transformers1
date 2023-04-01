@@ -6,7 +6,7 @@ def read_and_merge_csv_files(directory_path, filenames, start_date='2010-01-01',
     print(f"Reading and merging CSV files: {filenames}")
     # Initialize an empty DataFrame
     data = pd.DataFrame()
-
+    found_files = 0
     # Iterate through the specified filenames
     for filename in filenames:
         file_path = os.path.join(directory_path, filename) + '.csv'
@@ -26,6 +26,8 @@ def read_and_merge_csv_files(directory_path, filenames, start_date='2010-01-01',
                 data = file_data
             else:
                 data = data.merge(file_data, on='Date', how='outer')
+
+            found_files += 1
         else:
             print(f"File {file_path} not found")
 
@@ -37,18 +39,19 @@ def read_and_merge_csv_files(directory_path, filenames, start_date='2010-01-01',
     start_date = pd.Timestamp(start_date, tz='UTC')
     end_date = pd.Timestamp(end_date, tz='UTC')
     data = data.loc[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
+    data = data.fillna(method='bfill').reset_index(drop=True)
 
-    return data.fillna(method='bfill').reset_index(drop=True)
+    return data, found_files
 
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', None)
+# pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.width', None)
 
 def read_stock(self):
     df = pd.read_csv('F:\\workspace\\ai\\Transformers1\\timeseries\\US-Stock-Dataset\\Data\\Stocks\\TSLA.csv')
     df_close = df['Close'].values
     return df_close
 
-directory_path = 'US-Stock-Dataset/Data/StockHistory'
-merged_data = read_and_merge_csv_files(directory_path, ["A", "AAPL", "TSLA", "GOOG", "AMZN", "PYPL"])
-print(merged_data)
+# directory_path = 'US-Stock-Dataset/Data/StockHistory'
+# merged_data = read_and_merge_csv_files(directory_path, ["A", "AAPL", "TSLA", "GOOG", "AMZN", "PYPL"])
+# print(merged_data)
