@@ -127,7 +127,7 @@ class TimeseriesDataloader(object):
         self.codec = TimeseriesCodec()
 
         directory_path = 'US-Stock-Dataset/Data/StockHistory'
-        df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load)
+        df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2010-01-01', end_date='2020-12-31')
 
         df.drop(columns=['Date'], axis=1, inplace=True)
 
@@ -142,8 +142,10 @@ class TimeseriesDataloader(object):
 
         self.found_files = found_files
 
-    def get_found_file_number(self):
-        return self.found_files
+        print("Found files: ", found_files)
+
+    def get_number_of_channels(self):
+        return self.found_files * 2
 
     def get_train_data(self):
         return self.train_data
@@ -223,7 +225,7 @@ stocks_to_load = [
 ]
 
 dataloader = TimeseriesDataloader(stocks_to_load)
-config = TimeseriesTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, learning_rate=1e-3, channels=dataloader.get_found_file_number() * 2)
+config = TimeseriesTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, learning_rate=1e-3, channels=dataloader.get_number_of_channels())
 trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
 
 
