@@ -3,6 +3,7 @@ import time
 import torch
 import pandas as pd
 from torch import nn as nn
+import torch._dynamo as dynamo
 
 from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from src.performance_utils import timeit
@@ -11,6 +12,7 @@ from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalE
 
 from t3_karpathy.karpathy_transformer import AbstractRunner
 from t3_karpathy.transformer_config import BaseTransformerConfig
+from timeseries.csv_reader import read_and_merge_csv_files
 
 
 class TimeseriesFeedForward(nn.Module):
@@ -37,7 +39,7 @@ class TimeseriesTransformerModel(nn.Module):
     def __init__(self, config: BaseTransformerConfig, channels=1):
         super().__init__()
         self.config = config
-
+        self.channels = channels
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
 
@@ -57,12 +59,12 @@ class TimeseriesTransformerModel(nn.Module):
         self.blocks = BlockSequence(config)
 
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.out = TimeseriesFeedForward(config, 1)
+        self.out = TimeseriesFeedForward(config, channels)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
 
-        targets = targets[:, :, 0]
+        targets = targets[:, 0, :]
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -96,7 +98,7 @@ class TimeseriesTransformerModel(nn.Module):
 
 class TimeseriesRunner(AbstractRunner):
     def __init__(self, config: BaseTransformerConfig):
-        super().__init__(config, TimeseriesTransformerModel(config, channels=2))
+        super().__init__(config, TimeseriesTransformerModel(config, channels=12))
         pass
 
 
@@ -118,15 +120,15 @@ class TimeseriesDataloader(object):
         self.config = config
         self.codec = TimeseriesCodec()
 
-        df = pd.read_csv('F:\\workspace\\ai\\Transformers1\\timeseries\\US-Stock-Dataset\\Data\\Stocks\\TSLA.csv')
+        directory_path = 'US-Stock-Dataset/Data/StockHistory'
+        df = read_and_merge_csv_files(directory_path, ["A", "AAPL", "TSLA", "GOOG", "AMZN", "PYPL"])
 
-        df_close = df['Close'].values
+        df.drop(columns=['Date'], axis=1, inplace=True)
 
-        df_close = df_close
+        prices = df.values[1:]
+        prices_diff = df.diff().values[1:]
 
-        df_close_diff = df['Close'].diff().values
-
-        self.data = torch.stack([torch.tensor(df_close, dtype=torch.float), torch.tensor(df_close_diff, dtype=torch.float)], dim=1)[1:]
+        self.data = torch.concat([torch.tensor(prices, dtype=torch.float), torch.tensor(prices_diff, dtype=torch.float)], dim=1)#.unsqueeze(-1)
 
         n = int(0.9 * len(self.data))  # first 90% will be train, rest val
         self.train_data = self.data[:n]

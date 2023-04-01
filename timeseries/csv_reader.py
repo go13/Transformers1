@@ -44,6 +44,11 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 
+def read_stock(self):
+    df = pd.read_csv('F:\\workspace\\ai\\Transformers1\\timeseries\\US-Stock-Dataset\\Data\\Stocks\\TSLA.csv')
+    df_close = df['Close'].values
+    return df_close
+
 directory_path = 'US-Stock-Dataset/Data/StockHistory'
 merged_data = read_and_merge_csv_files(directory_path, ["A", "AAPL", "TSLA", "GOOG", "AMZN", "PYPL"])
 print(merged_data)
