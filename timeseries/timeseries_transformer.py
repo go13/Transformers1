@@ -226,7 +226,16 @@ stocks_to_load = [
 ]
 
 dataloader = TimeseriesDataloader(stocks_to_load)
-config = TimeseriesTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=8, channels=dataloader.get_number_of_channels(), learning_rate=1e-3)
+config = TimeseriesTransformerConfig(
+    batch_size=64,
+    block_size=128,
+    n_embed=32,
+    n_head=4,
+    n_layer=4,
+    kernel_size=1,
+    learning_rate=1e-3,
+    channels=dataloader.get_number_of_channels()
+)
 trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
 
 
