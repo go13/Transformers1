@@ -3,6 +3,8 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch._dynamo.utils import CompileProfiler
+import torch._dynamo as dynamo
 
 from t3_karpathy.commons import BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
@@ -191,11 +193,13 @@ class KarpathyTransformerModel(nn.Module):
 
 class AbstractRunner(object):
     def __init__(self, config: BaseTransformerConfig, model):
+        # print(torch._dynamo.list_backends() )
         self.model = model.to(config.my_device)
+        # self.model = torch.compile(model, mode="max-autotune", backend="cudagraphs") # , fullgraph=True
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
+
         self.config = config
         self.current_iteration = 0
-
         print(sum(p.numel() for p in self.model.parameters()) / 1e6, 'M parameters')
 
     def forward(self, x):

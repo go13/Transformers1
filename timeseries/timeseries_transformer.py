@@ -128,7 +128,7 @@ class TimeseriesDataloader(object):
         prices = df.values[1:]
         prices_diff = df.diff().values[1:]
 
-        self.data = torch.concat([torch.tensor(prices, dtype=torch.float), torch.tensor(prices_diff, dtype=torch.float)], dim=1)#.unsqueeze(-1)
+        self.data = torch.concat([torch.tensor(prices, dtype=torch.float), torch.tensor(prices_diff, dtype=torch.float)], dim=1)
 
         n = int(0.9 * len(self.data))  # first 90% will be train, rest val
         self.train_data = self.data[:n]
@@ -190,7 +190,7 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         return av_loss
 
 
-config = BaseTransformerConfig(batch_size=128, block_size=128, n_embed=16, n_head=4, n_layer=4, learning_rate=1e-3)
+config = BaseTransformerConfig(batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, learning_rate=1e-3)
 trainer1 = TimeseriesPandasTrainer(config)
 
 
