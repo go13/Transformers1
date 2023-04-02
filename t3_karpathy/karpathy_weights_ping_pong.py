@@ -14,14 +14,14 @@ dataloader = GptNanoDataloader(config)
 
 print("Training runner 1")
 runner1 = KarpathyRunner(config)
-runner1.train_iterate(5, dataloader.get_train_batch, dataloader.get_val_batch)
+runner1.train_eval(5, dataloader.get_train_batch, dataloader.get_val_batch)
 # context = torch.zeros((1, 1), dtype=torch.long, device=device)
 # print(dataloader.decode(runner1.generate(context, max_new_tokens=2000)[0].tolist()))
 
 
 print("Training runner 2")
 runner2 = KarpathyRunner(config)
-runner2.train_iterate(5, dataloader.get_train_batch, dataloader.get_val_batch)
+runner2.train_eval(5, dataloader.get_train_batch, dataloader.get_val_batch)
 # context = torch.zeros((1, 1), dtype=torch.long, device=device)
 # print(dataloader.decode(runner2.generate(context, max_new_tokens=2000)[0].tolist()))
 

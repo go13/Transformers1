@@ -193,6 +193,9 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
 
         return av_loss
 
+    def train_eval(self, n_iter):
+        self.runner.train_eval(n_iter, self.get_train_batch, self.get_val_batch)
+
     def get_batch(self, split):
         # generate a small batch of data of inputs x and targets y
         data = self.dataloader.get_train_data() if split == 'train' else self.dataloader.get_val_data()
@@ -238,15 +241,16 @@ config = TimeseriesTransformerConfig(
 )
 trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
 
-
-def step():
-    start_time = time.time()
-    av_loss = trainer1.train(1)
-    end_time = time.time()
-    time_taken = end_time - start_time
-
-    print(f"st={st}, av_loss={av_loss}, time_taken={time_taken}")
-
-
-for st in range(10000):
-    step()
+trainer1.train_eval(5000)
+#
+# def step():
+#     start_time = time.time()
+#     av_loss = trainer1.train(1)
+#     end_time = time.time()
+#     time_taken = end_time - start_time
+#
+#     print(f"st={st}, av_loss={av_loss}, time_taken={time_taken}")
+#
+#
+# for st in range(10000):
+#     step()

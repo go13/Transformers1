@@ -223,7 +223,7 @@ class AbstractRunner(object):
             losses[k] = loss.item()
         return losses.mean()
 
-    def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+    def train_eval(self, n_iter, get_train_batch, get_val_batch):
         for _ in range(n_iter):
             if self.current_iteration % self.config.eval_interval == 0:
                 train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
