@@ -3,11 +3,9 @@ import time
 import torch
 import pandas as pd
 from torch import nn as nn
-import torch._dynamo as dynamo
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from src.performance_utils import timeit
-from t3_karpathy.commons import AbstractCodec
+from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding, FeedForward
 
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -27,7 +25,7 @@ class TimeseriesFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig, out_size=1):
         super().__init__()
 
-        inp_size = config.n_embd * config.block_size
+        inp_size = config.n_embed * config.block_size
         hidden_size = config.hidden_size
         dropout = config.dropout
 
@@ -51,28 +49,63 @@ class TimeseriesTransformerModel(nn.Module):
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
 
-        kernel_size = config.kernel_size
-        right_pad = kernel_size - 1
-        n_kernels = config.n_embd * 4
-        self.conv1d1 = nn.Conv1d(
-            in_channels=self.channels,
-            out_channels=n_kernels,
-            kernel_size=kernel_size,
-            bias=True,
+        kernel_size = 4 #config.kernel_size
+        n_kernels = config.n_embed * 8
+        in_channels = 2 #
+        padding = 3
+        self.layer1 = nn.Sequential(
+            nn.Conv1d(in_channels=2, out_channels=n_kernels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Dropout(config.dropout),
+            nn.MaxPool1d(kernel_size=kernel_size, stride=1)
         )
+
+        self.layer2 = nn.Sequential(
+            nn.Conv1d(in_channels=n_kernels, out_channels=n_kernels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Dropout(config.dropout),
+            nn.MaxPool1d(kernel_size=kernel_size, stride=1)
+        )
+
+        self.out_channels_middle = n_kernels // 4
+
+        self.layer3 = nn.Sequential(
+            nn.Conv1d(in_channels=n_kernels, out_channels=self.out_channels_middle, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Dropout(config.dropout),
+            nn.MaxPool1d(kernel_size=kernel_size, stride=1)
+        )
+
+        self.layer4 = nn.Sequential(
+            nn.Conv1d(in_channels=self.out_channels_middle * config.channels, out_channels=n_kernels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Dropout(config.dropout),
+            nn.MaxPool1d(kernel_size=kernel_size, stride=1)
+        )
+
+        self.layer5 = nn.Sequential(
+            nn.Conv1d(in_channels=n_kernels, out_channels=n_kernels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Dropout(config.dropout),
+            nn.MaxPool1d(kernel_size=kernel_size, stride=1)
+        )
+
+        right_pad = kernel_size - 1
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embd, config.dropout)
+        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
+
+        self.input_ffwd2 = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config)
 
-        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.ln_f = nn.LayerNorm(config.n_embed)
         self.out = TimeseriesFeedForward(config, self.channels)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
 
-        targets = targets[:, 0, :]
+        targets = targets[:, 0, :, 0]
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -80,19 +113,31 @@ class TimeseriesTransformerModel(nn.Module):
 
     def forward(self, inp):
         # idx and targets are both (B,T) tensor of integers
-        b, t, c = inp.shape
+        b, t, c1, c2 = inp.shape
 
         pos_emb = self.pos_emb_dist(b)
 
-        x = inp.transpose(-1, -2)
+        # x = x.unsqueeze(-2)
+        x = inp.transpose(-2, -3).reshape(-1, t, c2).transpose(-1, -2)
 
-        x = self.conv1d1(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
 
-        x = self.padding1(x)
+        x = x.reshape(b, self.config.channels * self.out_channels_middle, -1)
+
+        x = self.layer4(x)
+        x = self.layer5(x)
+
+        # x = self.padding1(x)
+
+        # x = torch.concat([x, inp], dim=-1)
 
         x = x.transpose(-1, -2)
 
         x = self.input_ffwd(x)
+
+        # x = self.input_ffwd2(x)
 
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
@@ -105,8 +150,8 @@ class TimeseriesTransformerModel(nn.Module):
 
 
 class TimeseriesRunner(AbstractRunner):
-    def __init__(self, config: TimeseriesTransformerConfig):
-        super().__init__(config, TimeseriesTransformerModel(config))
+    def __init__(self, config: TimeseriesTransformerConfig, model: TimeseriesTransformerModel):
+        super().__init__(config, model)
         pass
 
 
@@ -135,7 +180,7 @@ class TimeseriesDataloader(object):
         prices = df.values[1:]
         prices_diff = df.diff().values[1:]
 
-        self.data = torch.concat([torch.tensor(prices, dtype=torch.float), torch.tensor(prices_diff, dtype=torch.float)], dim=1)
+        self.data = torch.concat([torch.tensor(prices, dtype=torch.float).unsqueeze(-1), torch.tensor(prices_diff, dtype=torch.float).unsqueeze(-1)], dim=-1)
 
         n = int(0.9 * len(self.data))  # first 90% will be train, rest val
         self.train_data = self.data[:n]
@@ -146,7 +191,7 @@ class TimeseriesDataloader(object):
         print("Found files: ", found_files)
 
     def get_number_of_channels(self):
-        return self.found_files * 2
+        return self.found_files
 
     def get_train_data(self):
         return self.train_data
@@ -156,9 +201,9 @@ class TimeseriesDataloader(object):
 
 
 class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
-    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader):
+    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader, model: TimeseriesTransformerModel):
         super().__init__(config)
-        self.runner: TimeseriesRunner = TimeseriesRunner(config)
+        self.runner: TimeseriesRunner = TimeseriesRunner(config, model)
         self.dataloader = dataloader
 
     def get_batch(self, data_x, data_y):
@@ -231,15 +276,16 @@ stocks_to_load = [
 dataloader = TimeseriesDataloader(stocks_to_load)
 config = TimeseriesTransformerConfig(
     batch_size=64,
-    block_size=128,
+    block_size=64,
     n_embed=32,
     n_head=4,
     n_layer=4,
-    kernel_size=1,
+    kernel_size=4,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
-trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
+model = TimeseriesTransformerModel(config)
+trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
 
 trainer1.train_eval(5000)
 #
