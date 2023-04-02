@@ -95,7 +95,7 @@ class TimeseriesTransformerModel(nn.Module):
 
         self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
 
-        self.input_ffwd2 = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
+        self.input_ffwd2 = FeedForward(config.n_embed + 2 * self.channels, config.n_embed, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config)
 
@@ -137,7 +137,11 @@ class TimeseriesTransformerModel(nn.Module):
 
         x = self.input_ffwd(x)
 
-        # x = self.input_ffwd2(x)
+        inp = inp.reshape(b, t, -1)
+
+        x = torch.concat([x, inp], dim=-1)
+
+        x = self.input_ffwd2(x)
 
         x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
