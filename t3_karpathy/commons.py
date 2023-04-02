@@ -9,13 +9,13 @@ class BaseTransformerConfig:
         # karpathy parameters
         self.batch_size = batch_size
         self.block_size = block_size
-        self.n_embd = n_embed
-        self.hidden_size = self.n_embd * 4
+        self.n_embed = n_embed
+        self.hidden_size = self.n_embed * 4
 
         self.n_head = n_head
         self.n_layer = n_layer
         self.dropout = 0.1
-        self.head_size = self.n_embd // self.n_head
+        self.head_size = self.n_embed // self.n_head
 
         self.max_iters = 15000
         self.eval_interval = 100
@@ -31,7 +31,7 @@ class SentimentalFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        inp_size = config.n_embd * config.block_size
+        inp_size = config.n_embed * config.block_size
         hidden_size = inp_size // 2  #config.hidden_size # * config.block_size
         dropout = config.dropout
         out_size = 1
@@ -57,3 +57,12 @@ class AbstractCodec(object):
 
     def decode(self, l: list) -> str:
         raise NotImplementedError()
+
+
+class AbstractAccumulativeTrainer(object):
+    def __init__(self, config: BaseTransformerConfig):
+        self.config = config
+        self.loss_hist = []
+
+    def get_loss_history(self):
+        return self.loss_hist

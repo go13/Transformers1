@@ -73,30 +73,30 @@ class Attention(nn.Module):
         super().__init__()
 
         self.n_local_heads = config.n_head  # fs_init.get_model_parallel_world_size()
-        self.head_dim = config.n_embd // config.n_head
+        self.head_dim = config.n_embed // config.n_head
 
         self.wq = skip_init(
             nn.Linear,
-            config.n_embd,
+            config.n_embed,
             config.n_head * self.head_dim,
             bias=False,
         )
         self.wk = skip_init(
             nn.Linear,
-            config.n_embd,
+            config.n_embed,
             config.n_head * self.head_dim,
             bias=False,
         )
         self.wv = skip_init(
             nn.Linear,
-            config.n_embd,
+            config.n_embed,
             config.n_head * self.head_dim,
             bias=False,
         )
         self.wo = skip_init(
             nn.Linear,
             config.n_head * self.head_dim,
-            config.n_embd,
+            config.n_embed,
             bias=False,
         )
 
@@ -182,15 +182,15 @@ class TransformerBlock(nn.Module):
     def __init__(self, layer_id: int, config: TransformerConfig):
         super().__init__()
         self.n_heads = config.n_head
-        self.dim = config.n_embd
-        self.head_dim = config.n_embd // config.n_head
+        self.dim = config.n_embed
+        self.head_dim = config.n_embed // config.n_head
         self.attention = Attention(config)
         self.feed_forward = FeedForward(
-            dim=config.n_embd, hidden_dim=4 * config.n_embd, multiple_of=config.multiple_of
+            dim=config.n_embed, hidden_dim=4 * config.n_embed, multiple_of=config.multiple_of
         )
         self.layer_id = layer_id
-        self.attention_norm = RMSNorm(config.n_embd, eps=config.norm_eps)
-        self.ffn_norm = RMSNorm(config.n_embd, eps=config.norm_eps)
+        self.attention_norm = RMSNorm(config.n_embed, eps=config.norm_eps)
+        self.ffn_norm = RMSNorm(config.n_embed, eps=config.norm_eps)
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
         h = x + self.attention.forward(self.attention_norm(x), start_pos, freqs_cis, mask)
@@ -219,20 +219,20 @@ class LlamaTransformer(nn.Module):
         self.tok_embeddings = skip_init(
             nn.Embedding,
             config.vocab_size,
-            config.n_embd
+            config.n_embed
         )
         self.layers = LlamaBlockSequence(config)
 
-        self.norm = RMSNorm(config.n_embd, eps=config.norm_eps)
+        self.norm = RMSNorm(config.n_embed, eps=config.norm_eps)
         self.output = skip_init(
             nn.Linear,
-            config.n_embd,
+            config.n_embed,
             config.vocab_size,
             bias=False
         )
 
         self.freqs_cis = precompute_freqs_cis(
-            config.my_device, self.config.n_embd // self.config.n_head, self.config.max_seq_len * 2
+            config.my_device, self.config.n_embed // self.config.n_head, self.config.max_seq_len * 2
         )
 
     def forward_vs_target(self, idx, targets):

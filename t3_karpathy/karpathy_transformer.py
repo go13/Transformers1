@@ -3,8 +3,6 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from torch._dynamo.utils import CompileProfiler
-import torch._dynamo as dynamo
 
 from t3_karpathy.commons import BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
@@ -130,10 +128,10 @@ class Block(nn.Module):
     @staticmethod
     def create(config: TransformerConfig):
         block_size = config.block_size
-        out_size = config.n_embd
+        out_size = config.n_embed
         hidden_size = config.hidden_size
         dropout = config.dropout
-        n_embd = config.n_embd
+        n_embd = config.n_embed
         head_size = config.head_size
         n_head = config.n_head
         return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
@@ -145,11 +143,11 @@ class KarpathyTransformerModel(nn.Module):
         super().__init__()
         self.config = config
         # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
         # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+        self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
+        self.lm_head = nn.Linear(config.n_embed, config.vocab_size)
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)
@@ -193,7 +191,6 @@ class KarpathyTransformerModel(nn.Module):
 
 class AbstractRunner(object):
     def __init__(self, config: BaseTransformerConfig, model):
-        # print(torch._dynamo.list_backends() )
         self.model = model.to(config.my_device)
         # self.model = torch.compile(model, mode="max-autotune", backend="cudagraphs") # , fullgraph=True
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)

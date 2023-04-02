@@ -122,10 +122,10 @@ class Block(nn.Module):
     @staticmethod
     def create(config: BaseTransformerConfig):
         block_size = config.block_size
-        out_size = config.n_embd
+        out_size = config.n_embed
         hidden_size = config.hidden_size
         dropout = config.dropout
-        n_embd = config.n_embd
+        n_embd = config.n_embed
         head_size = config.head_size
         n_head = config.n_head
         return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
@@ -141,9 +141,9 @@ class PositionalEmbedding(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
         self.config = config
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
-        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
+        self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed)
 
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
@@ -164,9 +164,9 @@ class DistancePositionalEmbedding(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
         self.config = config
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd * 2, config.n_embd * 2, config.dropout)
-        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd * 2)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
+        self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed * 2, config.n_embed * 2, config.dropout)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed * 2)
 
     def forward(self, b):
         pos_embedding_arrange = distance_triangle(self.config.block_size, self.config.my_device)
@@ -193,16 +193,16 @@ class KarpathyTransformerModel(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
 
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_emb_dist = DistancePositionalEmbedding(config)
-        self.pos_ffwd = FeedForward(config.n_embd * 3, config.n_embd, config.n_embd * 2, config.dropout)
-        self.pos_ln = nn.LayerNorm(config.n_embd * 2)
+        self.pos_ffwd = FeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
+        self.pos_ln = nn.LayerNorm(config.n_embed * 2)
 
         self.blocks = BlockSequence(config)
-        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+        self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
+        self.lm_head = nn.Linear(config.n_embed, config.vocab_size)
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)

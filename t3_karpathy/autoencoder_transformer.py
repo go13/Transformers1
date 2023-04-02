@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from t3_karpathy.commons import AbstractAccumulativeTrainer
 from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.transformer_config import TransformerConfig
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -14,17 +14,17 @@ class AutoencoderTransformerModel(nn.Module):
         super().__init__()
         self.config = config
         # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         self.blocks1 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
-        self.ln_mid = nn.LayerNorm(config.n_embd)
-        self.mid = nn.Linear(config.n_embd, config.n_embd)
+        self.ln_mid = nn.LayerNorm(config.n_embed)
+        self.mid = nn.Linear(config.n_embed, config.n_embed)
 
         self.blocks2 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
-        self.ln_out = nn.LayerNorm(config.n_embd)
-        self.out = nn.Linear(config.n_embd, config.vocab_size)
+        self.ln_out = nn.LayerNorm(config.n_embed)
+        self.out = nn.Linear(config.n_embed, config.vocab_size)
 
         self.out.weight = self.token_embedding_table.weight
 

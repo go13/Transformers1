@@ -1,7 +1,7 @@
 import torch
 from torch import nn as nn
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from t3_karpathy.commons import AbstractAccumulativeTrainer
 
 from t3_karpathy.karpathy_transformer import Block, AbstractRunner
 from t3_karpathy.sentimental_transformer import SentimentalFeedForward
@@ -14,7 +14,7 @@ class TTransformerModel(nn.Module):
         super().__init__()
         self.config = config
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.ln_f = nn.LayerNorm(config.n_embed)
         self.out = SentimentalFeedForward(config)
 
     def forward_vs_target(self, idx, targets):

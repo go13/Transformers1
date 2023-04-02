@@ -4,7 +4,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
+from t3_karpathy.commons import AbstractAccumulativeTrainer
 
 from t3_karpathy.karpathy_transformer import Block, FeedForward
 from t3_karpathy.transformer_config import TransformerConfig
@@ -16,18 +16,18 @@ class CrossoverTransformerModel(nn.Module):
         super().__init__()
         self.config = config
         # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         self.blocks1 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
         self.blocks2 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
-        mid_size = config.n_embd * config.block_size
+        mid_size = config.n_embed * config.block_size
 
         self.mid = FeedForward(mid_size * 2, mid_size * 1, mid_size, config.dropout)
 
         self.blocks3 = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.LayerNorm(config.n_embd)
-        self.out = nn.Linear(config.n_embd, config.vocab_size)
+        self.ln_f = nn.LayerNorm(config.n_embed)
+        self.out = nn.Linear(config.n_embed, config.vocab_size)
 
     def forward_vs_target(self, idx1, idx2, targets):
         logits = self.forward(idx1, idx2)

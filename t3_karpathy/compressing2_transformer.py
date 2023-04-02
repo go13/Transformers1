@@ -90,7 +90,7 @@ class CompressingTransformerModel(nn.Module):
         self.config = config
 
         block_size = config.block_size
-        n_embd = config.n_embd
+        n_embd = config.n_embed
 
         def get_block_size(i):
             res = block_size // (2 ** i)

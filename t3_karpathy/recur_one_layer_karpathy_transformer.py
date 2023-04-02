@@ -179,10 +179,10 @@ class Block(nn.Module):
     @staticmethod
     def create(config: TransformerConfig, att_nn):
         block_size = config.block_size
-        out_size = config.n_embd
+        out_size = config.n_embed
         hidden_size = config.hidden_size
         dropout = config.dropout
-        n_embd = config.n_embd
+        n_embd = config.n_embed
         head_size = config.head_size
         n_head = config.n_head
         return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size, att_nn)
@@ -192,8 +192,8 @@ class PositionalEmbedding(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.position_embedding_ff = FeedForward(config.n_embd, config.n_embd, config.n_embd, config.dropout)
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
+        self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
         # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
 
     def forward(self, b, t):
@@ -220,16 +220,16 @@ class KarpathyTransformerModel(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
+        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
 
         self.pe1 = PositionalEmbedding(config)
         self.se1 = PositionalEmbedding(config)
-        self.st_em_ff = FeedForward(config.n_embd * 2, config.n_embd, config.n_embd, config.dropout)
-        self.att_nn = SuperFeedForward(config.n_embd * 4, 4 * config.n_embd, config.n_embd, config.dropout)
+        self.st_em_ff = FeedForward(config.n_embed * 2, config.n_embed, config.n_embed, config.dropout)
+        self.att_nn = SuperFeedForward(config.n_embed * 4, 4 * config.n_embed, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config, self.att_nn)
-        self.ln_f = nn.LayerNorm(config.n_embd)  # final layer norm
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+        self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
+        self.lm_head = nn.Linear(config.n_embed, config.vocab_size)
 
     def forward_vs_target(self, idx, targets):
         logits = self.forward(idx)
