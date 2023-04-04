@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/timeseries/US-Stock-Dataset" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (torch20latest)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="torch20latest" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

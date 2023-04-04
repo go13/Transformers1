@@ -4,6 +4,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from flash_attn.flash_attention import FlashMHA
 
 from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
 from t3_karpathy.transformer_config import TransformerConfig
@@ -100,6 +101,28 @@ class MultiHeadAttention(nn.Module):
         return out
 
 
+class FlashMultiHeadAttention(nn.Module):
+    def __init__(self, inp_size: int, n_embed: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
+        super().__init__()
+        self.my_device = my_device
+
+        self.flash_mha = FlashMHA(
+            embed_dim=n_embed,  # total channels (= num_heads * head_dim)
+            num_heads=n_head,  # number of heads
+            device=my_device,
+            dtype=torch.bfloat16,
+        )
+
+        self.proj = nn.Linear(n_embed, n_embed)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, st_pos_emb):
+        # inp = torch.cat(x, st_pos_emb, dim=-1)
+        out = self.flash_mha(x)[0]
+        out = self.dropout(out)
+        return out
+
+
 class Block(nn.Module):
     def __init__(self, dropout: float, block_size: int, hidden_emb: int, inp_embd: int, out_emb: int, n_head: int, head_size: int):
         super().__init__()
@@ -108,6 +131,7 @@ class Block(nn.Module):
 
         # self.ln1 = nn.LayerNorm(inp_embd)
         self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
+        # self.sa = FlashMultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(inp_embd)
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
