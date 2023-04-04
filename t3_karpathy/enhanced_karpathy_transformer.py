@@ -130,7 +130,7 @@ class Block(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        self.sa = MultiHeadAttention(config)
+        # self.sa = MultiHeadAttention(config)
         self.sa = FlashMultiHeadAttention(config)
 
         dropout = config.dropout
