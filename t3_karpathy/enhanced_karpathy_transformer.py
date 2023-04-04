@@ -102,7 +102,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class FlashMultiHeadAttention(nn.Module):
-    def __init__(self, inp_size: int, n_embed: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
+    def __init__(self, n_embed: int, n_head: int, dropout: float, my_device='cuda'):
         super().__init__()
         self.my_device = my_device
 
@@ -111,15 +111,15 @@ class FlashMultiHeadAttention(nn.Module):
             num_heads=n_head,  # number of heads
             device=my_device,
             dtype=torch.bfloat16,
+            attention_dropout=dropout,
+            # causal=True, # auto-regressive or not
         )
 
         self.proj = nn.Linear(n_embed, n_embed)
-        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, st_pos_emb):
         # inp = torch.cat(x, st_pos_emb, dim=-1)
         out = self.flash_mha(x)[0]
-        out = self.dropout(out)
         return out
 
 
@@ -130,8 +130,8 @@ class Block(nn.Module):
         # self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
 
         # self.ln1 = nn.LayerNorm(inp_embd)
-        self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
-        # self.sa = FlashMultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
+        # self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
+        self.sa = FlashMultiHeadAttention(inp_embd, n_head, dropout)
 
         self.ln2 = nn.LayerNorm(inp_embd)
         self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
