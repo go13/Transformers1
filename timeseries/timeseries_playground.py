@@ -22,6 +22,6 @@ def get_batch():
 print("Training runner 1")
 runner1 = SentimentalRunner(config)
 
-runner1.train_eval(15000, get_batch, get_batch)
+runner1.train_iterate(15000, get_batch, get_batch)
 
 print(runner1.forward(XX))

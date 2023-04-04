@@ -233,7 +233,7 @@ class CompressingAccumulativeTrainer(StringAccumulativeTrainer):
         return self.predict_list([x1])[0]
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
-        self.runner.train_eval(n_iter, get_train_batch, get_val_batch)
+        self.runner.train_iterate(n_iter, get_train_batch, get_val_batch)
 
     def train(self, n=1):
         losses = 0

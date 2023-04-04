@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import torch
+import time
 import torch.nn as nn
 from torch.nn import functional as F
 
@@ -190,9 +191,10 @@ class KarpathyTransformerModel(nn.Module):
 
 class AbstractRunner(object):
     def __init__(self, config: BaseTransformerConfig, model: nn.Module):
-        self.model = model.to(config.my_device)
+        self.model = model.to(config.my_device, dtype=config.precision)
+        self.parameters = self.model.parameters()
         # self.model = torch.compile(model, mode="max-autotune", backend="cudagraphs") # , fullgraph=True
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
+        self.optimizer = torch.optim.AdamW(self.parameters, lr=config.learning_rate)
 
         self.config = config
         self.current_iteration = 0
@@ -219,12 +221,15 @@ class AbstractRunner(object):
             losses[k] = loss.item()
         return losses.mean()
 
-    def train_eval(self, n_iter, get_train_batch, get_val_batch):
+    def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+        t = time.time()
         for _ in range(n_iter):
             if self.current_iteration % self.config.eval_interval == 0:
+                t_taken = time.time() - t
                 train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
                 val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
-                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}")
+                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / self.config.eval_interval}")
+                t = time.time()
 
             x, y = get_train_batch()
 

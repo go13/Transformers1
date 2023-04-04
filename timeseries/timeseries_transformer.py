@@ -185,7 +185,7 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         return av_loss
 
     def train_eval(self, n_iter):
-        self.runner.train_eval(n_iter, self.get_train_batch, self.get_val_batch)
+        self.runner.train_iterate(n_iter, self.get_train_batch, self.get_val_batch)
 
     def get_batch(self, split):
         # generate a small batch of data of inputs x and targets y
