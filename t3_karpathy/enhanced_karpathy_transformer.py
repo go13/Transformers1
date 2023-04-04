@@ -115,8 +115,6 @@ class FlashMultiHeadAttention(nn.Module):
             # causal=True, # auto-regressive or not
         )
 
-        self.proj = nn.Linear(n_embed, n_embed)
-
     def forward(self, x, st_pos_emb):
         # inp = torch.cat(x, st_pos_emb, dim=-1)
         out = self.flash_mha(x)[0]
