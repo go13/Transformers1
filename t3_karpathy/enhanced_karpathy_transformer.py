@@ -256,10 +256,9 @@ class KarpathyTransformerModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
 
-
 class AbstractRunner(object):
-    def __init__(self, config: TransformerConfig, model):
-        self.model = model.to(config.my_device)
+    def __init__(self, config: TransformerConfig, model: KarpathyTransformerModel):
+        self.model = model.to(config.my_device, dtype=config.precision)
         self.parameters = self.model.parameters()
         # self.model = torch.compile(model) # torch.compile(model, mode="max-autotune")
         self.optimizer = torch.optim.AdamW(self.parameters, lr=config.learning_rate)

@@ -3,11 +3,9 @@ import time
 import torch
 import pandas as pd
 from torch import nn as nn
-import torch._dynamo as dynamo
 
-from ga_t3.accumulative_trainer import AbstractAccumulativeTrainer
 from src.performance_utils import timeit
-from t3_karpathy.commons import AbstractCodec
+from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding, FeedForward
 
 from t3_karpathy.karpathy_transformer import AbstractRunner
@@ -17,7 +15,7 @@ from timeseries.csv_reader import read_and_merge_csv_files
 
 class TimeseriesTransformerConfig(BaseTransformerConfig):
 
-    def __init__(self, my_device='cuda', batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
+    def __init__(self, my_device='cuda', precision=torch.bfloat16, batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
         super().__init__(my_device, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
         self.kernel_size = kernel_size
@@ -105,8 +103,8 @@ class TimeseriesTransformerModel(nn.Module):
 
 
 class TimeseriesRunner(AbstractRunner):
-    def __init__(self, config: TimeseriesTransformerConfig):
-        super().__init__(config, TimeseriesTransformerModel(config))
+    def __init__(self, config: TimeseriesTransformerConfig, model: TimeseriesTransformerModel):
+        super().__init__(config, model)
         pass
 
 
@@ -156,9 +154,9 @@ class TimeseriesDataloader(object):
 
 
 class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
-    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader):
+    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader, model: TimeseriesTransformerModel):
         super().__init__(config)
-        self.runner: TimeseriesRunner = TimeseriesRunner(config)
+        self.runner: TimeseriesRunner = TimeseriesRunner(config, model)
         self.dataloader = dataloader
 
     def get_batch(self, data_x, data_y):
@@ -231,15 +229,16 @@ stocks_to_load = [
 dataloader = TimeseriesDataloader(stocks_to_load)
 config = TimeseriesTransformerConfig(
     batch_size=64,
-    block_size=128,
+    block_size=64,
     n_embed=32,
     n_head=4,
     n_layer=4,
-    kernel_size=1,
+    kernel_size=4,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
-trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader)
+model = TimeseriesTransformerModel(config)
+trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
 
 trainer1.train_eval(5000)
 #

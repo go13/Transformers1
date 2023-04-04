@@ -1,9 +1,9 @@
+import torch
 from torch import nn as nn
-
 
 class BaseTransformerConfig:
 
-    def __init__(self, my_device='cuda', batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-2):
+    def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-2):
         self.my_device = my_device
 
         # karpathy parameters
@@ -25,6 +25,7 @@ class BaseTransformerConfig:
         self.norm_eps: float = 1e-5   # llma
         self.max_seq_len: int = 2048  # llma
         self.multiple_of: int = 256   # llma
+        self.precision = precision
 
 
 class SentimentalFeedForward(nn.Module):
