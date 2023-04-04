@@ -53,12 +53,12 @@ class NNAttentionHead(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, pos_emb):
+    def forward(self, x, pos_emb, pos_dist_emb):
         b, t, c = x.shape
 
         # pos_emb = self.pos_em_ff(pos_emb)
         # x1 = pos_emb + x
-        x1 = x + pos_emb
+        x1 = x #+ pos_emb
         # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
         x_tmp = x1.unsqueeze(1).repeat(1, t, 1, 1) # (B,T,C) -> (B,T,T,C)
@@ -67,8 +67,8 @@ class NNAttentionHead(nn.Module):
         q = x_tmp.transpose(1, 2)
 
         # a2 = torch.cat([k, q, pos_emb], dim=-1) # (B,T,T,C)
-        a2 = torch.cat([k, q], dim=-1)  # (B,T,T,C)
-        # a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
+        # a2 = torch.cat([k, q], dim=-1)  # (B,T,T,C)
+        a2 = torch.cat([k, q], dim=-1) + pos_dist_emb # (B,T,T,C)
         # a2 = torch.cat([k, q, pos_emb], dim=-1)   # (B,T,T,C)
 
         a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
@@ -101,8 +101,8 @@ class MultiHeadAttention(nn.Module):
         self.proj = nn.Linear(n_embed, n_embed)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, st_pos_emb):
-        out = torch.cat([h(x, st_pos_emb) for h in self.heads], dim=-1)
+    def forward(self, x, st_pos_emb, pos_dist_emb):
+        out = torch.cat([h(x, st_pos_emb, pos_dist_emb) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
 
@@ -121,7 +121,7 @@ class FlashMultiHeadAttention(nn.Module):
             causal=True # auto-regressive or not
         )
 
-    def forward(self, x, st_pos_emb):
+    def forward(self, x, st_pos_emb, pos_dist_emb):
         # inp = torch.cat(x, st_pos_emb, dim=-1)
         inp = x + st_pos_emb
         out = self.flash_mha(inp)[0]
@@ -132,8 +132,8 @@ class Block(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        # self.sa = MultiHeadAttention(config)
-        self.sa = FlashMultiHeadAttention(config)
+        self.sa = MultiHeadAttention(config)
+        # self.sa = FlashMultiHeadAttention(config)
 
         dropout = config.dropout
         hidden_emb = config.hidden_size
@@ -143,9 +143,9 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embed)
         self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout, bias=True)
 
-    def forward(self, x, st_pos_emb):
+    def forward(self, x, st_pos_emb, pos_dist_emb):
         # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
-        x = x + self.sa(x, st_pos_emb)
+        x = x + self.sa(x, st_pos_emb, pos_dist_emb)
         # x = x + self.sa(self.ln1(x), st_pos_emb)
         x = x + self.ffwd(self.ln2(x))
         return x, st_pos_emb
@@ -208,9 +208,9 @@ class BlockSequence(nn.Module):
         super().__init__()
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
 
-    def forward(self, x, st_pos_emb):
+    def forward(self, x, st_pos_emb, pos_dist_emb):
         for block in self.blocks:
-            x, st_pos_emb = block(x, st_pos_emb)
+            x, st_pos_emb = block(x, st_pos_emb, pos_dist_emb)
         return x, st_pos_emb
 
 
@@ -222,7 +222,7 @@ class KarpathyTransformerModel(nn.Module):
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
 
         self.pos_emb1 = PositionalEmbedding(config)
-        self.pos_emb_dist = DistancePositionalEmbedding(config)
+        self.pos_dist_emb = DistancePositionalEmbedding(config)
         self.pos_ffwd = FeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
         self.pos_ln = nn.LayerNorm(config.n_embed * 2)
 
@@ -247,7 +247,7 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        # pos_emb_dist = self.pos_emb_dist(b)
+        pos_dist_emb = self.pos_dist_emb(b)
 
         pos_emb = self.pos_emb1(b, t)
 
@@ -259,7 +259,7 @@ class KarpathyTransformerModel(nn.Module):
         # pos_emb = pos_emb_dist + pos_emb
 
         # x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
-        x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+        x, st_pos_emb = self.blocks(x, pos_emb, pos_dist_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
