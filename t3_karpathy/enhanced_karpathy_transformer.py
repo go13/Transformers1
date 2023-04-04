@@ -87,12 +87,17 @@ class NNAttentionHead(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, inp_size: int, n_embd: int, head_size: int, n_head: int, dropout: float, my_device='cuda'):
+    def __init__(self, config: BaseTransformerConfig):
         super().__init__()
-        self.my_device = my_device
 
-        self.heads = nn.ModuleList([NNAttentionHead(inp_size, n_embd, head_size, dropout) for _ in range(n_head)])
-        self.proj = nn.Linear(n_embd, n_embd)
+        dropout = config.dropout
+        block_size = config.block_size
+        n_embed = config.n_embed
+        head_size = config.head_size
+        n_head = config.n_head
+
+        self.heads = nn.ModuleList([NNAttentionHead(block_size, n_embed, head_size, dropout) for _ in range(n_head)])
+        self.proj = nn.Linear(n_embed, n_embed)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, st_pos_emb):
@@ -102,16 +107,16 @@ class MultiHeadAttention(nn.Module):
 
 
 class FlashMultiHeadAttention(nn.Module):
-    def __init__(self, n_embed: int, n_head: int, dropout: float, my_device='cuda'):
+    def __init__(self, config: BaseTransformerConfig):
         super().__init__()
-        self.my_device = my_device
+        assert torch.bfloat16 == config.precision, 'only bfloat16 is supported'
 
         self.flash_mha = FlashMHA(
-            embed_dim=n_embed,  # total channels (= num_heads * head_dim)
-            num_heads=n_head,  # number of heads
-            device=my_device,
-            dtype=torch.bfloat16,
-            attention_dropout=dropout,
+            embed_dim=config.n_embed,  # total channels (= num_heads * head_dim)
+            num_heads=config.n_head,
+            device=config.my_device,
+            dtype=config.precision,
+            attention_dropout=config.dropout,
             # causal=True, # auto-regressive or not
         )
 
@@ -122,17 +127,19 @@ class FlashMultiHeadAttention(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, dropout: float, block_size: int, hidden_emb: int, inp_embd: int, out_emb: int, n_head: int, head_size: int):
+    def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        # self.st_pos_em_ff = FeedForward(inp_embd, hidden_emb, inp_embd, dropout)
+        self.sa = MultiHeadAttention(config)
+        self.sa = FlashMultiHeadAttention(config)
 
-        # self.ln1 = nn.LayerNorm(inp_embd)
-        # self.sa = MultiHeadAttention(block_size, inp_embd, head_size, n_head, dropout)
-        self.sa = FlashMultiHeadAttention(inp_embd, n_head, dropout)
+        dropout = config.dropout
+        hidden_emb = config.hidden_size
+        n_embed = config.n_embed
+        out_emb = config.n_embed
 
-        self.ln2 = nn.LayerNorm(inp_embd)
-        self.ffwd = FeedForward(inp_embd, hidden_emb, out_emb, dropout)
+        self.ln2 = nn.LayerNorm(n_embed)
+        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout)
 
     def forward(self, x, st_pos_emb):
         # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
@@ -143,14 +150,7 @@ class Block(nn.Module):
 
     @staticmethod
     def create(config: BaseTransformerConfig):
-        block_size = config.block_size
-        out_size = config.n_embed
-        hidden_size = config.hidden_size
-        dropout = config.dropout
-        n_embd = config.n_embed
-        head_size = config.head_size
-        n_head = config.n_head
-        return Block(dropout, block_size, hidden_size, n_embd, out_size, n_head, head_size)
+        return Block(config)
 
 
 def distance_triangle(n, my_device):

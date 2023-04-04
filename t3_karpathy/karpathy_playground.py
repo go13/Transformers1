@@ -9,7 +9,7 @@ device = 'cuda'
 
 torch.manual_seed(1337)
 
-config = TransformerConfig(precision=torch.bfloat16, n_embed=64, n_head=4, n_layer=4, batch_size=32, block_size=128) # batch_size=1024, block_size=128, n_embed=64, n_head=4, n_layer=8)
+config = TransformerConfig(precision=torch.bfloat16, batch_size=32, block_size=128, n_embed=64, n_head=4, n_layer=8)
 dataloader = GptNanoDataloader(config)
 runner = EnhancedKarpathyRunner(config, dataloader)
 
