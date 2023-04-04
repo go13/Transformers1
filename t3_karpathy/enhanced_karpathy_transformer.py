@@ -44,11 +44,11 @@ class NNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         # self.pos_em_ff = nn.Linear(n_embd, n_embd, bias=False)
-        self.att = FeedForward(n_embd * 2, n_embd, 1, dropout)
+        self.att = FeedForward(n_embd * 2, n_embd, 1, dropout, bias=True)
         # self.att = LinearFeedForward(n_embd * 3, n_embd, 1, dropout)
         # self.att2 = nn.Linear(n_embd * 4, 1, bias=False)
 
-        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=True)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
@@ -132,8 +132,8 @@ class Block(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
-        self.sa = MultiHeadAttention(config)
-        # self.sa = FlashMultiHeadAttention(config)
+        # self.sa = MultiHeadAttention(config)
+        self.sa = FlashMultiHeadAttention(config)
 
         dropout = config.dropout
         hidden_emb = config.hidden_size
@@ -199,7 +199,7 @@ class DistancePositionalEmbedding(nn.Module):
         pos_emb = self.position_embedding_table(pos_embedding_arrange)
         pos_emb = pos_emb.repeat(b, 1, 1, 1)  # (B, T, T, C)
         pos_emb = self.position_embedding_ff(pos_emb)
-        pos_emb = self.position_embedding_ff_ln(pos_emb)
+        # pos_emb = self.position_embedding_ff_ln(pos_emb)
         return pos_emb
 
 
