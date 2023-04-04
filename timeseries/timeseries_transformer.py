@@ -16,7 +16,7 @@ from timeseries.csv_reader import read_and_merge_csv_files
 class TimeseriesTransformerConfig(BaseTransformerConfig):
 
     def __init__(self, my_device='cuda', precision=torch.bfloat16, batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
-        super().__init__(my_device, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
+        super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
         self.kernel_size = kernel_size
 
@@ -159,13 +159,6 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         self.runner: TimeseriesRunner = TimeseriesRunner(config, model)
         self.dataloader = dataloader
 
-    def get_batch(self, data_x, data_y):
-        ix = torch.randint(len(data_x), (self.config.batch_size,))
-        x = torch.stack([torch.tensor(self.dataloader.codec.encode(data_x[i])) for i in ix])
-        y = torch.stack([torch.tensor(data_y[i]) for i in ix])
-        x, y = x.to(self.config.my_device), y.to(self.config.my_device)
-        return x, y
-
     def predict_list(self, lst):
         lst = [self.dataloader.codec.encode(x) for x in lst]
         x = torch.tensor(lst).to(self.config.my_device)
@@ -237,8 +230,7 @@ config = TimeseriesTransformerConfig(
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
-model = TimeseriesTransformerModel(config)
-trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
+trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=TimeseriesTransformerModel(config))
 
 trainer1.train_eval(5000)
 #
