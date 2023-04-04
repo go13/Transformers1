@@ -1,8 +1,7 @@
 import torch
 from torch.nn import functional as F
 
-from t3_karpathy.karpathy_transformer import AbstractRunner
-from t3_karpathy.commons import BaseTransformerConfig, AbstractAccumulativeTrainer
+from t3_karpathy.commons import BaseTransformerConfig, AbstractAccumulativeTrainer, AbstractRunner
 
 
 class StringAccumulativeTrainer(AbstractAccumulativeTrainer):

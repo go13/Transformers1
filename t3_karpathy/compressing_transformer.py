@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from ga_t3.accumulative_trainer import StringAccumulativeTrainer
 from t3_karpathy.karpathy_transformer import FeedForward, Block
 from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.karpathy_transformer import AbstractRunner
+from t3_karpathy.commons import AbstractRunner
 
 
 class CompressingAttentionHead(nn.Module):
