@@ -5,7 +5,7 @@ import time
 import torch.nn as nn
 from torch.nn import functional as F
 
-from t3_karpathy.commons import BaseTransformerConfig, AbstractRunner
+from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
 
 

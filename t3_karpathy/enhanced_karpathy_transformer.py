@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from t3_karpathy.commons import BaseTransformerConfig, AbstractRunner
+from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
@@ -258,8 +258,8 @@ class KarpathyTransformerModel(nn.Module):
 
 
 class EnhancedKarpathyRunner(AbstractRunner):
-    def __init__(self, config: TransformerConfig):
-        super().__init__(config, KarpathyTransformerModel(config))
+    def __init__(self, config: TransformerConfig, data_loader: AbstractDataLoader):
+        super().__init__(config, KarpathyTransformerModel(config), data_loader)
         pass
 
     def generate(self, context, max_new_tokens):

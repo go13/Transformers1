@@ -1,11 +1,12 @@
 import torch
 
 from t3_karpathy.transformer_config import TransformerConfig
+from t3_karpathy.commons import BaseTransformerConfig, AbstractDataLoader
 
 
-class GptNanoDataloader(object):
-
-    def __init__(self, config: TransformerConfig):
+class GptNanoDataloader(AbstractDataLoader):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__(config)
         self.config = config
         self.token_codec = self.config.token_codec
 

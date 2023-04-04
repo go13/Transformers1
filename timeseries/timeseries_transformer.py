@@ -5,10 +5,9 @@ import pandas as pd
 from torch import nn as nn
 
 from src.performance_utils import timeit
-from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner
+from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, BaseTransformerConfig
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding, FeedForward
 
-from t3_karpathy.transformer_config import BaseTransformerConfig
 from timeseries.csv_reader import read_and_merge_csv_files
 
 

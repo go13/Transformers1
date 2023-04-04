@@ -2,6 +2,7 @@ import torch
 import time
 from torch import nn as nn
 
+
 class BaseTransformerConfig:
 
     def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-2):
@@ -23,18 +24,31 @@ class BaseTransformerConfig:
         self.learning_rate = learning_rate
         self.eval_iters = 200
 
-        self.norm_eps: float = 1e-5   # llma
+        self.norm_eps: float = 1e-5  # llma
         self.max_seq_len: int = 2048  # llma
-        self.multiple_of: int = 256   # llma
+        self.multiple_of: int = 256  # llma
         self.precision = precision
 
+class AbstractDataLoader(object):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__()
+        self.config = config
+
+    def get_batch(self, split):
+        raise NotImplementedError()
+
+    def get_train_batch(self):
+        return self.get_batch('train')
+
+    def get_val_batch(self):
+        return self.get_batch('test')
 
 class SentimentalFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
         inp_size = config.n_embed * config.block_size
-        hidden_size = inp_size // 2  #config.hidden_size # * config.block_size
+        hidden_size = inp_size // 2  # config.hidden_size # * config.block_size
         dropout = config.dropout
         out_size = 1
 
@@ -71,14 +85,14 @@ class AbstractAccumulativeTrainer(object):
 
 
 class AbstractRunner(object):
-    def __init__(self, config: BaseTransformerConfig, model: nn.Module):
-        self.model = model.to(config.my_device)#, dtype=config.precision)
+    def __init__(self, config: BaseTransformerConfig, model: nn.Module, data_loader: AbstractDataLoader):
+        self.model = model.to(config.my_device, dtype=config.precision)
         self.parameters = self.model.parameters()
         # self.model = torch.compile(model, mode="max-autotune", backend="cudagraphs") # , fullgraph=True
         self.optimizer = torch.optim.AdamW(self.parameters, lr=config.learning_rate)
-
         self.config = config
         self.current_iteration = 0
+        self.data_loader = data_loader
         print(sum(p.numel() for p in self.model.parameters()) / 1e6, 'M parameters')
 
     def forward(self, x):
@@ -101,6 +115,9 @@ class AbstractRunner(object):
             logits, loss = self.model.forward_vs_target(x, y)
             losses[k] = loss.item()
         return losses.mean()
+
+    def train_iterate_n(self, n_iter):
+        self.train_iterate(n_iter, self.data_loader.get_train_batch, self.data_loader.get_val_batch)
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
         t = time.time()
@@ -126,3 +143,4 @@ class AbstractRunner(object):
 
     def generate(self, *args):
         raise NotImplementedError()
+
