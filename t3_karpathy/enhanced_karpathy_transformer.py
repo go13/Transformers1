@@ -58,7 +58,7 @@ class NNAttentionHead(nn.Module):
 
         # pos_emb = self.pos_em_ff(pos_emb)
         # x1 = pos_emb + x
-        x1 = x
+        x1 = x + pos_emb
         # x1 = torch.cat([pos_emb, x], dim=-1) # (B,T,C * 2)
 
         x_tmp = x1.unsqueeze(1).repeat(1, t, 1, 1) # (B,T,C) -> (B,T,T,C)
@@ -67,7 +67,8 @@ class NNAttentionHead(nn.Module):
         q = x_tmp.transpose(1, 2)
 
         # a2 = torch.cat([k, q, pos_emb], dim=-1) # (B,T,T,C)
-        a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
+        a2 = torch.cat([k, q], dim=-1)  # (B,T,T,C)
+        # a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
         # a2 = torch.cat([k, q, pos_emb], dim=-1)   # (B,T,T,C)
 
         a2 = self.att(a2) # (B,T,T,C * 2) -> (B,T,T,1)
@@ -117,12 +118,13 @@ class FlashMultiHeadAttention(nn.Module):
             device=config.my_device,
             dtype=config.precision,
             attention_dropout=config.dropout,
-            # causal=True, # auto-regressive or not
+            causal=True # auto-regressive or not
         )
 
     def forward(self, x, st_pos_emb):
         # inp = torch.cat(x, st_pos_emb, dim=-1)
-        out = self.flash_mha(x)[0]
+        inp = x + st_pos_emb
+        out = self.flash_mha(inp)[0]
         return out
 
 
@@ -166,20 +168,22 @@ class PositionalEmbedding(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
         self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed)
+        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
         pos_emb = self.position_embedding_ff(pos_emb)
         pos_emb = self.position_embedding_ff_ln(pos_emb)
+        pos_emb = self.dropout(pos_emb)
 
-        pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
-        k = pos_emb
-        q = pos_emb.transpose(1, 2)
-        pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
+        # pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        # k = pos_emb
+        # q = pos_emb.transpose(1, 2)
+        # pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
 
-        return k + q
-        # return pos_emb
+        # return k + q
+        return pos_emb
 
 
 class DistancePositionalEmbedding(nn.Module):
@@ -243,9 +247,9 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        pos_emb_dist = self.pos_emb_dist(b)
+        # pos_emb_dist = self.pos_emb_dist(b)
 
-        # pos_emb = self.pos_emb1(b, t)
+        pos_emb = self.pos_emb1(b, t)
 
         # pos_emb = torch.cat([pos_emb_dist, pos_emb], dim=-1)
         #
@@ -255,7 +259,7 @@ class KarpathyTransformerModel(nn.Module):
         # pos_emb = pos_emb_dist + pos_emb
 
         # x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
-        x, st_pos_emb = self.blocks(x, pos_emb_dist)  # (B,T,C)
+        x, st_pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         logits = self.lm_head(x)  # (B,T,vocab_size)
