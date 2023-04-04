@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from t3_karpathy.commons import BaseTransformerConfig
+from t3_karpathy.commons import BaseTransformerConfig, AbstractRunner
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
@@ -255,63 +255,6 @@ class KarpathyTransformerModel(nn.Module):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
-
-class AbstractRunner(object):
-    def __init__(self, config: TransformerConfig, model: KarpathyTransformerModel):
-        self.model = model.to(config.my_device, dtype=config.precision)
-        self.parameters = self.model.parameters()
-        # self.model = torch.compile(model) # torch.compile(model, mode="max-autotune")
-        self.optimizer = torch.optim.AdamW(self.parameters, lr=config.learning_rate)
-        self.config = config
-        self.current_iteration = 0
-
-        print(sum(p.numel() for p in self.model.parameters()) / 1e6, 'M parameters')
-
-    def forward(self, x):
-        return self.model(x)
-
-    def learn(self, x, y):
-        self.model.train()
-        out, loss = self.model.forward_vs_target(x, y)
-        self.optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        self.optimizer.step()
-        return out, loss
-
-    @torch.no_grad()
-    def evaluate(self, get_batch, eval_iters):
-        self.model.eval()
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            x, y = get_batch()
-            logits, loss = self.model.forward_vs_target(x, y)
-            losses[k] = loss.item()
-        return losses.mean()
-
-    def train_iterate(self, n_iter, get_train_batch, get_val_batch):
-        t = time.time()
-        for _ in range(n_iter):
-            if self.current_iteration % self.config.eval_interval == 0:
-                t_taken = time.time() - t
-                train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
-                val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
-                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / self.config.eval_interval}")
-                t = time.time()
-
-            x, y = get_train_batch()
-
-            logits, loss = self.learn(x, y)
-
-            self.current_iteration += 1
-
-    def get_weights(self):
-        return self.model.state_dict()
-
-    def set_weights(self, new_state_dict):
-        self.model.load_state_dict(OrderedDict(new_state_dict))
-
-    def generate(self, *args):
-        raise NotImplementedError()
 
 
 class EnhancedKarpathyRunner(AbstractRunner):
