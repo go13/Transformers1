@@ -15,7 +15,7 @@ from timeseries.csv_reader import read_and_merge_csv_files
 
 class TimeseriesTransformerConfig(BaseTransformerConfig):
 
-    def __init__(self, my_device='cuda', batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
+    def __init__(self, my_device='cuda', precision=torch.bfloat16, batch_size=64, block_size=128, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
         super().__init__(my_device, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
         self.kernel_size = kernel_size
