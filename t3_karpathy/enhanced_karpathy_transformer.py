@@ -24,10 +24,10 @@ class LinearFeedForward(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout, bias=False):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, hidden_n_embd, bias=False),
+            nn.Linear(inp_n_embd, hidden_n_embd, bias=bias),
             # nn.ReLU(),
             nn.GELU(),
             nn.Linear(hidden_n_embd, out_n_embd),
@@ -141,7 +141,7 @@ class Block(nn.Module):
         out_emb = config.n_embed
 
         self.ln2 = nn.LayerNorm(n_embed)
-        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout)
+        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout, bias=True)
 
     def forward(self, x, st_pos_emb):
         # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)
