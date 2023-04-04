@@ -144,7 +144,7 @@ class KarpathyTransformerModel(nn.Module):
         self.config = config
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
-        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
         self.lm_head = nn.Linear(config.n_embed, config.vocab_size)

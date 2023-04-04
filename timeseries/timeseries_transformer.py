@@ -27,7 +27,7 @@ class TimeseriesFeedForward(nn.Module):
     def __init__(self, config: BaseTransformerConfig, out_size=1):
         super().__init__()
 
-        inp_size = config.n_embd * config.block_size
+        inp_size = config.n_embed * config.block_size
         hidden_size = config.hidden_size
         dropout = config.dropout
 
@@ -53,7 +53,7 @@ class TimeseriesTransformerModel(nn.Module):
 
         kernel_size = config.kernel_size
         right_pad = kernel_size - 1
-        n_kernels = config.n_embd * 4
+        n_kernels = config.n_embed * 4
         self.conv1d1 = nn.Conv1d(
             in_channels=self.channels,
             out_channels=n_kernels,
@@ -62,11 +62,11 @@ class TimeseriesTransformerModel(nn.Module):
         )
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embd, config.dropout)
+        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config)
 
-        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.ln_f = nn.LayerNorm(config.n_embed)
         self.out = TimeseriesFeedForward(config, self.channels)
 
     def forward_vs_target(self, idx, targets):

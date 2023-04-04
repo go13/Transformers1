@@ -194,7 +194,7 @@ class PositionalEmbedding(nn.Module):
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
-        # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embd)
+        # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed)
 
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)

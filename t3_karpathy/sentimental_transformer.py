@@ -36,7 +36,7 @@ class SentimentalTransformerModel(nn.Module):
         self.config = config
 
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
-        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
+        # self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
         #
         self.pos_emb1 = PositionalEmbedding(config)
 
