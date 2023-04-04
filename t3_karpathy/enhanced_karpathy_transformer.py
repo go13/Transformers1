@@ -76,12 +76,98 @@ class NNAttentionHead(nn.Module):
         # compute attention scores ("affinities")
         wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
         wei = F.softmax(wei, dim=-1)  # (B, T, T)
-        wei = self.dropout(wei)
+        # wei = self.dropout(wei) # dont think it is needed as present in FFN
         # perform the weighted aggregation of the values
         v = self.value(x)  # (B,T,C)
         out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
 
+
+def custom_softmax(x, dim=-1):
+    # Compute the exponential of each element in the input tensor
+    exp_x = torch.exp(x)
+
+    # Calculate the sum of exponentials along the specified dimension
+    sum_exp_x = torch.sum(exp_x, dim=dim, keepdim=True)
+
+    # Divide each exponential by the sum to obtain softmax probabilities
+    softmax_probs = exp_x / sum_exp_x
+
+    return softmax_probs
+class FastNNAttentionHead(nn.Module):
+    def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
+        super().__init__()
+        self.att_ff = FeedForward(n_embd * 2, n_embd, 1, dropout)
+
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, pos_emb):
+        b, t, c = x.shape
+        device = x.device
+
+        x1 = x
+
+        c_mul =  c ** -0.5
+
+        values = self.value(x)
+        out = torch.zeros((b, t, c), device=device)
+        wei = torch.zeros((b, t, t), device=device)
+        for i in range(1, t):
+            device = x.device
+            max_att = torch.full((b, t, 1), float('-inf'), device=device)
+            curr_att = torch.zeros((b, t, 1), device=device)
+            xi = x[:, i:i+1, :]
+
+            for j in range(0, i):
+
+                xk = xi
+                xq = x[:,j:j+1, :]
+
+                att_inp = torch.cat([xk, xq], dim=-1)
+
+                curr_att[:,j:j+1,:] = self.att_ff(att_inp) * c_mul
+
+                max_att[:,j:j+1,:] = torch.maximum(max_att[:,j:j+1,:], curr_att[:,j:j+1,:])
+
+            exp_att = torch.exp(curr_att - max_att)
+            sm_att = torch.sum(exp_att, dim=-1, keepdim=True)
+            att = exp_att / sm_att
+
+            wei[:,i,:] = att[:,:,0]
+
+            # for j in range(0, i):
+            #
+            #     v = values @ wei
+            #
+            #     out[:,i:i+1,:] = out[:,i:i+1,:] + v
+
+        out = wei @ values
+        return out
+        #
+        # x_tmp = x1.unsqueeze(1).repeat(1, t, 1, 1) # (B,T,C) -> (B,T,T,C)
+        #
+        # k = x_tmp
+        # q = x_tmp.transpose(1, 2)
+        #
+        # # a2 = torch.cat([k, q, pos_emb], dim=-1) # (B,T,T,C)
+        # a2 = torch.cat([k, q], dim=-1) + pos_emb # (B,T,T,C)
+        # # a2 = torch.cat([k, q, pos_emb], dim=-1)   # (B,T,T,C)
+        #
+        # a2 = self.att_ff(a2) # (B,T,T,C * 2) -> (B,T,T,1)
+        #
+        # wei = a2.squeeze(dim=-1) * c ** -0.5
+        #
+        # # compute attention scores ("affinities")
+        # wei = wei.masked_fill(self.tril[:t, :t] == 0, float('-inf'))  # (B, T, T)
+        # wei = F.softmax(wei, dim=-1)  # (B, T, T)
+        # wei = self.dropout(wei)
+        # # perform the weighted aggregation of the values
+        # v = self.value(x)  # (B,T,C)
+        # out = wei @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
+        # return out
 
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
