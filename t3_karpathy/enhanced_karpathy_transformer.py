@@ -115,12 +115,58 @@ class FlashMultiHeadAttention(nn.Module):
         return out
 
 
+class FlashConvMultiHeadAttention(nn.Module):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__()
+        assert torch.bfloat16 == config.precision, 'only bfloat16 is supported'
+
+        n_embed = config.n_embed
+        dropout = config.dropout
+
+        kernel_size = 4
+        right_pad = kernel_size - 1
+        self.conv1d1 = nn.Conv1d(
+            in_channels=n_embed,
+            out_channels=n_embed,
+            kernel_size=kernel_size,
+            bias=True,
+        )
+        self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
+
+        self.dropout = nn.Dropout(dropout)
+
+        # MHA + rotary requires flash-attention\csrc\rotary>pip install .
+        self.flash_mha = MHA(
+            embed_dim=config.n_embed,  # total channels (= num_heads * head_dim)
+            num_heads=config.n_head,
+            device=config.my_device,
+            dtype=config.precision,
+            dropout=config.dropout,
+            use_flash_attn=True,
+            return_residual=True,
+            dwconv=True,
+            rotary_emb_dim=config.head_size,
+            causal=True # auto-regressive or not
+        )
+
+    def forward(self, inp, st_pos_emb, pos_dist_emb):
+        x = self.conv1d1(inp.transpose(-1, -2))
+        x = self.padding1(x).transpose(-1, -2)
+        x = self.dropout(x)
+
+        inp = inp + x
+
+        out = self.flash_mha(inp)[0]
+        return out
+
+
 class Block(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
 
         # self.sa = MultiHeadAttention(config)
-        self.sa = FlashMultiHeadAttention(config)
+        # self.sa = FlashMultiHeadAttention(config)
+        self.sa = FlashConvMultiHeadAttention(config)
 
         dropout = config.dropout
         hidden_emb = config.hidden_size
