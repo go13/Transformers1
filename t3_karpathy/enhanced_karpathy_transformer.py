@@ -1,28 +1,12 @@
-import time
-from collections import OrderedDict
-
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from flash_attn.flash_attention import FlashMHA
 from flash_attn.modules.mha import MHA
-from flash_attn.layers.rotary import RotaryEmbedding
 
 from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
-
-
-class LinearFeedForward(nn.Module):
-    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, out_n_embd, bias=False),
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 class FeedForward(nn.Module):
@@ -158,7 +142,7 @@ class Block(nn.Module):
         out_emb = config.n_embed
 
         self.ln2 = nn.LayerNorm(n_embed)
-        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout, bias=True)
+        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout, bias=False)
 
     def forward(self, x, st_pos_emb, pos_dist_emb):
         # st_pos_emb = st_pos_emb + self.st_pos_em_ff(st_pos_emb)

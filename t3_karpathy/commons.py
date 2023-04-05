@@ -146,3 +146,13 @@ class AbstractRunner(object):
     def generate(self, *args):
         raise NotImplementedError()
 
+
+class LinearFeedForward(nn.Module):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(inp_n_embd, out_n_embd, bias=False),
+        )
+
+    def forward(self, x):
+        return self.net(x)
