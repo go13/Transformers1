@@ -1,7 +1,6 @@
 import torch
 
-from t3_karpathy.transformer_config import TransformerConfig
-from t3_karpathy.commons import BaseTransformerConfig, AbstractDataLoader
+from t3_karpathy.commons.commons import BaseTransformerConfig, AbstractDataLoader
 
 
 class GptNanoDataloader(AbstractDataLoader):
