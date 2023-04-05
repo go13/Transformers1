@@ -1,5 +1,5 @@
 import torch
-from t3_karpathy.commons import BaseTransformerConfig
+from t3_karpathy.commons.commons import BaseTransformerConfig
 from t3_karpathy.token_codec import TokenCodec
 
 

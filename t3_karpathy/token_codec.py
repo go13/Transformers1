@@ -4,7 +4,7 @@ import requests
 
 import torch
 
-from t3_karpathy.commons import AbstractCodec
+from t3_karpathy.commons.commons import AbstractCodec
 
 
 def download(url: str, dest_folder: str):
