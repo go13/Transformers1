@@ -146,7 +146,7 @@ class FlashConvMultiHeadAttention(nn.Module):
             return_residual=True,
             dwconv=True,
             rotary_emb_dim=config.head_size,
-            causal=True # auto-regressive or not
+            causal=False # auto-regressive or not
         )
 
     def forward(self, inp, st_pos_emb, pos_dist_emb):
