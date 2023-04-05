@@ -90,7 +90,7 @@ class TimeseriesTransformerModel(nn.Module):
 
         x = self.input_ffwd(x)
 
-        x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb, pos_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
@@ -102,7 +102,7 @@ class TimeseriesTransformerModel(nn.Module):
 
 class TimeseriesRunner(AbstractRunner):
     def __init__(self, config: TimeseriesTransformerConfig, model: TimeseriesTransformerModel):
-        super().__init__(config, model)
+        super().__init__(config, model, None)
         pass
 
 
@@ -191,7 +191,7 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         ix = torch.randint(len(data) - self.config.block_size, (self.config.batch_size,))
         x = torch.stack([data[i:i + self.config.block_size] for i in ix])
         y = torch.stack([data[i + self.config.block_size:i + self.config.block_size + 1] for i in ix])
-        x, y = x.to(self.config.my_device), y.to(self.config.my_device)
+        x, y = x.to(self.config.my_device, dtype=self.config.precision), y.to(self.config.my_device, dtype=self.config.precision)
         return x, y
 
     def get_train_batch(self):
