@@ -1,7 +1,7 @@
 import torch
 from torch import nn as nn
 
-from t3_karpathy.commons import AbstractAccumulativeTrainer, AbstractRunner
+from t3_karpathy.commons.commons import AbstractAccumulativeTrainer, AbstractRunner
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence
 from t3_karpathy.commons.embeddings import PositionalEmbedding
 

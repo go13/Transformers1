@@ -3,7 +3,7 @@ import time
 from t3_karpathy.commons import BaseTransformerConfig
 from t3_karpathy.transformer_config import TransformerConfig
 
-from commons import AbstractRunner
+from commons.commons import AbstractRunner
 from collections import OrderedDict
 
 

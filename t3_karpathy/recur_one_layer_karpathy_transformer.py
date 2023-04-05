@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from t3_karpathy.transformer_config import TransformerConfig
-from commons import AbstractRunner
+from commons.commons import AbstractRunner
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
 

@@ -1,7 +1,7 @@
 import torch
 from torch import nn as nn
 
-from t3_karpathy.commons import AbstractAccumulativeTrainer, AbstractRunner
+from t3_karpathy.commons.commons import AbstractAccumulativeTrainer, AbstractRunner
 
 from t3_karpathy.karpathy_transformer import Block
 from t3_karpathy.sentimental_transformer import SentimentalFeedForward
