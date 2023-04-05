@@ -165,8 +165,8 @@ class Block(nn.Module):
         super().__init__()
 
         # self.sa = MultiHeadAttention(config)
-        # self.sa = FlashMultiHeadAttention(config)
-        self.sa = FlashConvMultiHeadAttention(config)
+        self.sa = FlashMultiHeadAttention(config)
+        # self.sa = FlashConvMultiHeadAttention(config)
 
         dropout = config.dropout
         hidden_emb = config.hidden_size
