@@ -85,7 +85,7 @@ class AutoencoderTransformerModel(nn.Module):
 
 class AutoencoderRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, AutoencoderTransformerModel(config))
+        super().__init__(config, AutoencoderTransformerModel(config), None)
         pass
 
     def generate(self, context, max_new_tokens):
