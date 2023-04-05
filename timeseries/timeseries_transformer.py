@@ -29,7 +29,7 @@ class TimeseriesFeedForward(nn.Module):
             nn.Linear(inp_size, hidden_size, bias=False),
             nn.Dropout(dropout),
             nn.GELU(),
-            nn.Linear(hidden_size, out_size),
+            nn.Linear(hidden_size, out_size, bias=True),
         )
 
     def forward(self, x):
@@ -61,12 +61,13 @@ class TimeseriesTransformerModel(nn.Module):
         self.blocks = BlockSequence(config)
 
         self.ln_f = nn.LayerNorm(config.n_embed)
-        self.out = TimeseriesFeedForward(config, self.channels // 2)
+        self.out = TimeseriesFeedForward(config, self.channels // 2) # either absolute or delta
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
-        mid_indx = targets.shape[-1] // 2 # first half - absolute, 2nd - delta
-        targets = targets[:, 0, :mid_indx]
+        mid_indx = targets.shape[-1] // 2
+        # targets = targets[:, 0, :mid_indx]  # first half - absolute
+        targets = targets[:, 0, mid_indx:]  # 2nd - delta
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -200,29 +201,30 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
 
 
 stocks_to_load = [
-    "A", "AAPL", "TSLA", "GOOG", "AMZN", "PYPL", "NVDA", "AMD",
-    "NFLX", "MSFT", "INTC", "CSCO", "ADBE", "CRM", "QCOM", "TXN", "AVGO",
-    "INTU", "ORCL", "COST", "SBUX", "AMGN", "CHTR", "GILD", "CMCSA", "BKNG",
-    "MDLZ", "FISV", "BIIB", "MU", "MCD", "AMAT", "ADP", "ILMN", "ATVI", "ISRG",
-    "ADSK", "LRCX", "BIDU", "JD", "REGN", "WBA", "VRTX", "KHC", "WMT", "ZM", "MELI",
-    "TMUS", "CTSH", "XLNX", "PCAR", "ALGN", "WDAY", "SIRI", "CTXS", "ADI", "EXC", "LULU",
-    "MAR", "KLAC", "PAYX", "EA", "ILMN", "ALXN", "MNST", "BMRN", "EBAY", "CTAS", "VRSK",
-    "IDXX", "CDNS", "NXPI", "ASML", "INCY", "KLAC", "MCHP", "SNPS", "SWKS", "VRSN",
-    "WDC", "WYNN", "XLNX", "ZBRA", "ZTS", "AEP", "AIG", "ALL", "AXP", "BA", "BAC",
-    "BK", "BLK", "C", "CAT", "CL", "COF", "COP", "COST", "CSCO", "CVS", "CVX",
-    "DD", "DHR", "DIS", "DOW", "DUK", "EMR", "EXC", "F", "FDX", "GD", "GE", "GILD",
-    "GM", "GOOG", "GOOGL", "GS", "HD", "HON", "IBM", "INTC", "JNJ", "JPM", "KHC", "KMI",
-    "KO", "LLY", "LMT", "LOW", "MA", "MCD", "MDLZ", "MDT", "MET", "MMM"
+    "AAPL", "TSLA"
+    # , "A", "GOOG", "AMZN", "PYPL", "NVDA", "AMD",
+    # "NFLX", "MSFT", "INTC", "CSCO", "ADBE", "CRM", "QCOM", "TXN", "AVGO",
+    # "INTU", "ORCL", "COST", "SBUX", "AMGN", "CHTR", "GILD", "CMCSA", "BKNG",
+    # "MDLZ", "FISV", "BIIB", "MU", "MCD", "AMAT", "ADP", "ILMN", "ATVI", "ISRG",
+    # "ADSK", "LRCX", "BIDU", "JD", "REGN", "WBA", "VRTX", "KHC", "WMT", "ZM", "MELI",
+    # "TMUS", "CTSH", "XLNX", "PCAR", "ALGN", "WDAY", "SIRI", "CTXS", "ADI", "EXC", "LULU",
+    # "MAR", "KLAC", "PAYX", "EA", "ILMN", "ALXN", "MNST", "BMRN", "EBAY", "CTAS", "VRSK",
+    # "IDXX", "CDNS", "NXPI", "ASML", "INCY", "KLAC", "MCHP", "SNPS", "SWKS", "VRSN",
+    # "WDC", "WYNN", "XLNX", "ZBRA", "ZTS", "AEP", "AIG", "ALL", "AXP", "BA", "BAC",
+    # "BK", "BLK", "C", "CAT", "CL", "COF", "COP", "COST", "CSCO", "CVS", "CVX",
+    # "DD", "DHR", "DIS", "DOW", "DUK", "EMR", "EXC", "F", "FDX", "GD", "GE", "GILD",
+    # "GM", "GOOG", "GOOGL", "GS", "HD", "HON", "IBM", "INTC", "JNJ", "JPM", "KHC", "KMI",
+    # "KO", "LLY", "LMT", "LOW", "MA", "MCD", "MDLZ", "MDT", "MET", "MMM"
 ]
 
 dataloader = TimeseriesDataloader(stocks_to_load)
 config = TimeseriesTransformerConfig(
-    batch_size=128,
-    block_size=256,
+    batch_size=32,
+    block_size=512,
     n_embed=32,
     n_head=4,
     n_layer=8,
-    kernel_size=4,
+    kernel_size=8,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
