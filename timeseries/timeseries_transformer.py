@@ -61,12 +61,12 @@ class TimeseriesTransformerModel(nn.Module):
         self.blocks = BlockSequence(config)
 
         self.ln_f = nn.LayerNorm(config.n_embed)
-        self.out = TimeseriesFeedForward(config, self.channels)
+        self.out = TimeseriesFeedForward(config, self.channels // 2)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
-
-        targets = targets[:, 0, :]
+        mid_indx = targets.shape[-1] // 2 # first half - absolute, 2nd - delta
+        targets = targets[:, 0, :mid_indx]
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -217,11 +217,11 @@ stocks_to_load = [
 
 dataloader = TimeseriesDataloader(stocks_to_load)
 config = TimeseriesTransformerConfig(
-    batch_size=64,
+    batch_size=128,
     block_size=256,
     n_embed=32,
     n_head=4,
-    n_layer=4,
+    n_layer=8,
     kernel_size=4,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
@@ -229,6 +229,6 @@ config = TimeseriesTransformerConfig(
 model = TimeseriesTransformerModel(config)
 trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
 
-trainer1.train_eval(200000)
+trainer1.train_eval(20000)
 
 torch.save(model.state_dict(), "model.pt")
