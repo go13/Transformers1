@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from flash_attn.flash_attention import FlashMHA
+from flash_attn.modules.mha import MHA
+from flash_attn.layers.rotary import RotaryEmbedding
 
 from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
 from t3_karpathy.transformer_config import TransformerConfig
@@ -111,19 +113,34 @@ class FlashMultiHeadAttention(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
         assert torch.bfloat16 == config.precision, 'only bfloat16 is supported'
+        #
+        # self.flash_mha = FlashMHA(
+        #     embed_dim=config.n_embed,  # total channels (= num_heads * head_dim)
+        #     num_heads=config.n_head,
+        #     device=config.my_device,
+        #     dtype=config.precision,
+        #     attention_dropout=config.dropout,
+        #     causal=True # auto-regressive or not
+        # )
 
-        self.flash_mha = FlashMHA(
+        # MHA + rotary requires flash-attention\csrc\rotary>pip install .
+        self.flash_mha = MHA(
             embed_dim=config.n_embed,  # total channels (= num_heads * head_dim)
             num_heads=config.n_head,
             device=config.my_device,
             dtype=config.precision,
-            attention_dropout=config.dropout,
+            dropout=config.dropout,
+            use_flash_attn=True,
+            return_residual=True,
+            dwconv=True,
+            rotary_emb_dim=config.head_size,
             causal=True # auto-regressive or not
         )
 
     def forward(self, x, st_pos_emb, pos_dist_emb):
         # inp = torch.cat(x, st_pos_emb, dim=-1)
-        inp = x + st_pos_emb
+        inp = x
+        # inp = x + st_pos_emb
         out = self.flash_mha(inp)[0]
         return out
 
@@ -174,7 +191,7 @@ class PositionalEmbedding(nn.Module):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
         pos_emb = self.position_embedding_ff(pos_emb)
-        pos_emb = self.position_embedding_ff_ln(pos_emb)
+        # pos_emb = self.position_embedding_ff_ln(pos_emb)
         pos_emb = self.dropout(pos_emb)
 
         # pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
@@ -221,8 +238,8 @@ class KarpathyTransformerModel(nn.Module):
         self.config = config
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embed)
 
-        self.pos_emb1 = PositionalEmbedding(config)
-        self.pos_dist_emb = DistancePositionalEmbedding(config)
+        # self.pos_emb1 = PositionalEmbedding(config)
+        # self.pos_dist_emb = DistancePositionalEmbedding(config)
         self.pos_ffwd = FeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
         self.pos_ln = nn.LayerNorm(config.n_embed * 2)
 
@@ -247,9 +264,9 @@ class KarpathyTransformerModel(nn.Module):
         x = tok_emb # + pos_emb  # (B,T,C)
         b, t, c = x.shape
 
-        pos_dist_emb = self.pos_dist_emb(b)
+        pos_dist_emb = None #self.pos_dist_emb(b)
 
-        pos_emb = self.pos_emb1(b, t)
+        pos_emb = None #self.pos_emb1(b, t)
 
         # pos_emb = torch.cat([pos_emb_dist, pos_emb], dim=-1)
         #
