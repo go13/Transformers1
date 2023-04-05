@@ -156,3 +156,31 @@ class LinearFeedForward(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
+
+class GeluFeedForward(nn.Module):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout, bias=False):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(inp_n_embd, hidden_n_embd, bias=bias),
+            nn.GELU(),
+            nn.Linear(hidden_n_embd, out_n_embd),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class ReluFeedForward(nn.Module):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout, bias=False):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(inp_n_embd, hidden_n_embd, bias=bias),
+            nn.ReLU(),
+            nn.Linear(hidden_n_embd, out_n_embd),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        return self.net(x)

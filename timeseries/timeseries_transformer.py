@@ -5,8 +5,9 @@ import pandas as pd
 from torch import nn as nn
 
 from src.performance_utils import timeit
-from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, BaseTransformerConfig
-from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding, FeedForward
+from t3_karpathy.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, BaseTransformerConfig, \
+    GeluFeedForward
+from t3_karpathy.enhanced_karpathy_transformer import BlockSequence, PositionalEmbedding, DistancePositionalEmbedding
 
 from timeseries.csv_reader import read_and_merge_csv_files
 
@@ -58,7 +59,7 @@ class TimeseriesTransformerModel(nn.Module):
         )
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        self.input_ffwd = FeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
+        self.input_ffwd = GeluFeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config)
 

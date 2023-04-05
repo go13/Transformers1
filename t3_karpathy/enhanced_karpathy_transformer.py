@@ -3,25 +3,10 @@ import torch.nn as nn
 from torch.nn import functional as F
 from flash_attn.modules.mha import MHA
 
-from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
+from t3_karpathy.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader, GeluFeedForward
 from t3_karpathy.transformer_config import TransformerConfig
 # todo create step embedding and leave only one trans layer and iterate it. while extract weights using attention in another transformer
 # todo extract weights into separate transformer and learn layers to read write weights based on memory
-
-
-class FeedForward(nn.Module):
-    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout, bias=False):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, hidden_n_embd, bias=bias),
-            # nn.ReLU(),
-            nn.GELU(),
-            nn.Linear(hidden_n_embd, out_n_embd),
-            nn.Dropout(dropout),
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 class NNAttentionHead(nn.Module):
@@ -30,7 +15,7 @@ class NNAttentionHead(nn.Module):
     def __init__(self, block_size: int, n_embd: int, head_size: int, dropout: float):
         super().__init__()
         # self.pos_em_ff = nn.Linear(n_embd, n_embd, bias=False)
-        self.att = FeedForward(n_embd * 2, n_embd, 1, dropout, bias=True)
+        self.att = GeluFeedForward(n_embd * 2, n_embd, 1, dropout, bias=True)
         # self.att = LinearFeedForward(n_embd * 3, n_embd, 1, dropout)
         # self.att2 = nn.Linear(n_embd * 4, 1, bias=False)
 
@@ -142,7 +127,7 @@ class Block(nn.Module):
         out_emb = config.n_embed
 
         self.ln2 = nn.LayerNorm(n_embed)
-        self.ffwd = FeedForward(n_embed, hidden_emb, out_emb, dropout, bias=False)
+        self.ffwd = GeluFeedForward(n_embed, hidden_emb, out_emb, dropout, bias=False)
 
     def forward(self, x, st_pos_emb, pos_dist_emb):
         x = x + self.sa(x, st_pos_emb, pos_dist_emb)
@@ -165,7 +150,7 @@ class PositionalEmbedding(nn.Module):
         super().__init__()
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
-        self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
+        self.position_embedding_ff = GeluFeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
         self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed)
         self.dropout = nn.Dropout(config.dropout)
 
@@ -190,7 +175,7 @@ class DistancePositionalEmbedding(nn.Module):
         super().__init__()
         self.config = config
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
-        self.position_embedding_ff = FeedForward(config.n_embed, config.n_embed * 2, config.n_embed * 2, config.dropout)
+        self.position_embedding_ff = GeluFeedForward(config.n_embed, config.n_embed * 2, config.n_embed * 2, config.dropout)
         self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed * 2)
 
     def forward(self, b):
@@ -222,7 +207,7 @@ class KarpathyTransformerModel(nn.Module):
 
         # self.pos_emb1 = PositionalEmbedding(config)
         # self.pos_dist_emb = DistancePositionalEmbedding(config)
-        self.pos_ffwd = FeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
+        self.pos_ffwd = GeluFeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
         self.pos_ln = nn.LayerNorm(config.n_embed * 2)
 
         self.blocks = BlockSequence(config)
