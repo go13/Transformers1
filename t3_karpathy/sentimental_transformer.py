@@ -60,7 +60,7 @@ class SentimentalTransformerModel(nn.Module):
 
         pos_emb = self.pos_emb1(b, t)
 
-        x, pos_emb = self.blocks(x, pos_emb)  # (B,T,C)
+        x, pos_emb = self.blocks(x, pos_emb, pos_emb)  # (B,T,C)
 
         x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
@@ -86,7 +86,7 @@ class SentimentalTransformerModel(nn.Module):
 
 class SentimentalRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, SentimentalTransformerModel(config))
+        super().__init__(config, SentimentalTransformerModel(config), None)
         pass
 
 
@@ -124,7 +124,7 @@ class SentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
         ix = torch.randint(len(data_x), (self.config.batch_size,))
         x = torch.stack([torch.tensor(self.config.token_codec.encode(data_x[i])) for i in ix])
         y = torch.stack([torch.tensor(data_y[i]) for i in ix])
-        x, y = x.to(self.config.my_device), y.to(self.config.my_device)
+        x, y = x.to(self.config.my_device), y.to(self.config.my_device, dtype=self.config.precision)
         return x, y
 
     def add_sample(self, x, y):

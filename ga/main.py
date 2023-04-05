@@ -1,4 +1,4 @@
-from ga import GA, TargetStringEvaluator
+from ga.ga import GA, TargetStringEvaluator
 
 ga = GA(TargetStringEvaluator())
 
