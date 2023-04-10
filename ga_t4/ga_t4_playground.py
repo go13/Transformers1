@@ -2,7 +2,7 @@ import argparse
 
 import torch.multiprocessing as mp
 
-from ga_model_runner import GAModelRunner
+from ga_t4.ga_t4_model_runner import GAModelRunner
 from ga_t3.base_model_runner import GpuRunnner
 
 parser = argparse.ArgumentParser(description="Language transfer")

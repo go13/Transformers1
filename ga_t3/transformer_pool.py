@@ -1,4 +1,4 @@
-from t3_karpathy.karpathy_transformer import KarpathyRunner
+from t3_karpathy.enhanced_karpathy_transformer import EnhancedKarpathyRunner
 
 
 class TransformerPool(object):
@@ -9,7 +9,7 @@ class TransformerPool(object):
         self.params = params
         self.trainers = []
         for i in range(model_num * 2):
-            trainer = KarpathyRunner(config)
+            trainer = EnhancedKarpathyRunner(config, None)
             self.trainers += [trainer]
             print(f"Transformer created {i}")
             pass

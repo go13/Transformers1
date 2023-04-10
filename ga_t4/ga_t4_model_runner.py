@@ -3,7 +3,8 @@ import random
 
 import numpy as np
 import torch
-from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
+from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, \
+    sanitize
 from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
 from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
@@ -56,26 +57,24 @@ def neural_mutate(t1, mp):
     return t1
 
 
-class NeuralXY(XY):
-    def __init__(self, data, params):
+class TNeuralXY(XY):
+    def __init__(self, data, params, transformer_pool):
         super().__init__(data)
         self.params = params
+        self.transformer_pool = transformer_pool
+
 
     def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
-        if self.params.use_transformer_transformer:
-            new_data = neural_crossover(xy1, xy2, self.params.my_device)
-        else:
-            new_data = crossover_string(xy1.data, xy2.data, xy_data_size)
+        new_data = neural_crossover(xy1, xy2, self.params.my_device)
+        new_t = self.transformer_pool.acquire()
+        new_t.set_weights(new_data)
 
-        return NeuralXY(new_data, self.params)
+        return TNeuralXY(new_t, self.params, self.transformer_pool)
 
     def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
-        if self.params.use_transformer_transformer:
-            neural_mutate(self.data, mutation_p)
-        else:
-            super().mutate(mutation_p, xy_data_size, vocab)
+        neural_mutate(self.data, mutation_p)
 
     def get_transformer_weights(self):
         return self.data.get_weights()
@@ -86,43 +85,38 @@ class NeuralXY(XY):
     @staticmethod
     def generate_new_neural_xy(xy_data_size: int, params):
         data = gen_rnd_chars(xy_data_size)
-        return NeuralXY(data, params)
+        return TNeuralXY(data, params)
 
+    # def __str__(self):
+    #     return "id={id}, f={f}, d={data}".format(
+    #         id=self.id,
+    #         f=self.f,
+    #         data=sanitize(self.data),
+    #     )
+    #
     def __str__(self):
-        return "id={id}, f={f}, d={data}".format(
+        return "id={id}, f={f}".format(
             id=self.id,
             f=self.f,
-            data=sanitize(self.data),
         )
 
 
-class TargetStringTransformerEvaluator(AbstractEvaluator):
-    def __init__(self, config):
-        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG" * 20
+class TransformerEvaluator(AbstractEvaluator):
+    def __init__(self):
+        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
         self.xy_data_size_const = len(self.target)
-        self.dataloader = GptNanoDataloader(config)
 
     def func(self, xy) -> float:
         # data = xy.data
-        # diff = random.random() * 0.001
+        diff = random.random() * 0.001
         # diff += (self.xy_data_size_const - str_diff(self.target, data))
-
-        for i in range(1000):
-            x, y = self.dataloader.get_train_batch()
-            logits, loss = xy.trainer.learn(x, y)
-
-        # xy.trainer.train_iterate(100, self.dataloader.get_train_batch())
-
-        val = xy.trainer.evaluate(self.dataloader.get_train_batch, 20).item()
-
-        return val
+        return diff
 
     def get_xy_len(self) -> int:
         return self.xy_data_size_const
 
     def is_inverse_fitness(self):
-        return True
-
+        return False
 
 class GAModelRunner(AbstractModelRunnner):
 
@@ -135,8 +129,7 @@ class GAModelRunner(AbstractModelRunnner):
         self.config.block_size = 45
 
         self.population_size = params.ga_population_size
-        if self.params.use_transformer_transformer:
-            self.transformer_pool = TransformerPool(self.config, params, self.population_size)
+        self.transformer_pool = TransformerPool(self.config, params, self.population_size)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
@@ -160,13 +153,12 @@ class GAModelRunner(AbstractModelRunnner):
             self.autoencoder = None
 
         def neural_xy_factory(xy_data_size):
-            if self.params.use_transformer_transformer:
-                return NeuralXY(self.transformer_pool.acquire(), self.params)
-            else:
-                return NeuralXY.generate_new_neural_xy(xy_data_size, params)
+            return TNeuralXY(self.transformer_pool.acquire(), self.params, self.transformer_pool)
+
+        evaluator = TransformerEvaluator()
 
         self.ga = GA(
-            TargetStringEvaluator(),
+            evaluator,
             population_size=self.population_size,
             verbose=params.verbose,
             mutation_p=params.ga_mutation_p,
@@ -244,9 +236,8 @@ class GAModelRunner(AbstractModelRunnner):
         else:
             self.learn_neural_estimator(ga.population)
 
-        if self.params.use_transformer_transformer:
-            for xy in ga.get_worst_pp(ga.new_size):
-                self.transformer_pool.release(xy.data)
+        for xy in ga.get_worst_pp(ga.new_size):
+            self.transformer_pool.release(xy.data)
 
         ga.update_bottom(children)
 
@@ -358,7 +349,7 @@ class GAModelRunner(AbstractModelRunnner):
                 xy1 = xy1_list[i]
                 xy2 = xy2_list[i]
 
-                child = NeuralXY(new_data, self.params)
+                child = TNeuralXY(new_data, self.params)
 
                 family = (xy1, xy2, child)
 

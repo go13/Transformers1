@@ -192,7 +192,7 @@ class KarpathyTransformerModel(nn.Module):
 
 class KarpathyRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, KarpathyTransformerModel(config))
+        super().__init__(config, KarpathyTransformerModel(config), None)
         pass
 
     def generate(self, context, max_new_tokens):
