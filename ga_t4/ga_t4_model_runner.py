@@ -6,6 +6,7 @@ import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, \
     sanitize
 from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
+from t3_karpathy.commons.commons import AbstractDataLoader
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
 from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
@@ -102,26 +103,26 @@ class TNeuralXY(XY):
 
 
 class TransformerEvaluator(AbstractEvaluator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, dataloader: AbstractDataLoader):
+        self.dataloader = dataloader
 
     def func(self, xy) -> float:
         n_iter = 100
-        get_train_batch = None
-        get_val_batch = None
+        get_train_batch = self.dataloader.get_train_batch
+        get_val_batch = self.dataloader.get_val_batch
 
         runner = xy.data
-        runner.train_iterate(n_iter, get_train_batch, get_val_batch)
+        loss = runner.train_iterate(n_iter, get_train_batch, get_val_batch)
 
-        diff = random.random() * 0.001
+        # diff = random.random() * 0.001
 
-        return diff
+        return loss
 
     def get_xy_len(self) -> int:
         return 0
 
     def is_inverse_fitness(self):
-        return False
+        return True
 
 
 class GAModelRunner(AbstractModelRunnner):
@@ -161,7 +162,9 @@ class GAModelRunner(AbstractModelRunnner):
         def neural_xy_factory(xy_data_size):
             return TNeuralXY(self.transformer_pool.acquire(), self.params, self.transformer_pool)
 
-        evaluator = TransformerEvaluator()
+        dataloader = GptNanoDataloader(self.config)
+
+        evaluator = TransformerEvaluator(dataloader)
 
         self.ga = GA(
             evaluator,

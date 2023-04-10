@@ -31,6 +31,7 @@ class BaseTransformerConfig:
         self.multiple_of: int = 256  # llma
         self.precision = precision
 
+
 class AbstractDataLoader(object):
     def __init__(self, config: BaseTransformerConfig):
         super().__init__()
