@@ -102,6 +102,7 @@ class AbstractRunner(object):
         self.train_iterate(n_iter, self.data_loader.get_train_batch, self.data_loader.get_val_batch)
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+        last_loss = 0
         t = time.time()
         for _ in range(n_iter):
             if self.current_iteration % self.config.eval_interval == 0:
@@ -114,8 +115,10 @@ class AbstractRunner(object):
             x, y = get_train_batch()
 
             logits, loss = self.learn(x, y)
-
+            last_loss = loss.item()
             self.current_iteration += 1
+
+        return last_loss
 
     def get_weights(self):
         return self.model.state_dict()

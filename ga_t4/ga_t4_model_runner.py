@@ -82,10 +82,10 @@ class TNeuralXY(XY):
     def destroy(self):
         pass
 
-    @staticmethod
-    def generate_new_neural_xy(xy_data_size: int, params):
-        data = gen_rnd_chars(xy_data_size)
-        return TNeuralXY(data, params)
+    # @staticmethod
+    # def generate_new_neural_xy(xy_data_size: int, params):
+    #     data = gen_rnd_chars(xy_data_size)
+    #     return TNeuralXY(data, params)
 
     # def __str__(self):
     #     return "id={id}, f={f}, d={data}".format(
@@ -103,20 +103,26 @@ class TNeuralXY(XY):
 
 class TransformerEvaluator(AbstractEvaluator):
     def __init__(self):
-        self.target = "ABABAGALAMAGAABABAGALAMAGAABABAGALAMAGAABABAG"
-        self.xy_data_size_const = len(self.target)
+        super().__init__()
 
     def func(self, xy) -> float:
-        # data = xy.data
+        n_iter = 100
+        get_train_batch = None
+        get_val_batch = None
+
+        runner = xy.data
+        runner.train_iterate(n_iter, get_train_batch, get_val_batch)
+
         diff = random.random() * 0.001
-        # diff += (self.xy_data_size_const - str_diff(self.target, data))
+
         return diff
 
     def get_xy_len(self) -> int:
-        return self.xy_data_size_const
+        return 0
 
     def is_inverse_fitness(self):
         return False
+
 
 class GAModelRunner(AbstractModelRunnner):
 
@@ -349,7 +355,10 @@ class GAModelRunner(AbstractModelRunnner):
                 xy1 = xy1_list[i]
                 xy2 = xy2_list[i]
 
-                child = TNeuralXY(new_data, self.params)
+                new_t = self.transformer_pool.acquire()
+                new_t.set_data(new_data)
+
+                child = TNeuralXY(new_t, self.params, self.transformer_pool)
 
                 family = (xy1, xy2, child)
 
