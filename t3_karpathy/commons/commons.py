@@ -103,14 +103,20 @@ class AbstractRunner(object):
         self.train_iterate(n_iter, self.data_loader.get_train_batch, self.data_loader.get_val_batch)
 
     def train_iterate(self, n_iter, get_train_batch, get_val_batch):
+        eval_interval = self.config.eval_interval
+
+        if self.config.eval_interval == -1:
+            eval_interval = n_iter
+            self.current_iteration = 1
+
         last_loss = 0
         t = time.time()
         for _ in range(n_iter):
-            if self.current_iteration % self.config.eval_interval == 0:
+            if eval_interval != -1 and self.current_iteration % eval_interval == 0:
                 t_taken = time.time() - t
                 train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
                 val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
-                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / self.config.eval_interval}")
+                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
                 t = time.time()
 
             x, y = get_train_batch()

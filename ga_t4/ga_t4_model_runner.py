@@ -107,12 +107,12 @@ class TransformerEvaluator(AbstractEvaluator):
         self.dataloader = dataloader
 
     def func(self, xy) -> float:
-        n_iter = 100
+        n_iter = 10
         get_train_batch = self.dataloader.get_train_batch
-        get_val_batch = self.dataloader.get_val_batch
+        # get_val_batch = self.dataloader.get_val_batch
 
         runner = xy.data
-        loss = runner.train_iterate(n_iter, get_train_batch, get_val_batch)
+        loss = runner.evaluate(get_train_batch, n_iter)
 
         # diff = random.random() * 0.001
 
@@ -162,6 +162,7 @@ class GAModelRunner(AbstractModelRunnner):
         def neural_xy_factory(xy_data_size):
             return TNeuralXY(self.transformer_pool.acquire(), self.params, self.transformer_pool)
 
+        self.config.eval_interval = -1
         dataloader = GptNanoDataloader(self.config)
 
         evaluator = TransformerEvaluator(dataloader)
