@@ -75,7 +75,7 @@ class TransformerSentimentalModel(nn.Module):
         super().__init__()
         self.config = config
 
-        self.blocks = BlockSequence(config)
+        # self.blocks = BlockSequence(config) uncomment
         self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
 
         dropout = config.dropout
@@ -85,7 +85,14 @@ class TransformerSentimentalModel(nn.Module):
 
         # self.out = nn.Linear(inp_size, out_size, bias=False)
         # self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout, bias=True)
-        self.out = TimeseriesFeedForward(inp_size, inp_size * 2, out_size, dropout, bias=True)
+        # self.out = TimeseriesFeedForward(inp_size, inp_size * 2, hidden_size, dropout, bias=True)
+        # self.out2 = TimeseriesFeedForward(hidden_size, hidden_size, out_size, dropout, bias=True)
+
+        self.out = nn.Sequential(
+            TimeseriesFeedForward(inp_size, inp_size, hidden_size, dropout, bias=True),
+            nn.Dropout(dropout),
+            TimeseriesFeedForward(hidden_size, hidden_size, out_size, dropout, bias=True)
+        )
 
     def forward_vs_target(self, x, targets):
         logits = self.forward(x)
@@ -122,8 +129,9 @@ class TransformerSentimentalRunner(AbstractRunner):
 
 
 class TransformerCodec(AbstractCodec):
-    def __init__(self, seq_len, num_channels):
+    def __init__(self, seq_len, num_channels, config):
         super().__init__()
+        self.config = config
         self.seq_len = seq_len
         self.num_channels = num_channels
 
@@ -132,6 +140,7 @@ class TransformerCodec(AbstractCodec):
         return self.encode_weights(weights)
 
     def encode_weights(self, weights_tensor):
+        weights_tensor = weights_tensor.to(self.config.my_device, dtype=self.config.precision)
         target_size = self.seq_len * self.num_channels
 
         padding_size = target_size - weights_tensor.numel()
@@ -152,7 +161,7 @@ class TransformerSentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
     def __init__(self, config: TransformerConfig):
         super().__init__(config)
         self.runner: TransformerSentimentalRunner = TransformerSentimentalRunner(config)
-        self.codec = TransformerCodec(config.block_size, config.n_embed)
+        self.codec = TransformerCodec(config.block_size, config.n_embed, config)
         self.data_x = []
         self.data_y = []
         # self.data_dict = dict()
@@ -169,6 +178,8 @@ class TransformerSentimentalAccumulativeTrainer(AbstractAccumulativeTrainer):
 
     def add_sample(self, x, y):
         x = self.codec.encode(x)
+        y = y.to(self.config.my_device, dtype=self.config.precision)
+
         self.last_data_x += [x]
         self.last_data_y += [y]
 

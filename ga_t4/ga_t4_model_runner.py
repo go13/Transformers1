@@ -168,7 +168,8 @@ class GAModelRunner(AbstractModelRunnner):
                 n_embed=8,
                 n_head=1,
                 n_layer=4,
-                learning_rate=self.params.neural_estimator_lr
+                learning_rate=self.params.neural_estimator_lr,
+                precision=torch.float32
             )
             self.sentimental_accumulative_runner = TransformerSentimentalAccumulativeTrainer(sentimental_t_config)
         else:

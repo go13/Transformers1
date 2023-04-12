@@ -166,7 +166,7 @@ class TimeseriesFeedForward(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(inp_size, hidden_size, bias=bias),
             nn.Dropout(dropout),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_size, out_size, bias=bias),
         )
 
