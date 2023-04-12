@@ -161,7 +161,7 @@ class GAModelRunner(AbstractModelRunnner):
         if self.params.use_neural_estimator:
             sentimental_t_config = TransformerConfig(
                 params.my_device,
-                batch_size=8,
+                batch_size=64,
                 block_size=2**11,
                 n_embed=8,
                 n_head=1,
