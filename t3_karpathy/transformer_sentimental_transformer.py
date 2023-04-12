@@ -83,7 +83,8 @@ class TransformerSentimentalModel(nn.Module):
         hidden_size = config.hidden_size
         out_size = 1
 
-        self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout)
+        self.out = nn.Linear(inp_size, out_size, bias=False)
+        # self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout)
 
     def forward_vs_target(self, x, targets):
         logits = self.forward(x)
@@ -91,7 +92,10 @@ class TransformerSentimentalModel(nn.Module):
         # b, c = logits.shape
         # logits_view = logits.view(b * t, c)
         # targets = targets.view(b * t)
-        loss = F.cross_entropy(logits, targets)
+        # output = F.cross_entropy(logits, targets)
+
+        mse_loss = torch.nn.MSELoss(reduction='mean')
+        loss = mse_loss(logits, targets)
 
         return logits, loss
 

@@ -314,6 +314,9 @@ class GAModelRunner(AbstractModelRunnner):
 
                 weights_list = [dict_weights_to_vector(xy.data) for xy in children] # weights
                 estimations_list = self.sentimental_accumulative_runner.predict_list(weights_list)
+
+                print(f"Estimated f estimations_list={estimations_list}")
+
                 estimated_children_families = list(zip(children, estimations_list, families))
                 sorted_children_families = sorted(estimated_children_families, key=lambda x: x[1], reverse=True)
                 children = [x[0] for x in sorted_children_families]
