@@ -110,7 +110,7 @@ class TNeuralXY(XY):
         return "id={id}, f={f}, sentimental_error={sentimental_error}".format(
             id=self.id,
             f=self.f,
-            sentimental_error=abs(self.sentimental_estimate - self.f)
+            sentimental_error=abs(self.sentimental_estimate - self.f) if self.sentimental_estimate is not None else -999,
         )
 
 
