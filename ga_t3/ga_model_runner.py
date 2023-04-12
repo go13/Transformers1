@@ -6,6 +6,7 @@ import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, sanitize
 from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
+from t3_karpathy.enhanced_karpathy_transformer import EnhancedKarpathyRunner
 from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
 from ga_t3.transformer_pool import TransformerPool
@@ -136,7 +137,7 @@ class GAModelRunner(AbstractModelRunnner):
 
         self.population_size = params.ga_population_size
         if self.params.use_transformer_transformer:
-            self.transformer_pool = TransformerPool(self.config, params, self.population_size)
+            self.transformer_pool = TransformerPool(params, self.population_size, lambda: EnhancedKarpathyRunner(self.config, None))
 
         self.log_file = self.setup_logger(gpu_num, params)
 

@@ -1,7 +1,8 @@
 import torch
 from torch import nn as nn
 
-from t3_karpathy.commons.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, BaseTransformerConfig
+from t3_karpathy.commons.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, \
+    BaseTransformerConfig, TimeseriesFeedForward
 from t3_karpathy.commons.feed_forwards import GeluFeedForward
 from t3_karpathy.enhanced_karpathy_transformer import BlockSequence
 from t3_karpathy.commons.embeddings import PositionalEmbedding, DistancePositionalEmbedding
@@ -15,25 +16,6 @@ class TimeseriesTransformerConfig(BaseTransformerConfig):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
         self.kernel_size = kernel_size
-
-
-class TimeseriesFeedForward(nn.Module):
-    def __init__(self, config: BaseTransformerConfig, out_size=1):
-        super().__init__()
-
-        inp_size = config.n_embed * config.block_size
-        hidden_size = config.hidden_size
-        dropout = config.dropout
-
-        self.net = nn.Sequential(
-            nn.Linear(inp_size, hidden_size, bias=False),
-            nn.Dropout(dropout),
-            nn.GELU(),
-            nn.Linear(hidden_size, out_size, bias=True),
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 class TimeseriesTransformerModel(nn.Module):
@@ -61,7 +43,12 @@ class TimeseriesTransformerModel(nn.Module):
         self.blocks = BlockSequence(config)
 
         self.ln_f = nn.LayerNorm(config.n_embed)
-        self.out = TimeseriesFeedForward(config, self.channels // 2) # either absolute or delta
+
+        inp_size = config.n_embed * config.block_size
+        hidden_size = config.hidden_size
+        dropout = config.dropout
+        out_size = self.channels // 2
+        self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)

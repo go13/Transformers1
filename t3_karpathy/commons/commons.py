@@ -5,9 +5,16 @@ import time
 from torch import nn as nn
 
 
+def dict_weights_to_vector(w):
+    w = [v for v in w.values()]
+    w = torch.cat([v.flatten() for v in w])
+    return w
+
+
 class BaseTransformerConfig:
 
-    def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4, n_layer=4, learning_rate=1e-2):
+    def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4,
+                 n_layer=4, learning_rate=1e-2):
         self.my_device = my_device
 
         # karpathy parameters
@@ -51,10 +58,13 @@ class AbstractCodec(object):
     def __init__(self):
         pass
 
-    def encode(self, s: str) -> list:
+    def encode(self, s):
         raise NotImplementedError()
 
-    def decode(self, l: list) -> str:
+    def decode_into(self, src, dst):
+        raise NotImplementedError()
+
+    def decode(self, l):
         raise NotImplementedError()
 
 
@@ -116,7 +126,8 @@ class AbstractRunner(object):
                 t_taken = time.time() - t
                 train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
                 val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
-                print(f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
+                print(
+                    f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
                 t = time.time()
 
             x, y = get_train_batch()
@@ -130,10 +141,34 @@ class AbstractRunner(object):
     def get_weights(self):
         return self.model.state_dict()
 
+    def get_weights_as_tensor(self):
+        w = self.get_weights()
+        return dict_weights_to_vector(w)
+
+    def set_weights_as_tensor(self, new_state_tensor):
+        new_state_dict = self.get_weights()
+        for k, v in new_state_dict.items():
+            new_state_dict[k] = new_state_tensor[:v.numel()].reshape(v.shape)
+            new_state_tensor = new_state_tensor[v.numel():]
+        self.set_weights(new_state_dict)
+
     def set_weights(self, new_state_dict):
-        self.model.load_state_dict(OrderedDict(new_state_dict))
+        self.model.load_state_dict(new_state_dict)
 
     def generate(self, *args):
         raise NotImplementedError()
 
 
+class TimeseriesFeedForward(nn.Module):
+    def __init__(self, inp_size, hidden_size, out_size, dropout):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(inp_size, hidden_size, bias=False),
+            nn.Dropout(dropout),
+            nn.GELU(),
+            nn.Linear(hidden_size, out_size, bias=False),
+        )
+
+    def forward(self, x):
+        return self.net(x)

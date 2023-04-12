@@ -177,8 +177,11 @@ class Block(nn.Module):
         self.ffwd = GeluFeedForward(n_embed, hidden_emb, out_emb, dropout, bias=False)
 
     def forward(self, x, st_pos_emb, pos_dist_emb):
-        x = x + self.sa(x, st_pos_emb, pos_dist_emb)
-        x = x + self.ffwd(self.ln2(x))
+        x = self.sa(x, st_pos_emb, pos_dist_emb)
+        x = self.ffwd(self.ln2(x))
+        #
+        # x = x + self.sa(x, st_pos_emb, pos_dist_emb)
+        # x = x + self.ffwd(self.ln2(x))
         return x, st_pos_emb
 
     @staticmethod

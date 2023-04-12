@@ -37,7 +37,7 @@ class TTransformerModel(nn.Module):
 
 class TRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig):
-        super().__init__(config, TTransformerModel(config))
+        super().__init__(config, TTransformerModel(config), None)
         pass
 
 

@@ -1,18 +1,20 @@
 import time
 import random
+from collections import OrderedDict
 
 import numpy as np
 import torch
 from ga.ga import GA, XY, gen_rnd_chars, crossover_string, AbstractEvaluator, TargetStringEvaluator, get_random_xy, \
     sanitize
+from ga_t4.flash_attention_transformer import FlashAttentionRunner
 from t3_karpathy.autoencoder_transformer import AutoencoderAccumulativeTrainer
-from t3_karpathy.commons.commons import AbstractDataLoader
+from t3_karpathy.commons.commons import AbstractDataLoader, dict_weights_to_vector
 from t3_karpathy.crossover_transformer import CrossoverAccumulativeTrainer
-from t3_karpathy.sentimental_transformer import SentimentalAccumulativeTrainer
 from ga_t3.base_model_runner import AbstractModelRunnner
 from ga_t3.transformer_pool import TransformerPool
 from src.performance_utils import timeit
 from t3_karpathy.gpt_nano_dataloader import GptNanoDataloader
+from t3_karpathy.transformer_sentimental_transformer import TransformerSentimentalAccumulativeTrainer
 from t3_karpathy.transformer_config import TransformerConfig
 
 
@@ -45,13 +47,22 @@ def transformer_neural_crossover_and_mutate(xy1_weights, xy2_weights, my_device)
         update = rnd2 * to_mutate_one_zeros + (1 - to_mutate_one_zeros) * update
 
         update = update.reshape(shape)
-        new_weights.append((k1, update))
 
-    return new_weights
+        # update = torch.nan_to_num(update, nan=0)
+
+        new_weights.append((k1, update))
+    # sm = 0
+    # for t in new_weights:
+    #     sm += t[1].numel()
+    #
+    # print("weights size sm=", sm)
+
+    return OrderedDict(new_weights)
 
 
 def neural_crossover(t1, t2, my_device):
-    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(), my_device)
+    return transformer_neural_crossover_and_mutate(t1.get_transformer_weights(), t2.get_transformer_weights(),
+                                                   my_device)
 
 
 def neural_mutate(t1, mp):
@@ -64,15 +75,14 @@ class TNeuralXY(XY):
         self.params = params
         self.transformer_pool = transformer_pool
 
-
     def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
 
         new_data = neural_crossover(xy1, xy2, self.params.my_device)
-        new_t = self.transformer_pool.acquire()
-        new_t.set_weights(new_data)
+        # new_t = self.transformer_pool.acquire()
+        # new_t.set_weights(new_data)
 
-        return TNeuralXY(new_t, self.params, self.transformer_pool)
+        return TNeuralXY(new_data, self.params, self.transformer_pool)
 
     def mutate(self, mutation_p: float, xy_data_size: int, vocab) -> None:
         neural_mutate(self.data, mutation_p)
@@ -107,7 +117,7 @@ class TransformerEvaluator(AbstractEvaluator):
         self.dataloader = dataloader
 
     def func(self, xy) -> float:
-        n_iter = 10
+        n_iter = 1
         get_train_batch = self.dataloader.get_train_batch
         # get_val_batch = self.dataloader.get_val_batch
 
@@ -133,10 +143,14 @@ class GAModelRunner(AbstractModelRunnner):
         self.params = params
 
         self.config = TransformerConfig(params.my_device)
-        self.config.block_size = 45
+        # self.config.block_size = 45
 
         self.population_size = params.ga_population_size
-        self.transformer_pool = TransformerPool(self.config, params, self.population_size)
+
+        def transformer_factory():
+            return FlashAttentionRunner(self.config, None)
+
+        self.transformer_pool = TransformerPool(params, self.population_size, transformer_factory)
 
         self.log_file = self.setup_logger(gpu_num, params)
 
@@ -145,9 +159,17 @@ class GAModelRunner(AbstractModelRunnner):
         self.vocab = self.config.token_codec.vocab
 
         if self.params.use_neural_estimator:
-            self.accumulative_runner = SentimentalAccumulativeTrainer(self.config)
+            sentimental_t_config = TransformerConfig(
+                params.my_device,
+                batch_size=8,
+                block_size=2**11,
+                n_embed=8,
+                n_head=1,
+                n_layer=4
+            )
+            self.sentimental_accumulative_runner = TransformerSentimentalAccumulativeTrainer(sentimental_t_config)
         else:
-            self.accumulative_runner = None
+            self.sentimental_accumulative_runner = None
 
         if self.params.use_neural_crossover:
             self.crossover_trainer = CrossoverAccumulativeTrainer(self.config)
@@ -287,8 +309,11 @@ class GAModelRunner(AbstractModelRunnner):
             if self.params.use_neural_estimator and ga.iteration > self.params.neural_estimator_iteration_start:
                 children, families = self.generate_crossover(ga.new_size * 10)
                 children = ga.mutate(children, mp)
-                data_list = [xy.data for xy in children]
-                estimations_list = self.accumulative_runner.predict_list(data_list)
+                # weights_list = [dict_weights_to_vector(xy.data).to(self.config.my_device) for xy in children] # weights
+                # weights_list = [dict_weights_to_vector(xy.data) for xy in children] # weights
+
+                weights_list = [dict_weights_to_vector(xy.data) for xy in children] # weights
+                estimations_list = self.sentimental_accumulative_runner.predict_list(weights_list)
                 estimated_children_families = list(zip(children, estimations_list, families))
                 sorted_children_families = sorted(estimated_children_families, key=lambda x: x[1], reverse=True)
                 children = [x[0] for x in sorted_children_families]
@@ -321,6 +346,14 @@ class GAModelRunner(AbstractModelRunnner):
 
         children = generated_children[0:ga.new_size]
         families = generated_families[0:ga.new_size]
+        #todo: replace weights with real transformers
+
+        for xy in children:
+            new_data = xy.data
+            new_t = self.transformer_pool.acquire()
+            new_t.set_weights(new_data)
+            xy.data = new_t
+
         return children, families
 
     def generate_crossover(self, new_size):
@@ -359,10 +392,12 @@ class GAModelRunner(AbstractModelRunnner):
                 xy1 = xy1_list[i]
                 xy2 = xy2_list[i]
 
-                new_t = self.transformer_pool.acquire()
-                new_t.set_data(new_data)
+                child = TNeuralXY(new_data, self.params, self.transformer_pool)
 
-                child = TNeuralXY(new_t, self.params, self.transformer_pool)
+                # new_t = self.transformer_pool.acquire()
+                # new_t.set_data(new_data)
+                #
+                # child = TNeuralXY(new_t, self.params, self.transformer_pool)
 
                 family = (xy1, xy2, child)
 
@@ -381,14 +416,15 @@ class GAModelRunner(AbstractModelRunnner):
 
         if self.params.use_neural_crossover:
             for x1, x2, y in families:
-                f = y.f# - max(x1.f, x2.f)
+                f = y.f  # - max(x1.f, x2.f)
                 if f <= 0:
                     continue
 
                 f = f_transform(f)
                 self.crossover_trainer.add_sample(x1.data, x2.data, y.data, f)
 
-            av_loss, total_samples = self.crossover_trainer.train(n = self.params.neural_crossover_iterations_per_ga_iteration)
+            av_loss, total_samples = self.crossover_trainer.train(
+                n=self.params.neural_crossover_iterations_per_ga_iteration)
             print(f"Crossover average loss={av_loss}, total_samples={total_samples}")
 
     def learn_neural_autoencoder(self, population):
@@ -396,17 +432,19 @@ class GAModelRunner(AbstractModelRunnner):
             for xy in population:
                 self.autoencoder.add_sample(xy.data, xy.data)
 
-            av_loss, total_samples= self.autoencoder.train(self.params.ga_neural_autoencoder_iterations_per_ga_iteration)
+            av_loss, total_samples = self.autoencoder.train(
+                self.params.ga_neural_autoencoder_iterations_per_ga_iteration)
             print(f"Autoencoder average loss={av_loss}, total_samples={total_samples}")
 
     def learn_neural_estimator(self, new_samples):
         if self.params.use_neural_estimator:
             for xy in new_samples:
-                self.accumulative_runner.add_sample(xy.data, xy.f)
+                self.sentimental_accumulative_runner.add_sample(xy.data, xy.f)
 
-            self.accumulative_runner.train_recent(1)
+            self.sentimental_accumulative_runner.train_recent(1)
 
-            av_loss, total_samples = self.accumulative_runner.train(n=self.params.ga_neural_estimator_iterations_per_ga_iteration)
+            av_loss, total_samples = self.sentimental_accumulative_runner.train(
+                n=self.params.ga_neural_estimator_iterations_per_ga_iteration)
             print(f"Estimator average loss={av_loss}, total_samples={total_samples}")
 
     def log(self, log_line):
