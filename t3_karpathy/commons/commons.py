@@ -160,14 +160,14 @@ class AbstractRunner(object):
 
 
 class TimeseriesFeedForward(nn.Module):
-    def __init__(self, inp_size, hidden_size, out_size, dropout):
+    def __init__(self, inp_size, hidden_size, out_size, dropout, bias=False):
         super().__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(inp_size, hidden_size, bias=False),
+            nn.Linear(inp_size, hidden_size, bias=bias),
             nn.Dropout(dropout),
-            nn.GELU(),
-            nn.Linear(hidden_size, out_size, bias=False),
+            nn.ReLU(),
+            nn.Linear(hidden_size, out_size, bias=bias),
         )
 
     def forward(self, x):

@@ -83,8 +83,9 @@ class TransformerSentimentalModel(nn.Module):
         hidden_size = config.hidden_size
         out_size = 1
 
-        self.out = nn.Linear(inp_size, out_size, bias=False)
-        # self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout)
+        # self.out = nn.Linear(inp_size, out_size, bias=False)
+        # self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout, bias=True)
+        self.out = TimeseriesFeedForward(inp_size, inp_size * 2, out_size, dropout, bias=True)
 
     def forward_vs_target(self, x, targets):
         logits = self.forward(x)
@@ -101,9 +102,9 @@ class TransformerSentimentalModel(nn.Module):
 
     def forward(self, x):
         b, t, c = x.shape
-        x = self.blocks(x)  # (B,T,C)
+        # x = self.blocks(x)  # (B,T,C)
 
-        x = self.ln_f(x)  # (B,T,C)
+        # x = self.ln_f(x)  # (B,T,C)
         x = x.reshape(b, -1)
         logits = self.out(x)  # (B,T,1)
         logits = logits.reshape(b)

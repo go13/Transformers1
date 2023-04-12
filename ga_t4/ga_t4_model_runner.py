@@ -74,6 +74,7 @@ class TNeuralXY(XY):
         super().__init__(data)
         self.params = params
         self.transformer_pool = transformer_pool
+        self.sentimental_estimate = None
 
     def crossover(self, xy2: 'XY', xy_data_size: int) -> 'XY':
         xy1, xy2 = (self, xy2) if random.random() > 0.5 else (xy2, self)
@@ -106,9 +107,10 @@ class TNeuralXY(XY):
     #     )
     #
     def __str__(self):
-        return "id={id}, f={f}".format(
+        return "id={id}, f={f}, sentimental_error={sentimental_error}".format(
             id=self.id,
             f=self.f,
+            sentimental_error=abs(self.sentimental_estimate - self.f)
         )
 
 
@@ -165,7 +167,8 @@ class GAModelRunner(AbstractModelRunnner):
                 block_size=2**11,
                 n_embed=8,
                 n_head=1,
-                n_layer=4
+                n_layer=4,
+                learning_rate=self.params.neural_estimator_lr
             )
             self.sentimental_accumulative_runner = TransformerSentimentalAccumulativeTrainer(sentimental_t_config)
         else:
@@ -318,6 +321,10 @@ class GAModelRunner(AbstractModelRunnner):
                 print(f"Estimated f estimations_list={estimations_list}")
 
                 estimated_children_families = list(zip(children, estimations_list, families))
+
+                for c, e, f in estimated_children_families:
+                    c.sentimental_estimate = e
+
                 sorted_children_families = sorted(estimated_children_families, key=lambda x: x[1], reverse=True)
                 children = [x[0] for x in sorted_children_families]
                 families = [x[2] for x in sorted_children_families]
