@@ -119,7 +119,7 @@ class TransformerEvaluator(AbstractEvaluator):
         self.dataloader = dataloader
 
     def func(self, xy) -> float:
-        n_iter = 1
+        n_iter = 4
         get_train_batch = self.dataloader.get_train_batch
         # get_val_batch = self.dataloader.get_val_batch
 

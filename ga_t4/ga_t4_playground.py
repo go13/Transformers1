@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Language transfer")
 parser.add_argument("--number_of_gpus", type=int, default=1)
 parser.add_argument("--models_per_gpu", type=int, default=1)
 
-parser.add_argument("--ga_population_size", type=int, default=20)
+parser.add_argument("--ga_population_size", type=int, default=40)
 parser.add_argument("--number_of_iterations", type=int, default=100000)
 parser.add_argument("--ga_use_random_exchange", type=bool, default=False)
 parser.add_argument("--ga_mutation_p", type=float, default=0.1)
@@ -29,7 +29,7 @@ parser.add_argument("--use_transformer_transformer", type=bool, default=True)
 
 parser.add_argument("--use_neural_estimator", type=bool, default=True)
 parser.add_argument("--neural_estimator_iteration_start", type=int, default=0)
-parser.add_argument("--neural_estimator_lr", type=float, default=1e-4)
+parser.add_argument("--neural_estimator_lr", type=float, default=1e-3)
 parser.add_argument("--ga_neural_estimator_iterations_per_ga_iteration", type=int, default=10)
 parser.add_argument("--ga_generate_only_unique_xy", type=bool, default=False)
 
