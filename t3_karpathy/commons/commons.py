@@ -38,6 +38,8 @@ class BaseTransformerConfig:
         self.multiple_of: int = 256  # llma
         self.precision = precision
 
+        self.save_model_periodically = True
+
 
 class AbstractDataLoader(object):
     def __init__(self, config: BaseTransformerConfig):
@@ -129,6 +131,10 @@ class AbstractRunner(object):
                 print(
                     f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
                 t = time.time()
+
+                if self.config.save_model_periodically:
+                    torch.save(self.model.state_dict(), "model.pt")
+                    print(f"saved model")
 
             x, y = get_train_batch()
 
