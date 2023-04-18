@@ -15,6 +15,10 @@ def read_and_merge_csv_files(directory_path, filenames, start_date='2010-01-01',
             # Read the CSV file
             file_data = pd.read_csv(file_path)
 
+            if file_data.empty:
+                print(f"File {file_path} is empty")
+                continue
+
             # Extract the 'Date' and 'Close' columns
             file_data = file_data[['Date', 'Close']]
 
