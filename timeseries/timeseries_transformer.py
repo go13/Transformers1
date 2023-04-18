@@ -1,5 +1,6 @@
 import torch
 from torch import nn as nn
+import glob
 
 from t3_karpathy.commons.commons import AbstractCodec, AbstractAccumulativeTrainer, AbstractRunner, \
     BaseTransformerConfig, TimeseriesFeedForward
@@ -107,10 +108,9 @@ class TimeseriesCodec(AbstractCodec):
 
 class TimeseriesDataloader(object):
 
-    def __init__(self, stocks_to_load, my_device='cuda'):
+    def __init__(self, directory_path, stocks_to_load, my_device='cuda'):
         self.codec = TimeseriesCodec()
 
-        directory_path = 'US-Stock-Dataset/Data/Stocks'
         df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01', end_date='2020-12-31')
 
         df.drop(columns=['Date'], axis=1, inplace=True)
@@ -205,14 +205,22 @@ stocks_to_load = [
     "KO", "LLY", "LMT", "LOW", "MA", "MCD", "MDLZ", "MDT", "MET", "MMM"
 ]
 
-dataloader = TimeseriesDataloader(stocks_to_load)
+directory_path = 'US-Stock-Dataset/Data/Stocks'
+
+stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
+
+stock_number_to_load = 512
+
+stocks_to_load = stocks_to_load[:stock_number_to_load]
+
+dataloader = TimeseriesDataloader(directory_path, stocks_to_load)
 config = TimeseriesTransformerConfig(
     batch_size=32,
     block_size=512,
     n_embed=32,
     n_head=4,
     n_layer=8,
-    kernel_size=1,
+    kernel_size=4,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
