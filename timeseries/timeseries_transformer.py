@@ -207,11 +207,11 @@ stocks_to_load = [
 
 directory_path = 'US-Stock-Dataset/Data/Stocks'
 
-stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
-
-stock_number_to_load = 512
-
-stocks_to_load = stocks_to_load[:stock_number_to_load]
+# stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
+#
+# stock_number_to_load = 100
+#
+# stocks_to_load = stocks_to_load[:stock_number_to_load]
 
 dataloader = TimeseriesDataloader(directory_path, stocks_to_load)
 config = TimeseriesTransformerConfig(
@@ -219,9 +219,9 @@ config = TimeseriesTransformerConfig(
     block_size=512,
     n_embed=32,
     n_head=4,
-    n_layer=8,
-    kernel_size=4,
-    learning_rate=1e-3,
+    n_layer=16,
+    kernel_size=1,
+    learning_rate=1e-4,
     channels=dataloader.get_number_of_channels()
 )
 model = TimeseriesTransformerModel(config)
