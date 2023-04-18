@@ -38,7 +38,7 @@ class BaseTransformerConfig:
         self.multiple_of: int = 256  # llma
         self.precision = precision
 
-        self.save_model_periodically = True
+        self.save_model_periodically_every_n_iterations = 1000
 
 
 class AbstractDataLoader(object):
@@ -132,7 +132,7 @@ class AbstractRunner(object):
                     f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
                 t = time.time()
 
-                if self.config.save_model_periodically:
+                if self.config.save_model_periodically_every_n_iterations != -1 and self.current_iteration % self.config.save_model_periodically_every_n_iterations == 0:
                     torch.save(self.model.state_dict(), "model.pt")
                     print(f"saved model")
 

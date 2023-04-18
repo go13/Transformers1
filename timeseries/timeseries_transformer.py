@@ -213,8 +213,8 @@ config = TimeseriesTransformerConfig(
     block_size=512,
     n_embed=32,
     n_head=4,
-    n_layer=8,
-    kernel_size=8,
+    n_layer=4,
+    kernel_size=4,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
