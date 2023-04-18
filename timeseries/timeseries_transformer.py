@@ -29,7 +29,7 @@ class TimeseriesTransformerModel(nn.Module):
 
         kernel_size = config.kernel_size
         right_pad = kernel_size - 1
-        n_kernels = config.n_embed * 4
+        n_kernels = config.n_embed * 16
         self.conv1d1 = nn.Conv1d(
             in_channels=self.channels,
             out_channels=n_kernels,
@@ -38,7 +38,7 @@ class TimeseriesTransformerModel(nn.Module):
         )
         self.padding1 = nn.ConstantPad1d((0, right_pad), 0)
 
-        self.input_ffwd = GeluFeedForward(n_kernels, n_kernels, config.n_embed, config.dropout)
+        self.input_ffwd = GeluFeedForward(n_kernels, config.n_embed, config.n_embed, config.dropout)
 
         self.blocks = BlockSequence(config)
 
@@ -47,14 +47,14 @@ class TimeseriesTransformerModel(nn.Module):
         inp_size = config.n_embed
         hidden_size = config.hidden_size
         dropout = config.dropout
-        out_size = config.channels
+        out_size = config.channels // 2
         self.out = TimeseriesFeedForward(inp_size, hidden_size, out_size, dropout)
 
     def forward_vs_target(self, idx, targets):
         output = self.forward(idx)
-        # mid_indx = targets.shape[-1] // 2
-        # targets = targets[:, 0, :mid_indx]  # first half - absolute
-        # targets = targets[:, 0, mid_indx:]  # 2nd - delta
+        mid_indx = targets.shape[-1] // 2
+        # targets = targets[:, :, :mid_indx]  # first half - absolute
+        targets = targets[:, :, mid_indx:]  # 2nd - delta
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
 
@@ -107,20 +107,18 @@ class TimeseriesCodec(AbstractCodec):
 
 class TimeseriesDataloader(object):
 
-    def __init__(self, stocks_to_load):
+    def __init__(self, stocks_to_load, my_device='cuda'):
         self.codec = TimeseriesCodec()
 
-        directory_path = 'US-Stock-Dataset/Data/StockHistory'
+        directory_path = 'US-Stock-Dataset/Data/Stocks'
         df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01', end_date='2020-12-31')
 
         df.drop(columns=['Date'], axis=1, inplace=True)
 
-        prices = df.values
-        # prices = df.values[1:]
-        # prices_diff = df.diff().values[1:]
+        prices = torch.tensor(df.values, dtype=torch.float, device=my_device)
+        prices_diff = torch.diff(prices, dim=0)
 
-        self.data = torch.tensor(prices, dtype=torch.float)
-        # self.data = torch.concat([torch.tensor(prices, dtype=torch.float), torch.tensor(prices_diff, dtype=torch.float)], dim=1)
+        self.data = torch.concat([prices[1:], prices_diff], dim=1)
 
         n = int(0.9 * len(self.data))  # first 90% will be train, rest val
         self.train_data = self.data[:n]
@@ -131,7 +129,7 @@ class TimeseriesDataloader(object):
         print("Found files: ", found_files)
 
     def get_number_of_channels(self):
-        return self.found_files
+        return self.found_files * 2
 
     def get_train_data(self):
         return self.train_data
@@ -213,8 +211,8 @@ config = TimeseriesTransformerConfig(
     block_size=512,
     n_embed=32,
     n_head=4,
-    n_layer=4,
-    kernel_size=4,
+    n_layer=8,
+    kernel_size=1,
     learning_rate=1e-3,
     channels=dataloader.get_number_of_channels()
 )
