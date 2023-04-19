@@ -209,11 +209,11 @@ stocks_to_load = [
 
 directory_path = 'US-Stock-Dataset/Data/Stocks'
 
-stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
-
-stock_number_to_load = 1000
-
-stocks_to_load = stocks_to_load[0:stock_number_to_load]
+# stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
+#
+# stock_number_to_load = 200
+#
+# stocks_to_load = stocks_to_load[1000:1000+stock_number_to_load]
 
 dataloader = TimeseriesDataloader(directory_path, stocks_to_load)
 config = TimeseriesTransformerConfig(
