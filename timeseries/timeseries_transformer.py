@@ -1,3 +1,10 @@
+import sys
+import os
+
+module_path = os.path.join(os.path.dirname(__file__), 't3_karpathy')
+sys.path.append(module_path)
+
+
 import torch
 from torch import nn as nn
 import glob
@@ -120,13 +127,14 @@ class TimeseriesDataloader(object):
 
         self.data = torch.concat([prices[1:], prices_diff], dim=1)
 
-        n = int(0.9 * len(self.data))  # first 90% will be train, rest val
+        n = int(0.9 * len(self.data))  # first 90% will be trained, rest val
         self.train_data = self.data[:n]
         self.val_data = self.data[n:]
 
         self.found_files = found_files
 
         print("Found files: ", found_files)
+
 
     def get_number_of_channels(self):
         return self.found_files * 2
@@ -136,6 +144,9 @@ class TimeseriesDataloader(object):
 
     def get_val_data(self):
         return self.val_data
+
+    def get_data(self):
+        return self.data
 
 
 class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
@@ -207,7 +218,7 @@ stocks_to_load = [
     'BLTE', 'BLU', 'BLUA', 'BLUE', 'BLW', 'BLX', 'BLZE', 'BMA', 'BMAC', 'BMAQ', 'BMAQR', 'BMAQU'
 ]
 
-directory_path = 'US-Stock-Dataset/Data/Stocks'
+directory_path = '../us-stock-dataset/Data/Stocks'
 
 # stocks_to_load = [s.split("\\")[1].replace(".csv", "") for s in glob.glob(directory_path + "//*.csv")]
 #
@@ -215,18 +226,18 @@ directory_path = 'US-Stock-Dataset/Data/Stocks'
 #
 # stocks_to_load = stocks_to_load[1000:1000+stock_number_to_load]
 
-dataloader = TimeseriesDataloader(directory_path, stocks_to_load)
-config = TimeseriesTransformerConfig(
-    batch_size=32,
-    block_size=512,
-    n_embed=32,
-    n_head=4,
-    n_layer=8,
-    kernel_size=1,
-    learning_rate=1e-3,
-    channels=dataloader.get_number_of_channels()
-)
-model = TimeseriesTransformerModel(config)
-trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
-
-trainer1.train_eval(20000)
+# dataloader = TimeseriesDataloader(directory_path, stocks_to_load)
+# config = TimeseriesTransformerConfig(
+#     batch_size=32,
+#     block_size=512,
+#     n_embed=32,
+#     n_head=4,
+#     n_layer=8,
+#     kernel_size=1,
+#     learning_rate=1e-3,
+#     channels=dataloader.get_number_of_channels()
+# )
+# model = TimeseriesTransformerModel(config)
+# trainer1 = TimeseriesPandasTrainer(config, dataloader=dataloader, model=model)
+#
+# trainer1.train_eval(20000)
