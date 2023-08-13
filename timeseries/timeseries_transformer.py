@@ -115,7 +115,7 @@ class TimeseriesCodec(AbstractCodec):
 
 class TimeseriesDataloader(object):
 
-    def __init__(self, directory_path, stocks_to_load, my_device='cuda'):
+    def __init__(self, directory_path, stocks_to_load, my_device='cuda', add_diff=True):
         self.codec = TimeseriesCodec()
 
         df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01', end_date='2020-12-31')
@@ -125,7 +125,10 @@ class TimeseriesDataloader(object):
         prices = torch.tensor(df.values, dtype=torch.float, device=my_device)
         prices_diff = torch.diff(prices, dim=0)
 
-        self.data = torch.concat([prices[1:], prices_diff], dim=1)
+        if add_diff:
+            self.data = torch.concat([prices[1:], prices_diff], dim=1)
+        else:
+            self.data = prices
 
         n = int(0.9 * len(self.data))  # first 90% will be trained, rest val
         self.train_data = self.data[:n]
