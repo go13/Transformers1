@@ -1,18 +1,18 @@
 import torch
 
-from t3_karpathy.transformer_config import TransformerConfig
-from t4.generic_dataloader import GenericDataloader
+from t3_karpathy.token_codec import TokenCodec
 
-from t4.transformer import FastTransformerRunner
+from t4.transformer import FastTransformerRunner, FastTransformerConfig
 
 device = 'cuda'
 
 torch.manual_seed(1337)
 
-config = TransformerConfig(precision=torch.bfloat16, batch_size=32, block_size=512, n_embed=64, n_head=4, n_layer=4)
+config = FastTransformerConfig(precision=torch.bfloat16, batch_size=32, block_size=512, n_embed=64, n_head=4, n_layer=4)
 
-dataloader = GenericDataloader(config, None, None)
-runner = FastTransformerRunner(config, dataloader)
+codec = TokenCodec()
+
+runner = FastTransformerRunner(config, codec.train_data, codec.val_data)
 
 runner.train_iterate_n(2500)
 

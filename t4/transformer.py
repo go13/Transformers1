@@ -6,6 +6,7 @@ from flash_attn.modules.mha import MHA
 from t3_karpathy.commons.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
 from t3_karpathy.commons.feed_forwards import GeluFeedForward
 from t3_karpathy.transformer_config import TransformerConfig
+from t4.generic_dataloader import GenericDataloader
 
 
 class FlashMultiHeadAttention(nn.Module):
@@ -63,17 +64,21 @@ class BlockSequence(nn.Module):
         return x
 
 
+class FastTransformerConfig(BaseTransformerConfig):
+    def __init__(self, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256, n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3):
+        super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
+        self.vocab_size = vocab_size
+
+
 class FastTransformerModel(nn.Module):
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: FastTransformerConfig):
         super().__init__()
         self.config = config
         self.token_embeddings = nn.Embedding(config.vocab_size, config.n_embed)
 
-        self.pos_ffwd = GeluFeedForward(config.n_embed * 3, config.n_embed, config.n_embed * 2, config.dropout)
-        self.pos_ln = nn.LayerNorm(config.n_embed * 2)
-
         self.blocks = BlockSequence(config)
+
         self.ln_f = nn.LayerNorm(config.n_embed)  # final layer norm
         self.lm_head = nn.Linear(config.n_embed, config.vocab_size)
 
@@ -87,8 +92,8 @@ class FastTransformerModel(nn.Module):
 
         return logits_view, loss
 
-    def forward(self, idx):
-        x = self.token_embeddings(idx)  # (B,T,C)
+    def forward(self, inp):
+        x = self.token_embeddings(inp)  # (B,T,C)
 
         x = self.blocks.forward(x)
 
@@ -116,8 +121,8 @@ class FastTransformerModel(nn.Module):
 
 
 class FastTransformerRunner(AbstractRunner):
-    def __init__(self, config: TransformerConfig, data_loader: AbstractDataLoader):
-        super().__init__(config, FastTransformerModel(config), data_loader)
+    def __init__(self, config: FastTransformerConfig, train_data, val_data):
+        super().__init__(config, FastTransformerModel(config), GenericDataloader(config, train_data, val_data))
         pass
 
     def generate(self, context, max_new_tokens):
