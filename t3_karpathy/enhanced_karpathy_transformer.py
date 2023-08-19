@@ -161,11 +161,11 @@ class FlashConvMultiHeadAttention(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, config: BaseTransformerConfig):
+    def __init__(self, config: BaseTransformerConfig, causal=True):
         super().__init__()
 
         # self.sa = MultiHeadAttention(config)
-        self.sa = FlashMultiHeadAttention(config, causal=True)
+        self.sa = FlashMultiHeadAttention(config, causal=causal)
         # self.sa = FlashConvMultiHeadAttention(config)
 
         dropout = config.dropout
@@ -182,8 +182,8 @@ class Block(nn.Module):
         return x, st_pos_emb
 
     @staticmethod
-    def create(config: BaseTransformerConfig):
-        return Block(config)
+    def create(config: BaseTransformerConfig, causal=True):
+        return Block(config, causal=causal)
 
 
 def distance_triangle(n, my_device):
@@ -193,9 +193,9 @@ def distance_triangle(n, my_device):
 
 
 class BlockSequence(nn.Module):
-    def __init__(self, config: BaseTransformerConfig):
+    def __init__(self, config: BaseTransformerConfig, causal=True):
         super().__init__()
-        self.blocks = nn.Sequential(*[Block.create(config) for _ in range(config.n_layer)])
+        self.blocks = nn.Sequential(*[Block.create(config, causal) for _ in range(config.n_layer)])
 
     def forward(self, x, st_pos_emb, pos_dist_emb):
         for block in self.blocks:

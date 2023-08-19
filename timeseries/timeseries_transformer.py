@@ -4,7 +4,6 @@ import os
 module_path = os.path.join(os.path.dirname(__file__), 't3_karpathy')
 sys.path.append(module_path)
 
-
 import torch
 from torch import nn as nn
 import glob
@@ -20,7 +19,8 @@ from timeseries.csv_reader import read_and_merge_csv_files
 
 class TimeseriesTransformerConfig(BaseTransformerConfig):
 
-    def __init__(self, my_device='cuda', precision=torch.bfloat16, batch_size=64, block_size=256, n_embed=32, n_head=4, n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
+    def __init__(self, my_device='cuda', precision=torch.bfloat16, batch_size=64, block_size=256, n_embed=32, n_head=4,
+                 n_layer=4, kernel_size=4, channels=12, learning_rate=1e-3):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.channels = channels
         self.kernel_size = kernel_size
@@ -118,7 +118,8 @@ class TimeseriesDataloader(object):
     def __init__(self, directory_path, stocks_to_load, my_device='cuda', add_diff=True):
         self.codec = TimeseriesCodec()
 
-        df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01', end_date='2020-12-31')
+        df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01',
+                                                   end_date='2020-12-31')
 
         df.drop(columns=['Date'], axis=1, inplace=True)
 
@@ -130,14 +131,13 @@ class TimeseriesDataloader(object):
         else:
             self.data = prices
 
-        n = int(0.9 * len(self.data))  # first 90% will be trained, rest val
+        n = int(0.9 * len(self.data))  # first 90% will be trained, rest - eval
         self.train_data = self.data[:n]
         self.val_data = self.data[n:]
 
         self.found_files = found_files
 
         print("Found files: ", found_files)
-
 
     def get_number_of_channels(self):
         return self.found_files * 2
@@ -153,7 +153,8 @@ class TimeseriesDataloader(object):
 
 
 class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
-    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader, model: TimeseriesTransformerModel):
+    def __init__(self, config: TimeseriesTransformerConfig, dataloader: TimeseriesDataloader,
+                 model: TimeseriesTransformerModel):
         super().__init__(config)
         self.runner: TimeseriesRunner = TimeseriesRunner(config, model)
         self.dataloader = dataloader
@@ -192,7 +193,8 @@ class TimeseriesPandasTrainer(AbstractAccumulativeTrainer):
         ix = torch.randint(len(data) - self.config.block_size - 1, (self.config.batch_size,))
         x = torch.stack([data[i:i + self.config.block_size] for i in ix])
         y = torch.stack([data[i + 1: i + self.config.block_size + 1] for i in ix])
-        x, y = x.to(self.config.my_device, dtype=self.config.precision), y.to(self.config.my_device, dtype=self.config.precision)
+        x, y = x.to(self.config.my_device, dtype=self.config.precision), y.to(self.config.my_device,
+                                                                              dtype=self.config.precision)
         return x, y
 
     def get_train_batch(self):
