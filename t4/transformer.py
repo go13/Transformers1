@@ -64,15 +64,16 @@ class BlockSequence(nn.Module):
         return x
 
 
-class FastTransformerConfig(BaseTransformerConfig):
-    def __init__(self, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256, n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3):
+class TransformerConfig(BaseTransformerConfig):
+    def __init__(self, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256,
+                 n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.vocab_size = vocab_size
 
 
-class FastTransformerModel(nn.Module):
+class SymbolicTransformerModel(nn.Module):
 
-    def __init__(self, config: FastTransformerConfig):
+    def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
         self.token_embeddings = nn.Embedding(config.vocab_size, config.n_embed)
@@ -120,9 +121,56 @@ class FastTransformerModel(nn.Module):
         return idx
 
 
-class FastTransformerRunner(AbstractRunner):
-    def __init__(self, config: FastTransformerConfig, train_data, val_data):
-        super().__init__(config, FastTransformerModel(config), GenericDataloader(config, train_data, val_data))
+class TransformerModel(nn.Module):
+
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+        self.blocks = BlockSequence(config)
+
+    def forward_vs_target(self, idx, targets):
+        logits = self.forward(idx)
+
+        b, t, c = logits.shape
+        logits_view = logits.view(b * t, c)
+        targets = targets.view(b * t)
+        loss = F.cross_entropy(logits_view, targets)
+
+        return logits_view, loss
+
+    def forward(self, inp):
+        return self.blocks.forward(inp)
+
+    def generate(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            # crop idx to the last block_size tokens
+            idx_cond = idx[:, -self.config.block_size:]
+            # get the predictions
+            logits = self.forward(idx_cond)
+            # focus only on the last time step
+            logits = logits[:, -1, :]  # becomes (B, C)
+            # apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1)  # (B, C)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+            # append sampled index to the running sequence
+            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
+        return idx
+
+
+class SymbolicTransformerRunner(AbstractRunner):
+    def __init__(self, config: TransformerConfig, train_data, val_data):
+        super().__init__(config, SymbolicTransformerModel(config), GenericDataloader(config, train_data, val_data))
+        pass
+
+    def generate(self, context, max_new_tokens):
+        return self.model.generate(context, max_new_tokens)
+
+
+class TransformerRunner(AbstractRunner):
+    def __init__(self, config: TransformerConfig, train_data, val_data):
+        super().__init__(config, TransformerModel(config), GenericDataloader(config, train_data, val_data))
         pass
 
     def generate(self, context, max_new_tokens):
