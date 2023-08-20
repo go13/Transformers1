@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from flash_attn.modules.mha import MHA
 
 from t3_karpathy.commons.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
-from t3_karpathy.commons.feed_forwards import GeluFeedForward
+from t3_karpathy.commons.feed_forwards import GeluFeedForward, LinearFeedForward
 from t4.generic_dataloader import GenericDataloader
 
 
@@ -38,13 +38,9 @@ class Block(nn.Module):
 
         self.sa = FlashMultiHeadAttention(config, causal=causal)
 
-        dropout = config.dropout
-        hidden_emb = config.hidden_size
-        n_embed = config.n_embed
-        out_emb = config.n_embed
+        self.ln2 = nn.LayerNorm(config.n_embed)
 
-        self.ln2 = nn.LayerNorm(n_embed)
-        self.ffwd = GeluFeedForward(n_embed, hidden_emb, out_emb, dropout, bias=False)
+        self.ffwd = GeluFeedForward(config.n_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
 
     def forward(self, x):
         x = x + self.sa.forward(x)
@@ -75,15 +71,21 @@ class TransformerModel(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        self.ffwd1 = GeluFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=True)
-        self.blocks = BlockSequence(config, causal=False)
-        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.input_embed, config.dropout, bias=True)
+
+        self.ffwd1 = LinearFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
+
+        self.encoder = BlockSequence(config, causal=False)
+
+        self.ln_mid = nn.LayerNorm(config.n_embed)
+
+        self.decoder = BlockSequence(config, causal=False)
+
+        self.ffwd2 = LinearFeedForward(config.n_embed, config.hidden_size, config.input_embed, config.dropout, bias=True)
 
         # print(self)
 
     def forward_vs_target(self, inp, targets):
         output = self.forward(inp)
-        # print(f"inp {inp.shape} targets {targets.shape} output {output.shape}")
 
         mse_loss = torch.nn.MSELoss(reduction='mean')
         loss = mse_loss(output, targets)
@@ -94,7 +96,13 @@ class TransformerModel(nn.Module):
         x = inp
 
         x = self.ffwd1.forward(x)
-        x = self.blocks.forward(x)
+
+        x = self.encoder.forward(x)
+
+        x = self.ln_mid.forward(x)
+
+        x = self.decoder.forward(x)
+
         x = self.ffwd2.forward(x)
         return x
 

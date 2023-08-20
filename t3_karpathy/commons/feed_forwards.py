@@ -25,10 +25,10 @@ class SentimentalFeedForward(nn.Module):
 
 
 class LinearFeedForward(nn.Module):
-    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout):
+    def __init__(self, inp_n_embd, hidden_n_embd, out_n_embd, dropout, bias=False):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(inp_n_embd, out_n_embd, bias=False),
+            nn.Linear(inp_n_embd, out_n_embd, bias=bias),
         )
 
     def forward(self, x):

@@ -14,7 +14,7 @@ def dict_weights_to_vector(w):
 class BaseTransformerConfig:
 
     def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4,
-                 n_layer=4, learning_rate=1e-2):
+                 n_layer=4, learning_rate=1e-3):
         self.my_device = my_device
 
         self.batch_size = batch_size
@@ -87,7 +87,9 @@ class AbstractRunner(object):
         self.config = config
         self.current_iteration = 0
         self.data_loader = data_loader
+        self.model_version = 1
         print(sum(p.numel() for p in self.model.parameters()) / 1e6, 'M parameters')
+
 
     def forward(self, x):
         return self.model(x)
@@ -125,15 +127,16 @@ class AbstractRunner(object):
         for _ in range(n_iter):
             if eval_interval != -1 and self.current_iteration % eval_interval == 0:
                 t_taken = time.time() - t
-                train_losses = self.evaluate(get_train_batch, self.config.eval_iters)
-                val_losses = self.evaluate(get_val_batch, self.config.eval_iters)
+                train_losses = torch.sqrt(self.evaluate(get_train_batch, self.config.eval_iters))
+                val_losses = torch.sqrt(self.evaluate(get_val_batch, self.config.eval_iters))
                 print(
                     f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
                 t = time.time()
 
                 if self.config.save_model_periodically_every_n_iterations != -1 and self.current_iteration % self.config.save_model_periodically_every_n_iterations == 0:
-                    torch.save(self.model.state_dict(), "model.pt")
-                    print(f"saved model")
+                    torch.save(self.model.state_dict(), f"model-{self.model_version}.pt")
+                    print(f"saved model version {self.model_version}")
+                    self.model_version += 1
 
             x, y = get_train_batch()
 
