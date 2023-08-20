@@ -11,6 +11,19 @@ def dict_weights_to_vector(w):
     return w
 
 
+def min_max_scaling(tensor):
+    return (tensor - tensor.min()) / (tensor.max() - tensor.min())
+
+
+def extract_sliding_windows(tensor, window_size):
+    windows = tensor.unfold(1, window_size, 1)
+    return windows
+
+def z_scale(tensor, dim=1):
+    mean = torch.mean(tensor, dim=dim, keepdim=True)
+    std = torch.std(tensor, dim=dim, keepdim=True)
+    return (tensor - mean) / (std + 1e-7)
+
 class BaseTransformerConfig:
 
     def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4,
@@ -89,7 +102,6 @@ class AbstractRunner(object):
         self.data_loader = data_loader
         self.model_version = 1
         print(sum(p.numel() for p in self.model.parameters()) / 1e6, 'M parameters')
-
 
     def forward(self, x):
         return self.model(x)
