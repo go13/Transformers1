@@ -11,7 +11,7 @@ from t4.generic_dataloader import GenericDataloader
 class FlashMultiHeadAttention(nn.Module):
     def __init__(self, config: BaseTransformerConfig, causal=True):
         super().__init__()
-        assert torch.bfloat16 == config.precision, 'only bfloat16 is supported'
+        assert torch.bfloat16 == config.precision, 'only bfloat16 is supported - checked 20 aug 23'
 
         # MHA + rotary requires flash-attention\csrc\rotary>pip install .
         self.flash_mha = MHA(
@@ -64,10 +64,10 @@ class BlockSequence(nn.Module):
 
 
 class TransformerConfig(BaseTransformerConfig):
-    def __init__(self, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256,
+    def __init__(self, input_embed, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256,
                  n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
-        self.vocab_size = vocab_size
+        self.input_embed = input_embed
 
 
 class TransformerModel(nn.Module):
@@ -75,20 +75,28 @@ class TransformerModel(nn.Module):
     def __init__(self, config: TransformerConfig):
         super().__init__()
         self.config = config
-        self.blocks = BlockSequence(config)
+        self.ffwd1 = GeluFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=True)
+        self.blocks = BlockSequence(config, causal=False)
+        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.input_embed, config.dropout, bias=True)
 
-    def forward_vs_target(self, idx, targets):
-        logits = self.forward(idx)
+        # print(self)
 
-        b, t, c = logits.shape
-        logits_view = logits.view(b * t, c)
-        targets = targets.view(b * t)
-        loss = F.cross_entropy(logits_view, targets)
+    def forward_vs_target(self, inp, targets):
+        output = self.forward(inp)
+        # print(f"inp {inp.shape} targets {targets.shape} output {output.shape}")
 
-        return logits_view, loss
+        mse_loss = torch.nn.MSELoss(reduction='mean')
+        loss = mse_loss(output, targets)
+
+        return output, loss
 
     def forward(self, inp):
-        return self.blocks.forward(inp)
+        x = inp
+
+        x = self.ffwd1.forward(x)
+        x = self.blocks.forward(x)
+        x = self.ffwd2.forward(x)
+        return x
 
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices in the current context

@@ -6,10 +6,10 @@ from t3_karpathy.commons.commons import BaseTransformerConfig, AbstractDataLoade
 class GenericDataloader(AbstractDataLoader):
     def __init__(self, config: BaseTransformerConfig, data):
         super().__init__(config)
-        self.data = data
+        self.data = data.to(config.precision).to(self.config.my_device)
         self.config = config
 
-        n = int(0.9 * len(self.data))  # first 90% will be train, rest val
+        n = int(0.9 * len(self.data))  # first 90% will be trained, rest val
         self.train_data = self.data[:n]
         self.val_data = self.data[n:]
 

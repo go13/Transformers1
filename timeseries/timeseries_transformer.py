@@ -118,8 +118,12 @@ class TimeseriesDataloader(object):
     def __init__(self, directory_path, stocks_to_load, my_device='cuda', add_diff=True):
         self.codec = TimeseriesCodec()
 
-        df, found_files = read_and_merge_csv_files(directory_path, stocks_to_load, start_date='2000-01-01',
-                                                   end_date='2020-12-31')
+        df, found_files = read_and_merge_csv_files(
+            directory_path,
+            stocks_to_load,
+            start_date='2000-01-01',
+            end_date='2020-12-31'
+        )
 
         df.drop(columns=['Date'], axis=1, inplace=True)
 
@@ -127,9 +131,11 @@ class TimeseriesDataloader(object):
         prices_diff = torch.diff(prices, dim=0)
 
         if add_diff:
+            self.number_of_channels = found_files * 2
             self.data = torch.concat([prices[1:], prices_diff], dim=1)
         else:
             self.data = prices
+            self.number_of_channels = found_files
 
         n = int(0.9 * len(self.data))  # first 90% will be trained, rest - eval
         self.train_data = self.data[:n]
@@ -139,8 +145,8 @@ class TimeseriesDataloader(object):
 
         print("Found files: ", found_files)
 
-    def get_number_of_channels(self):
-        return self.found_files * 2
+    def n_channels(self):
+        return self.number_of_channels
 
     def get_train_data(self):
         return self.train_data

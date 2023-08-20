@@ -17,7 +17,6 @@ class BaseTransformerConfig:
                  n_layer=4, learning_rate=1e-2):
         self.my_device = my_device
 
-        # karpathy parameters
         self.batch_size = batch_size
         self.block_size = block_size
         self.n_embed = n_embed
