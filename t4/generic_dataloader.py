@@ -4,11 +4,14 @@ from t3_karpathy.commons.commons import BaseTransformerConfig, AbstractDataLoade
 
 
 class GenericDataloader(AbstractDataLoader):
-    def __init__(self, config: BaseTransformerConfig, train_data, val_data):
+    def __init__(self, config: BaseTransformerConfig, data):
         super().__init__(config)
+        self.data = data
         self.config = config
-        self.train_data = train_data
-        self.val_data = val_data
+
+        n = int(0.9 * len(self.data))  # first 90% will be train, rest val
+        self.train_data = self.data[:n]
+        self.val_data = self.data[n:]
 
     def get_batch(self, split):
         # generate a small batch of data of inputs x and targets y

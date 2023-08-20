@@ -2,7 +2,7 @@ import torch
 
 from t3_karpathy.token_codec import TokenCodec
 
-from t4.transformer import FastTransformerRunner, FastTransformerConfig
+from t4.timeseries_transformer import FastTransformerRunner, FastTransformerConfig
 
 device = 'cuda'
 
