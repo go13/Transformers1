@@ -19,10 +19,16 @@ def extract_sliding_windows(tensor, window_size):
     windows = tensor.unfold(1, window_size, 1)
     return windows
 
+
 def z_scale(tensor, dim=1):
     mean = torch.mean(tensor, dim=dim, keepdim=True)
     std = torch.std(tensor, dim=dim, keepdim=True)
     return (tensor - mean) / (std + 1e-7)
+
+
+def diff(prices, dim=1):
+    return torch.diff(prices, dim=dim)
+
 
 class BaseTransformerConfig:
 

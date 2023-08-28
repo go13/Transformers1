@@ -128,9 +128,9 @@ class TimeseriesDataloader(object):
         df.drop(columns=['Date'], axis=1, inplace=True)
 
         prices = torch.tensor(df.values, dtype=torch.float, device=my_device)
-        prices_diff = torch.diff(prices, dim=0)
 
         if add_diff:
+            prices_diff = torch.diff(prices, dim=0)
             self.number_of_channels = found_files * 2
             self.data = torch.concat([prices[1:], prices_diff], dim=1)
         else:

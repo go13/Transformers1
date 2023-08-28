@@ -164,8 +164,8 @@ class Block(nn.Module):
     def __init__(self, config: BaseTransformerConfig, causal=True):
         super().__init__()
 
-        # self.sa = MultiHeadAttention(config)
-        self.sa = FlashMultiHeadAttention(config, causal=causal)
+        self.sa = MultiHeadAttention(config)
+        # self.sa = FlashMultiHeadAttention(config, causal=causal)
         # self.sa = FlashConvMultiHeadAttention(config)
 
         dropout = config.dropout

@@ -3,8 +3,12 @@ from torch import nn as nn
 
 from t3_karpathy.commons.commons import BaseTransformerConfig
 from t3_karpathy.commons.feed_forwards import GeluFeedForward
-from t3_karpathy.enhanced_karpathy_transformer import distance_triangle
 
+
+def distance_triangle(n, my_device):
+    arange_matrix = torch.arange(n, device=my_device).view(-1, 1) - torch.arange(n, device=my_device).view(1, -1)
+    lower_triangular = torch.tril(arange_matrix)
+    return lower_triangular
 
 class PositionalEmbedding(nn.Module):
     def __init__(self, config: BaseTransformerConfig):
@@ -18,7 +22,7 @@ class PositionalEmbedding(nn.Module):
     def forward(self, b, t):
         pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
-        pos_emb = self.position_embedding_ff(pos_emb)
+        pos_emb = self.position_embedding_ff.forward(pos_emb)
         # pos_emb = self.position_embedding_ff_ln(pos_emb)
         pos_emb = self.dropout(pos_emb)
 
@@ -43,6 +47,6 @@ class DistancePositionalEmbedding(nn.Module):
         pos_embedding_arrange = distance_triangle(self.config.block_size, self.config.my_device)
         pos_emb = self.position_embedding_table(pos_embedding_arrange)
         pos_emb = pos_emb.repeat(b, 1, 1, 1)  # (B, T, T, C)
-        pos_emb = self.position_embedding_ff(pos_emb)
+        pos_emb = self.position_embedding_ff.forward(pos_emb)
         # pos_emb = self.position_embedding_ff_ln(pos_emb)
         return pos_emb

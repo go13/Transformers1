@@ -1,11 +1,63 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
 from flash_attn.modules.mha import MHA
+from torch.nn import functional as F
 
-from t3_karpathy.commons.commons import AbstractRunner, BaseTransformerConfig, AbstractDataLoader
-from t3_karpathy.commons.feed_forwards import GeluFeedForward, LinearFeedForward
+from t3_karpathy.commons.commons import AbstractRunner, BaseTransformerConfig
+from t3_karpathy.commons.feed_forwards import GeluFeedForward
 from t4.generic_dataloader import GenericDataloader
+
+
+def distance_triangle(n, my_device):
+    arange_matrix = torch.arange(n, device=my_device).view(-1, 1) - torch.arange(n, device=my_device).view(1, -1)
+    lower_triangular = torch.tril(arange_matrix)
+    return lower_triangular
+
+
+class PositionalEmbedding(nn.Module):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__()
+        self.config = config
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
+        self.position_embedding_ff = GeluFeedForward(config.n_embed, config.n_embed, config.n_embed, config.dropout)
+        self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed)
+
+    def forward(self, b, t):
+        pos_embedding_arrange = torch.arange(t, device=self.config.my_device)
+        pos_emb = self.position_embedding_table(pos_embedding_arrange).repeat(b, 1, 1)  # (B,T,C)
+        pos_emb = self.position_embedding_ff.forward(pos_emb)
+        # pos_emb = self.position_embedding_ff_ln(pos_emb)
+        # pos_emb = self.dropout(pos_emb)
+
+        # pos_emb = pos_emb.unsqueeze(1).repeat(1, t, 1, 1)  # (B,T,C) -> (B,T,T,C)
+        # k = pos_emb
+        # q = pos_emb.transpose(1, 2)
+        # pos_emb = torch.cat([k, q], dim=-1)  # (B,T,T,C)
+
+        # return k + q
+        return pos_emb
+
+
+class DistancePositionalEmbedding(nn.Module):
+    def __init__(self, config: BaseTransformerConfig):
+        super().__init__()
+        self.config = config
+        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embed)
+        self.position_embedding_ff = GeluFeedForward(
+            config.n_embed,
+            config.n_embed,
+            config.n_embed,
+            config.dropout
+        )
+        # self.position_embedding_ff_ln = nn.LayerNorm(config.n_embed * 2)
+
+    def forward(self, b):
+        pos_embedding_arrange = distance_triangle(self.config.block_size, self.config.my_device)
+        pos_emb = self.position_embedding_table(pos_embedding_arrange)
+        pos_emb = pos_emb.repeat(b, 1, 1, 1)  # (B, T, T, C)
+        pos_emb = self.position_embedding_ff.forward(pos_emb)
+        # pos_emb = self.position_embedding_ff_ln(pos_emb)
+        return pos_emb
 
 
 class FlashMultiHeadAttention(nn.Module):
@@ -27,7 +79,8 @@ class FlashMultiHeadAttention(nn.Module):
             causal=causal  # auto-regressive or not
         )
 
-    def forward(self, x):
+    def forward(self, x, pos_emb, pos_dist_emb):
+        x = x +pos_emb
         out = self.flash_mha(x)[0]
         return out
 
@@ -42,8 +95,8 @@ class Block(nn.Module):
 
         self.ffwd = GeluFeedForward(config.n_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
 
-    def forward(self, x):
-        x = x + self.sa.forward(x)
+    def forward(self, x, pos_emb, pos_dist_emb):
+        x = x + self.sa.forward(x, pos_emb, pos_dist_emb)
         x = x + self.ffwd.forward(self.ln2(x))
         return x
 
@@ -53,9 +106,9 @@ class BlockSequence(nn.Module):
         super().__init__()
         self.blocks = nn.Sequential(*[Block(config, causal) for _ in range(config.n_layer)])
 
-    def forward(self, x):
+    def forward(self, x, pos_emb, pos_dist_emb):
         for block in self.blocks:
-            x = block(x)
+            x = block(x, pos_emb, pos_dist_emb)
         return x
 
 
@@ -72,17 +125,14 @@ class TransformerModel(nn.Module):
         super().__init__()
         self.config = config
 
+        self.pos_emb1 = PositionalEmbedding(config)
+        self.pos_dist_emb1 = DistancePositionalEmbedding(config)
+
         self.ffwd1 = GeluFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
 
-        self.encoder = BlockSequence(config, causal=False)
-
-        # self.ln_mid = nn.LayerNorm(config.n_embed)
-
-        # self.decoder = BlockSequence(config, causal=False)
+        self.t1 = BlockSequence(config, causal=False)
 
         self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.input_embed, config.dropout, bias=True)
-
-        # print(self)
 
     def forward_vs_target(self, inp, targets):
         output = self.forward(inp)
@@ -95,15 +145,17 @@ class TransformerModel(nn.Module):
     def forward(self, inp):
         x = inp
 
+        b, t, c = x.shape
+
         x = self.ffwd1.forward(x)
 
-        x = self.encoder.forward(x)
-
-        # x = self.ln_mid.forward(x)
-
-        # x = self.decoder.forward(x)
+        pos_emb = self.pos_emb1.forward(b, t)
+        # pos_dist_emb = self.pos_dist_emb1.forward(b)
+        # print(pos_dist_emb.shape)
+        x = self.t1.forward(x, pos_emb, None)
 
         x = self.ffwd2.forward(x)
+
         return x
 
     def generate(self, idx, max_new_tokens):
