@@ -80,7 +80,7 @@ class FlashMultiHeadAttention(nn.Module):
         )
 
     def forward(self, x, pos_emb, pos_dist_emb):
-        x = x +pos_emb
+        x = x + pos_emb
         out = self.flash_mha(x)[0]
         return out
 
@@ -114,9 +114,10 @@ class BlockSequence(nn.Module):
 
 class TransformerConfig(BaseTransformerConfig):
     def __init__(self, input_embed, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256,
-                 n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3):
+                 n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3, causal=True):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.input_embed = input_embed
+        self.causal = causal
 
 
 class TransformerModel(nn.Module):
@@ -130,7 +131,7 @@ class TransformerModel(nn.Module):
 
         self.ffwd1 = GeluFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
 
-        self.t1 = BlockSequence(config, causal=False)
+        self.t1 = BlockSequence(config, causal=config.causal)
 
         self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.input_embed, config.dropout, bias=True)
 

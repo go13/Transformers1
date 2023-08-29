@@ -30,6 +30,14 @@ def diff(prices, dim=1):
     return torch.diff(prices, dim=dim)
 
 
+def standardize(data, dim=-1):
+    mean = torch.mean(data, dim=dim, keepdim=True)
+    std = torch.std(data, dim=dim, keepdim=True)
+    data_standardized = (data - mean) / (std + 1e-7)
+    return data_standardized
+
+
+
 class BaseTransformerConfig:
 
     def __init__(self, my_device='cuda', precision=torch.float32, batch_size=64, block_size=32, n_embed=64, n_head=4,
