@@ -157,6 +157,7 @@ class AbstractRunner(object):
                 val_losses = torch.sqrt(self.evaluate(get_val_batch, self.config.eval_iters))
                 print(
                     f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
+
                 t = time.time()
 
                 if self.config.save_model_periodically_every_n_iterations != -1 and self.current_iteration % self.config.save_model_periodically_every_n_iterations == 0:
