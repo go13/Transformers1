@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 from t3_karpathy.commons.commons import AbstractRunner, BaseTransformerConfig
 from t3_karpathy.commons.feed_forwards import GeluFeedForward
-from t4.generic_dataloader import GenericDataloader, InOutGenericDataloader
+from t4.generic_dataloader import AbstractDataLoader
 
 
 def distance_triangle(n, my_device):
@@ -113,7 +113,8 @@ class BlockSequence(nn.Module):
 
 
 class TransformerConfig(BaseTransformerConfig):
-    def __init__(self, input_embed, output_num, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128, block_size=256,
+    def __init__(self, input_embed, output_num, vocab_size, my_device='cuda', precision=torch.bfloat16, batch_size=128,
+                 block_size=256,
                  n_embed=16, n_head=2, n_layer=4, learning_rate=1e-3, causal=True):
         super().__init__(my_device, precision, batch_size, block_size, n_embed, n_head, n_layer, learning_rate)
         self.input_embed = input_embed
@@ -128,75 +129,9 @@ class TransformerModel(nn.Module):
         super().__init__()
         self.config = config
 
-        self.tok_emb = nn.Embedding(config.vocab_size, config.n_embed)
-        self.pos_emb1 = PositionalEmbedding(config)
-        self.pos_dist_emb1 = DistancePositionalEmbedding(config)
+        self.out_stock_embedding = nn.Embedding(config.output_num, config.n_embed)
 
-        self.ffwd1 = GeluFeedForward(config.input_embed * config.n_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
-
-        self.t1 = BlockSequence(config, causal=config.causal)
-
-        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.vocab_size * config.input_embed, config.dropout, bias=False)
-
-    def forward_vs_target(self, inp, targets):
-        output = self.forward(inp)
-
-        b, t, c = output.shape
-        logits_view = output.view(b * t * c // self.config.vocab_size, self.config.vocab_size)
-        targets = targets.view(-1)
-        # targets = targets.view(b * t, -1)
-        # print(logits_view.shape)
-        # print(targets.shape)
-
-        loss = F.cross_entropy(logits_view, targets)
-
-        return output, loss
-
-    def forward(self, inp):
-        x = inp
-
-        x = self.tok_emb.forward(x)
-
-        x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
-
-        # print(x.shape)
-        b, t, c = x.shape
-
-        x = self.ffwd1.forward(x)
-
-        pos_emb = self.pos_emb1.forward(b, t)
-        # pos_dist_emb = self.pos_dist_emb1.forward(b)
-        # print(pos_dist_emb.shape)
-        x = self.t1.forward(x, pos_emb, None)
-
-        x = self.ffwd2.forward(x)
-
-        return x
-
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # crop idx to the last block_size tokens
-            idx_cond = idx[:, -self.config.block_size:]
-            # get the predictions
-            logits = self.forward(idx_cond)
-            # focus only on the last time step
-            logits = logits[:, -1, :]  # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1)  # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-        return idx
-
-
-
-class NoInpTokenTransformerModel(nn.Module):
-
-    def __init__(self, config: TransformerConfig):
-        super().__init__()
-        self.config = config
+        self.out_stock_ffwd = GeluFeedForward(config.n_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
 
         self.pos_emb1 = PositionalEmbedding(config)
         self.pos_dist_emb1 = DistancePositionalEmbedding(config)
@@ -205,7 +140,8 @@ class NoInpTokenTransformerModel(nn.Module):
 
         self.t1 = BlockSequence(config, causal=config.causal)
 
-        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.vocab_size * config.output_num, config.dropout, bias=False)
+        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.vocab_size,
+                                     config.dropout, bias=False)
 
     def forward_vs_target(self, inp, targets):
         output = self.forward(inp)
@@ -223,18 +159,23 @@ class NoInpTokenTransformerModel(nn.Module):
         return output, loss
 
     def forward(self, inp):
-        x = inp
+        x = inp[0]
+        stock_ix = inp[1]
 
+        out_stock_emb = self.out_stock_embedding(stock_ix)
+        out_stock_emb = self.out_stock_ffwd.forward(out_stock_emb)
         # x = self.tok_emb.forward(x)
 
         # x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
 
-        # print(x.shape)
         b, t, c = x.shape
 
         x = self.ffwd1.forward(x)
 
-        pos_emb = self.pos_emb1.forward(b, t)
+        pos_emb = self.pos_emb1.forward(b, t) + out_stock_emb
+
+        # print(pos_emb.shape, out_stock_emb.shape)
+
         # pos_dist_emb = self.pos_dist_emb1.forward(b)
         # print(pos_dist_emb.shape)
         x = self.t1.forward(x, pos_emb, None)
@@ -261,98 +202,64 @@ class NoInpTokenTransformerModel(nn.Module):
         return idx
 
 
-
-class NoTokenTransformerModel(nn.Module):
-
-    def __init__(self, config: TransformerConfig):
-        super().__init__()
+class InOutDataloader(AbstractDataLoader):
+    def __init__(self, config: BaseTransformerConfig, in_data, out_data):
+        super().__init__(config)
+        self.in_data = in_data.to(self.config.my_device).to(config.precision)
+        self.out_data = out_data.to(self.config.my_device)#.to(config.precision)
         self.config = config
 
-        self.pos_emb1 = PositionalEmbedding(config)
-        self.pos_dist_emb1 = DistancePositionalEmbedding(config)
+        n = int(0.9 * len(self.in_data))  # first 90% will be trained, rest val
+        self.in_train_data = self.in_data[:n]
+        self.in_val_data = self.in_data[n:]
 
-        self.ffwd1 = GeluFeedForward(config.input_embed, config.hidden_size, config.n_embed, config.dropout, bias=False)
+        self.out_train_data = self.out_data[:n]
+        self.out_val_data = self.out_data[n:]
 
-        self.t1 = BlockSequence(config, causal=config.causal)
+    def get_batch(self, split):
+        # generate a small batch of data of inputs x and targets y
+        in_data = self.in_train_data if split == 'train' else self.in_val_data
+        out_data = self.out_train_data if split == 'train' else self.out_val_data
 
-        self.ffwd2 = GeluFeedForward(config.n_embed, config.hidden_size, config.output_num, config.dropout, bias=False)
+        # print(out_data.shape)
+        batch_ix = torch.randint(len(in_data) - self.config.block_size, (self.config.batch_size,))
 
-    def forward_vs_target(self, inp, targets):
-        output = self.forward(inp)
+        stock_idx = []
+        x = []
+        y = []
+        for i in batch_ix:
+            stock_out_ix = torch.randint(out_data.shape[-1], (1,))
 
-        b, t, c = output.shape
-        # print(output.shape)
+            x.append(in_data[i:i + self.config.block_size])
+            y.append(out_data[i + 1:i + self.config.block_size + 1, stock_out_ix])
+            stock_idx.append(stock_out_ix)
 
-        logits_view = output.view(b * t, c)
-        targets = targets.view(b * t, -1)
+        x = torch.stack(x)
+        y = torch.stack(y)
+        stock_idx = torch.stack(stock_idx)
 
-        mse_loss = torch.nn.MSELoss(reduction='mean')
-        loss = mse_loss(logits_view, targets)
+        # x = torch.stack([in_data[i:i + self.config.block_size] for i in ix])
+        # y = torch.stack([out_data[i + 1:i + self.config.block_size + 1] for i in ix])
 
-        # print(f"loss = {loss.item()}, {logits_view.shape}, {targets.shape}")
+        x, y, stock_idx = x.to(self.config.my_device), y.to(self.config.my_device), stock_idx.to(self.config.my_device)
 
-        return output, loss
+        # print(x.shape, y.shape)
+        return (x, stock_idx), y
 
-    def forward(self, inp):
-        x = inp
+    def get_train_batch(self):
+        return self.get_batch('train')
 
-        # x = self.tok_emb.forward(x)
-
-        x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
-
-        # print(x.shape)
-        b, t, c = x.shape
-
-        x = self.ffwd1.forward(x)
-
-        pos_emb = self.pos_emb1.forward(b, t)
-        # pos_dist_emb = self.pos_dist_emb1.forward(b)
-        # print(pos_dist_emb.shape)
-        x = self.t1.forward(x, pos_emb, None)
-
-        x = self.ffwd2.forward(x)
-
-        return x
-
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # crop idx to the last block_size tokens
-            idx_cond = idx[:, -self.config.block_size:]
-            # get the predictions
-            logits = self.forward(idx_cond)
-            # focus only on the last time step
-            logits = logits[:, -1, :]  # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1)  # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-        return idx
+    def get_val_batch(self):
+        return self.get_batch('test')
 
 
 class TransformerRunner(AbstractRunner):
-    def __init__(self, config: TransformerConfig, data):
-        super().__init__(config, TransformerModel(config), GenericDataloader(config, data))
-        pass
-
-    def generate(self, context, max_new_tokens):
-        return self.model.generate(context, max_new_tokens)
-
-
-class InOutTransformerRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig, in_data, out_data):
-        super().__init__(config, NoInpTokenTransformerModel(config), InOutGenericDataloader(config, in_data, out_data))
-        pass
-
-    def generate(self, context, max_new_tokens):
-        return self.model.generate(context, max_new_tokens)
-
-
-class NoTokenTransformerRunner(AbstractRunner):
-    def __init__(self, config: TransformerConfig, in_data, out_data):
-        super().__init__(config, NoTokenTransformerModel(config), InOutGenericDataloader(config, in_data, out_data.to(config.precision)))
+        super().__init__(
+            config,
+            TransformerModel(config),
+            InOutDataloader(config, in_data, out_data)
+        )
         pass
 
     def generate(self, context, max_new_tokens):

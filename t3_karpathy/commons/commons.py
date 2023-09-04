@@ -55,7 +55,7 @@ class BaseTransformerConfig:
         self.head_size = self.n_embed // self.n_head
 
         self.max_iters = 15000
-        self.eval_interval = 100
+        self.eval_interval = 500
         self.learning_rate = learning_rate
         self.eval_iters = 200
 
@@ -131,12 +131,12 @@ class AbstractRunner(object):
     @torch.no_grad()
     def evaluate(self, get_batch, eval_iters):
         self.model.eval()
-        losses = torch.zeros(eval_iters)
+        losses = 0
         for k in range(eval_iters):
             x, y = get_batch()
             logits, loss = self.model.forward_vs_target(x, y)
-            losses[k] = loss.item()
-        return losses.mean()
+            losses += loss
+        return losses / eval_iters
 
     def train_iterate_n(self, n_iter):
         self.train_iterate(n_iter, self.data_loader.get_train_batch, self.data_loader.get_val_batch)
@@ -156,7 +156,7 @@ class AbstractRunner(object):
                 train_losses = torch.sqrt(self.evaluate(get_train_batch, self.config.eval_iters))
                 val_losses = torch.sqrt(self.evaluate(get_val_batch, self.config.eval_iters))
                 print(
-                    f"step {self.current_iteration}: train loss {train_losses:.4f}, val loss {val_losses:.4f}, time/iter {t_taken / eval_interval}")
+                    f"step {self.current_iteration}: rmse train loss {train_losses:.4f}, rmse val loss {val_losses:.4f}, sec/iter {t_taken / eval_interval}")
 
                 t = time.time()
 
