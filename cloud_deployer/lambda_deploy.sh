@@ -2,7 +2,7 @@
 
 # API Key and SSH details
 LAMBDA_API_KEY="secret_api-key2_e4b54166fae54bee895300564adaf1e4.zS0nxFFon2OAqgUbAU43rAEYEY9QP0FL"
-SSH_PRIVATE_KEY="/path/to/your/private/key"
+SSH_PRIVATE_KEY="~/.ssh/id_rsa"
 SSH_KEY_NAME="x399" # Name of the SSH key in the Lambda Labs Cloud console
 LOCAL_FILES_PATH="./*"
 REMOTE_PATH="~/"
