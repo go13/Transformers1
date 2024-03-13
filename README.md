@@ -1,0 +1,1 @@
+stocks source - https://www.kaggle.com/datasets/footballjoe789/us-stock-dataset/code
