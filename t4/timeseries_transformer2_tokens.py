@@ -352,7 +352,8 @@ class InOutTransformerRunner(AbstractRunner):
 
 class NoTokenTransformerRunner(AbstractRunner):
     def __init__(self, config: TransformerConfig, in_data, out_data):
-        super().__init__(config, NoTokenTransformerModel(config), InOutGenericDataloader(config, in_data, out_data.to(config.precision)))
+        super().__init__(config, NoTokenTransformerModel(config),
+                         InOutGenericDataloader(config, in_data, out_data.to(config.precision)))
         pass
 
     def generate(self, context, max_new_tokens):
