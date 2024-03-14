@@ -298,7 +298,7 @@ class NoTokenTransformerModel(nn.Module):
 
         # x = self.tok_emb.forward(x)
 
-        x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
+        # x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
 
         # print(x.shape)
         b, t, c = x.shape
