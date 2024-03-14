@@ -300,7 +300,7 @@ class NoTokenTransformerModel(nn.Module):
 
         # x = x.reshape(x.shape[0], x.shape[1], x.shape[2] * x.shape[3])
 
-        print(x.shape)
+        # print(x.shape)
         b, t, c = x.shape
 
         x = self.ffwd1.forward(x)
