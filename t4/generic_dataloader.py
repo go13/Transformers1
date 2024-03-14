@@ -56,7 +56,7 @@ class InOutGenericDataloader(AbstractDataLoader):
 
         x, y = x.to(self.config.my_device), y.to(self.config.my_device)
 
-        print(x.shape, y.shape)
+        # print(x.shape, y.shape)
         return x, y
 
     def get_train_batch(self):
